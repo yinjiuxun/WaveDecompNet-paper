@@ -13,34 +13,32 @@ from obspy.clients.fdsn import Client
 from obspy.taup import TauPyModel
 from obspy.geodetics import locations2degrees
 
+#%%
+client = Client('IRIS', debug=True)
 
 #%% function to download the seismograms give the network, station, startime and endtime of the waveform
-def download_stations(network, stations, channels, path, location='10'):
+def download_station(network, station, channel, location, path):
 
-    
-    for station in stations:
-        for channel in channels:
-            fname = path + "/" + network + "." + station + "." + channel 
-            inventory = client.get_stations(network=network, station=station, channel=channel, 
-                                  location=location,level="response")
-            inventory.write(fname + ".xml", format="STATIONXML") 
+    fname = path + "/" + network + "." + station + "." + location + "." + channel 
+    inventory = client.get_stations(network=network, station=station, channel=channel, 
+                          location=location,level="response")
+    inventory.write(fname + ".xml", format="STATIONXML") 
+    return inventory
 
 # download waveform given network          
-def download_waveforms(network, stations, channels, starttime, endtime, path, location='10'):
+def download_waveforms(network, station, channel, location, starttime, endtime, path, fname):
     
-    for station in stations:
-        for channel in channels:
-            fname = path + "/" + network + "." + station + "." + channel + "." + starttime.strftime('%Y%m%d')
-            tr = client.get_waveforms(network=network, station=station, channel=channel, 
-                                      location=location, starttime = starttime - 1800, endtime=endtime + 1800,
-                                      attach_response=True)
-            tr.detrend("spline", order=3, dspline=1000)
-            tr.remove_response(output="VEL")
-            
-            # here to deal with the taperring at both end, only keep the central 1-hour long data
-            newtr = tr.slice(starttime, endtime) # probably fix later
-            
-            newtr.write(fname + ".mseed", format='MSEED')
+    tr = client.get_waveforms(network=network, station=station, channel=channel, 
+                              location=location, starttime = starttime - 1800, endtime=endtime + 1800,
+                              attach_response=True)
+    tr.detrend("spline", order=3, dspline=1000)
+    tr.remove_response(output="VEL")
+    
+    # here to deal with the taperring at both end, only keep the central 1-hour long data
+    newtr = tr.slice(starttime, endtime) # probably fix later
+    
+    newtr.write(path + "/" + fname + ".mseed", format='MSEED')
+    return newtr
             
 
 #%%
@@ -51,44 +49,64 @@ os.chdir(working_dir)
 
 print(os.getcwd())
 
-#%%
-#@title Step 2.1 Specify the stations and time { display-mode: "both" }
-# Specify the network and stations we want.
-network = 'IU' # A specific seismic network to which the stations belong 
+
+#%% Specify the network and stations we want.
+networks = np.array(['IU']) # A specific seismic network to which the stations belong 
 stations = np.array(['XMAS']) # Names of the stations
 channels = np.array(['BHE','BHN','BHZ']) # Channels
-# Specify begining time of the waveforms
-year = 2011 
-month = 3 
-day = 11 
-hour = 0 
-minute = 0 
-second = 0 
-seconds_per_day = 24 * 60 * 60
-
+location = '10'
 
 
 station_dir = working_dir + '/stations'
 if not os.path.exists(station_dir):
     os.makedirs(station_dir)
+    
+for network in networks:
+    for station in stations:
+        for channel in channels:
+            inventory = download_station(network, station, channel, location, station_dir)    
+            
+#%% Get the location of station
+sta_lon = inventory[0][0].longitude
+sta_lat = inventory[0][0].latitude
+
+#%% load the USGS earthquake catalog (TODO: this can be modified as directly downloading using Obspy with conditions)
+catalog = obspy.read_events(working_dir + '/USGS_catalog_Tohoku_1year_M6+.xml')
+print(catalog)
+print(catalog[0])
+
+#%%
+event = catalog[5]
+print(event)
+print(event.origins[0])
+#%% extract the event information
+event_time = event.origins[0].time
+event_lon = event.origins[0].longitude
+event_lat = event.origins[0].latitude
+event_dep = event.origins[0].depth/1e3
+
+
+#%% estimate the distance and the P arrival time from the event to the station
+distance_to_source = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
+model = TauPyModel(model='iasp91')
+
+arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['P'])
+P_arrival = arrivals[0].time
+
+#%% determine the time window of the waveform based on the P arrival, will download 1 hour before and 2 hours after P
+starttime = event_time + P_arrival - 1 * 3600
+endtime = event_time + P_arrival + 2 * 3600
+
+
 waveform_dir = working_dir + '/waveforms'
 if not os.path.exists(waveform_dir):
     os.makedirs(waveform_dir)
 
+fname = network + "." + station + "." + channel + "." + event_time.strftime("%Y%m%d-%H%M%S")
+tr = download_waveforms(network, station, channel, location, starttime, endtime, waveform_dir, fname)
+
 
 #%%
-client = Client('IRIS', debug=True)
-
-download_stations(network, stations, channels, station_dir)
-
-# Set the time of waveform we want (1 hour long)
-starttime=obspy.UTCDateTime(year, month, day, hour, minute, second)
-endtime=obspy.UTCDateTime(year, month, day+1, hour, minute, second)
-download_waveforms(network, stations, channels, starttime, endtime, waveform_dir)
-
-
-# In[ ]:
-
-
+tr.plot()
 
 
