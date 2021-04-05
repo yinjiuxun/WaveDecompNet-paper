@@ -76,34 +76,48 @@ print(catalog)
 print(catalog[0])
 
 #%%
-event = catalog[5]
-print(event)
-print(event.origins[0])
-#%% extract the event information
-event_time = event.origins[0].time
-event_lon = event.origins[0].longitude
-event_lat = event.origins[0].latitude
-event_dep = event.origins[0].depth/1e3
+event_mag_pre = 99 # this variable is used to record the magnitude of previous event
+# for events with the same magnitude, only download one
+for i_event in range(len(catalog)):
+    event = catalog[i_event]
+    print(event)
+    print(event.origins[0])
+    #% % extract the event information
+    event_time = event.origins[0].time
+    event_lon = event.origins[0].longitude
+    event_lat = event.origins[0].latitude
+    event_dep = event.origins[0].depth/1e3
+    event_mag = event.magnitudes[0].mag
+    
+    # if the current event has the same magnitude as the previous one, skip
+    # this step is not necessary for actual application
+    if event_mag == event_mag_pre:
+        continue
+    else:
+        event_mag_pre = event_mag
+    
+    #% % estimate the distance and the P arrival time from the event to the station
+    distance_to_source = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
+    model = TauPyModel(model='iasp91')
+    
+    arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['P'])
+    P_arrival = arrivals[0].time
+    
+    #% % determine the time window of the waveform based on the P arrival, will download 1 hour before and 2 hours after P
+    starttime = event_time + P_arrival - 1 * 3600
+    endtime = event_time + P_arrival + 2 * 3600
+    
+    
+    waveform_dir = working_dir + '/waveforms'
+    if not os.path.exists(waveform_dir):
+        os.makedirs(waveform_dir)
+    
 
-
-#%% estimate the distance and the P arrival time from the event to the station
-distance_to_source = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
-model = TauPyModel(model='iasp91')
-
-arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['P'])
-P_arrival = arrivals[0].time
-
-#%% determine the time window of the waveform based on the P arrival, will download 1 hour before and 2 hours after P
-starttime = event_time + P_arrival - 1 * 3600
-endtime = event_time + P_arrival + 2 * 3600
-
-
-waveform_dir = working_dir + '/waveforms'
-if not os.path.exists(waveform_dir):
-    os.makedirs(waveform_dir)
-
-fname = network + "." + station + "." + channel + "." + event_time.strftime("%Y%m%d-%H%M%S")
-tr = download_waveforms(network, station, channel, location, starttime, endtime, waveform_dir, fname)
+    fname = network + "." + station + ".M" + str(event_mag) + "." + event_time.strftime("%Y%m%d-%H%M%S")
+    try:
+        tr = download_waveforms(network, station, 'BH*', location, starttime, endtime, waveform_dir, fname)
+    except:
+        print("Issue with " + "event " + event_time.strftime("%Y%m%d-%H%M%S"))
 
 
 #%%
