@@ -89,12 +89,12 @@ for i_event in range(len(catalog)):
     event_dep = event.origins[0].depth/1e3
     event_mag = event.magnitudes[0].mag
     
-    # if the current event has the same magnitude as the previous one, skip
-    # this step is not necessary for actual application
-    if event_mag == event_mag_pre:
-        continue
-    else:
-        event_mag_pre = event_mag
+    # # if the current event has the same magnitude as the previous one, skip
+    # # this step is not necessary for actual application
+    # if event_mag == event_mag_pre:
+    #     continue
+    # else:
+    #     event_mag_pre = event_mag
     
     #% % estimate the distance and the P arrival time from the event to the station
     distance_to_source = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
