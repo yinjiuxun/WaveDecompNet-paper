@@ -13,7 +13,7 @@ from obspy.geodetics import locations2degrees
 # functions for fft
 from scipy.fft import fft, fftfreq, fftshift
 
-#%%
+#%% Function to plot waveforms (not in use now)
 def plot_waveforms(st, starttime=None, endtime=None, ylim=40e-2):
   fig, ax = plt.subplots(len(st),1,sharex=True,sharey=True,squeeze=False,figsize=(10,12))
 
@@ -40,7 +40,7 @@ def plot_waveforms(st, starttime=None, endtime=None, ylim=40e-2):
 
   fig.autofmt_xdate()
   
-  
+#%% 
 def SNR(signal, noise):
     snr = 10 * np.log10(signal.std() / noise.std())
     return snr
@@ -118,6 +118,8 @@ for i_st in range(0, len(tr)):
     plt.plot(time, data_filt, '-k', linewidth=0.5)
     plt.show()
     
+    
+#
 #%% TODO: try the thresholding method in time-frequency domain or in the wavelet domain    
     
 
@@ -136,120 +138,3 @@ snr = SNR(signal, noise)
 plt.figure()
 plt.plot(time, data)
 plt.show()
-#%%
-working_dir = '/Users/Yin9xun/Work/island_stations/waveforms'
-st = obspy.read(working_dir + '/*XMAS*.mseed')
-st_filt = st.filter('highpass', freq=2, corners=2, zerophase=True)
-starttime = st[0].stats.starttime.datetime
-endtime = (st[0].stats.starttime + 3600).datetime
-plot_waveforms(st_filt, starttime=starttime, endtime=endtime, ylim=0.5e-2)
-
-#%%
-working_dir = '/Users/Yin9xun/Work/island_stations/waveforms'
-st = obspy.read(working_dir + '/*KIP*.mseed')
-print(st)
-st.plot()
-
-
-# In[57]:
-
-
-#%%
-working_dir = '/Users/Yin9xun/Work/island_stations/waveforms'
-st = obspy.read(working_dir + '/*POHA*.mseed')
-print(st)
-st.plot()
-
-
-# In[58]:
-
-
-#%%
-working_dir = '/Users/Yin9xun/Work/island_stations/waveforms'
-st = obspy.read(working_dir + '/*XMAS*.mseed')
-print(st)
-st.plot()
-
-
-# In[5]:
-
-
-#%%
-st = obspy.read(working_dir + '/*XMAS*BH1*.mseed')
-st_filt = st.copy()
-st_filt.filter('highpass', freq=6, corners=2, zerophase=True)
-st_filt.plot(type='dayplot', interval=60,linewidth=0.2,size=(1000,1500),data_unit='m/s')
-
-
-# In[61]:
-
-
-get_ipython().run_line_magic('pinfo', 'st.plot')
-
-
-# In[ ]:
-
-
-#%%
-st.spectrogram(log=True)
-
-
-# In[4]:
-
-
-#%%
-st_filt.spectrogram(log=True,dbscale=True,clip=[0, 0.9])
-
-
-# In[7]:
-
-
-get_ipython().run_line_magic('matplotlib', 'inline')
-st.plot()
-
-
-# In[4]:
-
-
-working_dir = '/Users/Yin9xun/Work/island_stations/data'
-st = obspy.read(working_dir + '/*POHA*.mseed')
-st.detrend("spline", order=3, dspline=1000)
-print(st)
-st.plot(type='dayplot', interval=60,linewidth=0.2)
-plt.show()
-
-
-# In[56]:
-
-
-st_filt = st.copy()
-st_filt.filter('highpass', freq=2, corners=2, zerophase=True)
-st_filt.plot()
-#st_filt.plot(type='dayplot', interval=60,linewidth=0.2,size=(1000,1500))
-
-
-# In[35]:
-
-
-dt = obspy.UTCDateTime('2018-01-01T04:00:00.019500Z')
-st_hour = st_filt.slice(dt,dt+30)
-
-
-# In[36]:
-
-
-st_hour.spectrogram(log=True)
-
-
-# In[37]:
-
-
-st_short_filt = st_hour.filter('highpass', freq=2, corners=2, zerophase=True)
-st_short_filt.plot()
-
-
-# In[ ]:
-
-
-
-
