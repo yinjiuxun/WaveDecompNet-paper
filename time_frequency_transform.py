@@ -24,8 +24,9 @@ from ssqueezepy import cwt, icwt, ssq_cwt, ssq_stft, issq_cwt, ssqueeze
 
 
 #%% read the waveforms
-working_dir = '/Users/Yin9xun/Work/island_stations/waveforms/clear'
-tr = obspy.read(working_dir + '/*.mseed')
+working_dir = '/Users/Yin9xun/Work/island_stations'
+os.chdir(working_dir)
+tr = obspy.read(working_dir + '/waveforms/clear/*.mseed')
 
 
 st0 = tr[0]
@@ -49,14 +50,15 @@ plt.show()
 #%% list of different parts of the waveforms
 wave_list = [signal, data, noise]
 time_list = [time[(time >=3600) & (time <7200)], time, time[time <3600]]
-
+title_list = ['Signal segment', 'Entire data', 'Noise segment']
 #%% Spectrogram
-fig, ax = plt.subplots(2, 2, figsize=(12,10))
+fig, ax = plt.subplots(2, 2, figsize=(14,8))
 ax = ax.flatten()
 
 ax[0].plot(time, data)
 ax[0].plot(time[time <3600], noise)
 ax[0].plot(time[(time >=3600) & (time <7200)], signal)
+ax[0].set_title('Waveform')
 
 for i_ax in range(len(wave_list)):
     
@@ -69,7 +71,7 @@ for i_ax in range(len(wave_list)):
         vmax = np.max(Sxx.flatten())
         vmin = np.min(Sxx.flatten())
     
-    sb = ax[i_ax + 1].pcolormesh(t + time_series_time[0], f, Sxx, shading='gouraud', vmax=vmax, vmin=vmin)
+    sb = ax[i_ax + 1].pcolormesh(t + time_series_time[0], f, Sxx, shading='gouraud', vmax=vmax/1.4, vmin=vmin)
     
     if i_ax != 1:
         fig.colorbar(sb, ax=ax[i_ax + 1])
@@ -77,11 +79,11 @@ for i_ax in range(len(wave_list)):
     ax[i_ax + 1].set_ylabel('Frequency [Hz]')
     ax[i_ax + 1].set_xlabel('Time [sec]')
     ax[i_ax + 1].set_yscale('log')
-    ax[i_ax + 1].set_ylim(0.01,5)
-
+    ax[i_ax + 1].set_title(title_list[i_ax])
+    ax[i_ax + 1].set_ylim(0.01,4)
 
 plt.show()
-
+plt.savefig('./SeisDenoise/STFT.png', format='png')
 #%% SSCWT
 time_series = wave_list[1]
 time_series_time = time_list[1]
