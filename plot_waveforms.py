@@ -58,9 +58,11 @@ def spectrum(data, dt, normalized = True):
     
     return freq, wave_spect
 
+
 #%%
-working_dir = '/Users/Yin9xun/Work/island_stations/waveforms'
-tr = obspy.read(working_dir + '/clear/*.mseed')
+working_dir = '/Users/Yin9xun/Work/island_stations/waveforms/clear'
+
+tr = obspy.read(working_dir + '/*.mseed')
 
 #%% check the spectra of the data
 for i_st in range(0, len(tr), 3):
