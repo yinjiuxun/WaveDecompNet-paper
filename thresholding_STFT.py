@@ -56,7 +56,7 @@ os.chdir(working_dir)
 tr = obspy.read(working_dir + '/waveforms/clear/*.mseed')
 
 
-st0 = tr[11]
+st0 = tr[43]
 st = st0.copy()
 st.decimate(factor=5, strict_length=False)
 data = st.data

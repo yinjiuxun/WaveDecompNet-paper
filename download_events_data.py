@@ -126,3 +126,6 @@ for i_event in range(len(catalog)):
         tr = download_waveforms(network, station, 'BH*', location, starttime, endtime, waveform_dir, fname)
     except:
         print("Issue with " + "event " + event_time.strftime("%Y%m%d-%H%M%S"))
+        
+        
+#

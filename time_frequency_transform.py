@@ -20,7 +20,7 @@ from scipy.fft import fft, fftfreq, fftshift
 # functions for STFT (spectrogram)
 from scipy import signal as sgn
 # functions for CWT and SSCWT
-from ssqueezepy import cwt, icwt, ssq_cwt, ssq_stft, issq_cwt, ssqueeze
+#from ssqueezepy import cwt, icwt, ssq_cwt, ssq_stft, issq_cwt, ssqueeze
 
 
 #%% read the waveforms
@@ -29,7 +29,7 @@ os.chdir(working_dir)
 tr = obspy.read(working_dir + '/waveforms/clear/*.mseed')
 
 
-st0 = tr[0]
+st0 = tr[43]
 st = st0.copy()
 st.decimate(factor=5, strict_length=False)
 data = st.data
