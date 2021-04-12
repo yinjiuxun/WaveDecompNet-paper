@@ -60,12 +60,12 @@ def spectrum(data, dt, normalized = True):
 
 
 #%%
-working_dir = '/Users/Yin9xun/Work/island_stations/waveforms/clear'
+working_dir = '/Users/Yin9xun/Work/island_stations/waveforms/events_data'
 
 tr = obspy.read(working_dir + '/*.mseed')
 
 #%% check the spectra of the data
-for i_st in range(0, len(tr), 3):
+for i_st in range(300, 500, 3):
     st = tr[i_st]
     data = st.data
     time = st.times()
@@ -73,7 +73,10 @@ for i_st in range(0, len(tr), 3):
     
     freq, wave_spect = spectrum(data, dt)
     
-    plt.figure()
+    plt.figure(figsize=(10,10))
+    plt.subplot(2,1,1)
+    plt.plot(time, data)
+    plt.subplot(2,1,2)
     plt.loglog(freq[freq>0], wave_spect[freq>0], linewidth=0.5)
     plt.show()    
 
