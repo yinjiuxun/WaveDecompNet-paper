@@ -53,12 +53,16 @@ def scale_to_denoise(Sxx, gammaN, Mmax):
 #%% read the waveforms
 working_dir = '/Users/Yin9xun/Work/island_stations'
 os.chdir(working_dir)
-tr = obspy.read(working_dir + '/waveforms/clear/*.mseed')
+tr = obspy.read(working_dir + '/waveforms/events_data/*.mseed')
+#%%
+plt.close('all')
 
-
-st0 = tr[43]
+i_tr = np.random.randint(0,len(tr))
+print(i_tr)
+#i_tr = 192
+st0 = tr[i_tr]
 st = st0.copy()
-st.decimate(factor=5, strict_length=False)
+#st.decimate(factor=5, strict_length=False)
 data = st.data
 time = st.times()
 dt = st.stats.delta
@@ -102,20 +106,26 @@ for i_ax in range(len(wave_list)):
     
     sb = ax[i_ax + 1].pcolormesh(t + time_series_time[0], f, np.abs(Sxx), shading='gouraud', vmax=vmax/1.4, vmin=vmin)
     
+    if i_ax == 1:
+        I_positive = np.abs(Sxx) > 1e-16
+        gammaN_all = np.sqrt(2*np.log(len(time_series))) * np.median(np.abs(np.abs(Sxx[I_positive]) - np.median(np.abs(Sxx[I_positive])))) * 1.4826
+             
     if i_ax != 1:
         fig.colorbar(sb, ax=ax[i_ax + 1])
         
     if i_ax == 2:
-        gammaN = np.sqrt(2*np.log(len(time_series))) * np.mean(np.abs(np.abs(Sxx) - np.mean(np.abs(Sxx)))) * 1.4826
-        Mmax = np.mean(np.max(abs(Sxx), axis=1))
+        I_positive = np.abs(Sxx) > 1e-16
+        #gammaN = np.sqrt(2*np.log(len(time_series))) * np.median(np.abs(np.abs(Sxx[I_positive]) - np.median(np.abs(Sxx[I_positive])))) * 1.4826
+        gammaN = np.sqrt(2*np.log(len(time_series))) * np.std(np.abs(Sxx[I_positive]).flatten()) * 1.4826
+        #Mmax = np.mean(np.max(abs(Sxx), axis=1))
         Mmax = np.max(abs(Sxx))/1
-        gammaN = Mmax/2
+        #gammaN = Mmax/1.5
         
     ax[i_ax + 1].set_ylabel('Frequency [Hz]')
     ax[i_ax + 1].set_xlabel('Time [sec]')
     ax[i_ax + 1].set_yscale('log')
     ax[i_ax + 1].set_title(title_list[i_ax])
-    ax[i_ax + 1].set_ylim(0.01,4)
+    ax[i_ax + 1].set_ylim(0.01,st.stats.sampling_rate/2)
 
 plt.show()
 
@@ -124,6 +134,7 @@ plt.show()
 fig, ax = plt.subplots(2, 2, figsize=(14,8))
 ax = ax.flatten()
 ax[0].plot(time, data, '-k')
+wave_list_denoised = []
 
 for i_ax in range(len(wave_list)):
     
@@ -138,7 +149,12 @@ for i_ax in range(len(wave_list)):
     time_temp, time_series_denoise = sgn.istft(Sxx, fs, nperseg=int(100/dt), 
                                 noverlap=int(90/dt), window='hann')
     
-    ax[0].plot(time_temp + time_series_time[0], time_series_denoise)
+    # interpolate the denoised waveform to the same time axis as the original waveforms
+    time_series_denoise = np.interp(time_series_time, time_temp, time_series_denoise, left=0, right=0)
+    
+    wave_list_denoised.append(time_series_denoise)
+    
+    ax[0].plot(time_series_time, time_series_denoise)
     
     if i_ax == 0:
         vmax = np.max(np.abs(Sxx.flatten()))
@@ -153,7 +169,15 @@ for i_ax in range(len(wave_list)):
     ax[i_ax + 1].set_xlabel('Time [sec]')
     ax[i_ax + 1].set_yscale('log')
     ax[i_ax + 1].set_title(title_list[i_ax])
-    ax[i_ax + 1].set_ylim(0.01,4)
+    ax[i_ax + 1].set_ylim(0.01,st.stats.sampling_rate/2)
 
 ax[0].set_title('Waveform')
+plt.show()
+
+#%%
+noise_series = wave_list[1] - wave_list_denoised[1]
+plt.figure()
+plt.plot(time_list[1], noise_series)
+plt.plot(time_list[1], wave_list[1], '-k', alpha=0.4)
+plt.plot(time_list[1], wave_list_denoised[1], '-r', alpha=0.4)
 plt.show()
