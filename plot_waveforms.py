@@ -81,8 +81,8 @@ for i_event in range(0,len(catalog),20):
     
     # read event wavefroms
     
-
-    fname = "/events_data/IU.XMAS" + ".M" + str(event_mag) + "." + event_time.strftime("%Y%m%d-%H%M%S") + '.mseed'
+    event_name = "IU.XMAS" + ".M" + str(event_mag) + "." + event_time.strftime("%Y%m%d-%H%M%S")
+    fname = "/events_data/" + event_name + '.mseed'
     
     try:
         tr = obspy.read(working_dir + fname)
@@ -92,7 +92,7 @@ for i_event in range(0,len(catalog),20):
 
 # look at the waveforms 0: BH1, 1: BH2, 2: BHZ
     st = tr[0]
-    #st = st.filter('lowpass', freq=0.1)
+    #st = st.filter('lowpass', freq=0.05)
     data = st.data
     time = st.times()
     dt = st.stats.delta
@@ -105,16 +105,20 @@ for i_event in range(0,len(catalog),20):
 
     vmax = np.max(Sxx.flatten())
     vmin = np.min(Sxx.flatten())
+    vmin = 1e-12
     
     plt.figure(figsize=(10,10))
     plt.subplot(2,1,1)
     plt.plot(time, data)
     plt.title('M' + str(event_mag))
     plt.subplot(2,1,2)
-    plt.pcolormesh(t, f, Sxx, shading='gouraud', vmax=vmax/1.4, vmin=vmin)
+    sb = plt.pcolormesh(t, f, np.log10(Sxx), shading='gouraud', vmax=np.log10(vmax)/1.4, vmin=np.log10(vmin))
+    plt.colorbar(sb)
     plt.yscale('log')
-    plt.ylim(1e-3,10)
-    plt.show()    
+    plt.ylim(1e-3,2)
+    #plt.show()    
+    plt.savefig(working_dir + '/events_data/figures/' + event_name + '.png')
+    plt.close()
     
 #%% Estimate the SNR for each traces
 sta_lat = 2.0448
