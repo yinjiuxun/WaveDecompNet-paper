@@ -13,6 +13,8 @@ from obspy.geodetics import locations2degrees
 # functions for fft
 from scipy.fft import fft, fftfreq, fftshift
 
+from scipy import signal as sgn
+
 #%% Function to plot waveforms (not in use now)
 def plot_waveforms(st, starttime=None, endtime=None, ylim=40e-2):
   fig, ax = plt.subplots(len(st),1,sharex=True,sharey=True,squeeze=False,figsize=(10,12))
@@ -60,25 +62,114 @@ def spectrum(data, dt, normalized = True):
 
 
 #%%
-working_dir = '/Users/Yin9xun/Work/island_stations/waveforms/events_data'
+working_dir = '/Users/Yin9xun/Work/island_stations/waveforms'
 
-tr = obspy.read(working_dir + '/*.mseed')
 
-#%% check the spectra of the data
-for i_st in range(300, 500, 3):
-    st = tr[i_st]
+#%% Read catalog first
+catalog = obspy.read_events(working_dir + '/events_by_distance.xml')
+print(catalog)
+
+#%%
+for i_event in range(0,len(catalog),20):
+    event = catalog[i_event]
+    #% % extract the event information
+    event_time = event.origins[0].time
+    event_lon = event.origins[0].longitude
+    event_lat = event.origins[0].latitude
+    event_dep = event.origins[0].depth/1e3
+    event_mag = event.magnitudes[0].mag
+    
+    # read event wavefroms
+    
+
+    fname = "/events_data/IU.XMAS" + ".M" + str(event_mag) + "." + event_time.strftime("%Y%m%d-%H%M%S") + '.mseed'
+    
+    try:
+        tr = obspy.read(working_dir + fname)
+    except:
+        print("Issue with " + "event " + event_time.strftime("%Y%m%d-%H%M%S"))
+        continue
+
+# look at the waveforms 0: BH1, 1: BH2, 2: BHZ
+    st = tr[0]
+    #st = st.filter('lowpass', freq=0.1)
     data = st.data
     time = st.times()
     dt = st.stats.delta
+    fs = 1/dt
     
     freq, wave_spect = spectrum(data, dt)
+
+    f, t, Sxx = sgn.spectrogram(data, fs, mode='magnitude', nperseg=int(100/dt), 
+                                noverlap=int(90/dt), window='hann')
+
+    vmax = np.max(Sxx.flatten())
+    vmin = np.min(Sxx.flatten())
     
     plt.figure(figsize=(10,10))
     plt.subplot(2,1,1)
     plt.plot(time, data)
+    plt.title('M' + str(event_mag))
     plt.subplot(2,1,2)
-    plt.loglog(freq[freq>0], wave_spect[freq>0], linewidth=0.5)
+    plt.pcolormesh(t, f, Sxx, shading='gouraud', vmax=vmax/1.4, vmin=vmin)
+    plt.yscale('log')
+    plt.ylim(1e-3,10)
     plt.show()    
+    
+#%% Estimate the SNR for each traces
+sta_lat = 2.0448
+sta_lon = -157.4457
+
+mag_all = np.zeros(len((catalog)))
+distance_all = np.zeros(len(catalog))
+SNR_all = np.zeros((len(catalog), 3)) # for all BH1, BH2, BHZ
+
+for i_event in range(len(catalog)):
+    event = catalog[i_event]
+    #% % extract the event information
+    event_time = event.origins[0].time
+    event_lon = event.origins[0].longitude
+    event_lat = event.origins[0].latitude
+    event_dep = event.origins[0].depth/1e3
+    event_mag = event.magnitudes[0].mag
+    
+    # distance from the event to the station
+    distance_all[i_event] = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
+    mag_all[i_event] = event_mag
+
+    fname = "/events_data/IU.XMAS" + ".M" + str(event_mag) + "." + event_time.strftime("%Y%m%d-%H%M%S") + '.mseed'
+    
+    try:
+        tr = obspy.read(working_dir + fname)
+    except:
+        print("Issue with " + "event " + event_time.strftime("%Y%m%d-%H%M%S"))
+        
+        mag_all[i_event] = np.NaN
+        distance_all[i_event] = np.NaN
+        SNR_all[i_event] = np.NaN
+        
+        continue
+
+# Calculate the SNR for each component
+    for i_component in range(3):
+        st = tr[i_component]
+        #st = st.filter('lowpass', freq=0.1)
+        data = st.data
+        time = st.times()
+        signal = data[time >=3600]
+        noise = data[time < 3600]
+        SNR_all[i_event, i_component] = SNR(signal, noise)
+      
+#%% Check the SNR distribution
+for i_component, component in enumerate(['BH1', 'BH2', 'BHZ']):
+    plt.subplot(1,3,i_component+1)
+    sb = plt.scatter(mag_all,distance_all,s=mag_all*2, c=SNR_all[:,1], cmap = 'viridis')
+    plt.colorbar(sb)
+    plt.title(component)
+    plt.xlabel('magnitude')
+    plt.ylabel('distance')
+plt.show()
+    
 
 #%% compare spectrum of noise vs data
 for i_st in range(0, len(tr)):
@@ -125,21 +216,3 @@ for i_st in range(0, len(tr)):
     
     
 #
-#%% TODO: try the thresholding method in time-frequency domain or in the wavelet domain    
-    
-
-
-#%% TODO: calculate the SNR for each channel
-# equation to calculate SNR
-st = tr[2]
-data = st.data
-time = st.times()
-
-# noise is 3500 s before P arrival, signal is 3600 s after P arrival
-noise = data[time <3500]
-signal = data[(time >=3600) & (time <7200)]
-
-snr = SNR(signal, noise)
-plt.figure()
-plt.plot(time, data)
-plt.show()
