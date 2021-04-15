@@ -81,7 +81,9 @@ plt.show()
 
 #%% list of different parts of the waveforms
 wave_list = [signal, data, noise]
+wave_list = [signal, data, data]
 time_list = [time[(time >=3600) & (time <7200)], time, time[time <3600]]
+time_list = [time[(time >=3600) & (time <7200)], time, time]
 title_list = ['Signal segment', 'Entire data', 'Noise segment']
 
 #%% Spectrogram (original)
@@ -116,8 +118,10 @@ for i_ax in range(len(wave_list)):
     if i_ax == 2:
         I_positive = np.abs(Sxx) > 1e-16
         #gammaN = np.sqrt(2*np.log(len(time_series))) * np.median(np.abs(np.abs(Sxx[I_positive]) - np.median(np.abs(Sxx[I_positive])))) * 1.4826
-        gammaN = np.sqrt(2*np.log(len(time_series))) * np.std(np.abs(Sxx[I_positive]).flatten()) * 1.4826
-        #Mmax = np.mean(np.max(abs(Sxx), axis=1))
+        #gammaN = np.sqrt(2*np.log(len(time_series))) * np.std(np.abs(Sxx[I_positive]).flatten()) #* 1.4826
+        gammaN = np.sqrt(2*np.log(len(Sxx[I_positive]))) * np.std(np.abs(Sxx[I_positive]).flatten())
+
+        #Mmax = np.mean(np.max(abs(Sxx)))
         Mmax = np.max(abs(Sxx))/1
         #gammaN = Mmax/1.5
         
@@ -144,8 +148,8 @@ for i_ax in range(len(wave_list)):
     f, t, Sxx0 = sgn.stft(time_series, fs, nperseg=int(100/dt), 
                                 noverlap=int(90/dt), window='hann')
     
-    #Sxx = soft_threshold(Sxx0, Mmax)
-    Sxx = scale_to_denoise(Sxx0, gammaN, Mmax)
+    Sxx = soft_threshold(Sxx0, gammaN)
+    #Sxx = scale_to_denoise(Sxx0, gammaN, Mmax)
     time_temp, time_series_denoise = sgn.istft(Sxx, fs, nperseg=int(100/dt), 
                                 noverlap=int(90/dt), window='hann')
     
