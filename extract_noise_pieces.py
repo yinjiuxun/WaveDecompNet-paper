@@ -12,6 +12,9 @@ import sys
 import datetime
 from matplotlib import pyplot as plt
 
+# import the ASDF format module
+import asdf
+
 # import the Obspy modules that we will use in this exercise
 import obspy
 
@@ -19,11 +22,11 @@ import obspy
 from scipy import signal as sgn
 
 # import the modules with different threshold functions
-sys.path.append('/Users/Yin9xun/Work/island_stations/SeisDenoise')
+sys.path.append('./')
 import threshold_functions as threshold
 
 #%% loop over catalog to read waveforms
-working_dir = '/Users/Yin9xun/Work/island_stations/waveforms'
+working_dir = '../waveforms'
 #Read catalog first
 catalog = obspy.read_events(working_dir + '/events_by_distance.xml')
 print(catalog)
@@ -33,10 +36,17 @@ figure_output_dir = working_dir + '/events_data_figures'
 if not os.path.exists(figure_output_dir):
     os.makedirs(figure_output_dir)
     
+processed_waveform_output_dir = working_dir + '/events_data_processed'
+if not os.path.exists(processed_waveform_output_dir):
+    os.makedirs(processed_waveform_output_dir)
+    
+noise_output_dir = working_dir + '/noise'
+if not os.path.exists(noise_output_dir):
+    os.makedirs(noise_output_dir)
 #%%
 i_event0 = np.random.randint(0,193)
 plt.close('all')
-for i_event in range(len(catalog)):
+for i_event in [20]:#range(len(catalog)):
     event = catalog[i_event]
     #% % extract the event information
     event_time = event.origins[0].time
@@ -55,8 +65,13 @@ for i_event in range(len(catalog)):
         print("Issue with " + "event " + event_time.strftime("%Y%m%d-%H%M%S"))
         continue
     
+    # initialize the dictionary to store waveforms
+    waveform_dict = {}
+    waveform_denoised_dict = {}
+    noise_dict = {}
     
-    for i_chan in range(len(tr)): # loop over each channel
+    # loop over each channel
+    for i_chan in range(len(tr)): 
         channel = tr[i_chan].stats.channel
         st0 = tr[i_chan]
         st = st0.copy()
@@ -87,18 +102,24 @@ for i_event in range(len(catalog)):
         # interpolate the denoised waveform to the same time axis as the original waveforms
         data_denoised = np.interp(time, time_temp, data_denoised, left=0, right=0)
         
+        # get the waveforms and noise at each channel
+        waveform_dict[channel] = data
+        waveform_denoised_dict[channel] = data_denoised
+        noise_dict[channel] = data - data_denoised     
+        
+        # plot the waveforms
         plt.figure(i_event, figsize=(12,12))
         plt.subplot(len(tr),2,i_chan*2+1)
         plt.plot(time, data, '-b', alpha=1)
         
         plt.plot(time, data_denoised, '-r', linewidth=0.3, alpha=0.8, zorder = 5)
-        if i_chan == 3:
+        if i_chan == 2:
             plt.xlabel('Time (s)')
             
         plt.title(event_name + '.' + channel)
         plt.subplot(len(tr),2,i_chan*2+2)
         plt.plot(time, data-data_denoised, '-k', alpha=0.9, linewidth=0.3, zorder = 3)
-        if i_chan == 3:
+        if i_chan == 2:
             plt.xlabel('Time (s)')
             
         plt.ylim(-2e-5,2e-5)
@@ -107,4 +128,33 @@ for i_event in range(len(catalog)):
         #plt.show()
         plt.savefig(figure_output_dir + '/'+ event_name + '.png')
         
-#%% TODO: save the separated data and noise waveforms
+    # save the waveforms in ASDF format
+    # save the waveforms
+    tree = {
+        'event_name': event_name,
+        'event_mag': event_mag,
+        'event_time': event_time.datetime,
+        'event_lon': event_lon,
+        'event_lat': event_lat,
+        'event_dep': event_dep,
+        'waveform_time': time
+        'waveforms': waveform_dict,
+        'waveforms_denoised': waveform_denoised_dict
+        }
+    
+    waveform_ff = asdf.AsdfFile(tree)
+    waveform_ff.write_to(processed_waveform_output_dir + '/' + event_name + '.asdf')
+
+    # save the noise only
+    tree = {
+        'noise': noise_dict,
+        'noise_time': time
+        }
+    noise_ff = asdf.AsdfFile(tree)
+    noise_ff.write_to(noise_output_dir + '/' + event_name + '.asdf')
+    
+        
+
+
+
+

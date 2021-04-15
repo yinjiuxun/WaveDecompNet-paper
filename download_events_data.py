@@ -33,8 +33,8 @@ def download_waveforms(network, station, channel, location, starttime, endtime, 
     tr = client.get_waveforms(network=network, station=station, channel=channel, 
                               location=location, starttime = starttime - 1800, endtime=endtime + 1800,
                               attach_response=True)
-    tr.detrend("spline", order=3, dspline=1000)
-    tr.remove_response(output="VEL")
+    #tr.detrend("spline", order=3, dspline=1000)
+    #tr.remove_response(output="VEL")
     
     # here to deal with the taperring at both end, only keep the central 1-hour long data
     newtr = tr.slice(starttime, endtime) # probably fix later
