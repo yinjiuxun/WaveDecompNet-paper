@@ -27,7 +27,7 @@ sys.path.append('./')
 
 # %% define the refactoring functions
 
-def STFT_thresholding_denoise(twin=100, toverlap=50, win_type='hann'):
+def STFT_thresholding_denoise(twin=100, toverlap=50, win_type='hann', threshold_type='soft'):
     # apply the thresholding method in the STFT to separate the noise and signals
     f, t, Sxx = sgn.stft(data, fs, nperseg=int(twin/dt),
                          noverlap=int(toverlap/dt), window=win_type)
@@ -38,7 +38,10 @@ def STFT_thresholding_denoise(twin=100, toverlap=50, win_type='hann'):
         2*np.log(len(Sxx[I_positive]))) * np.std(np.abs(Sxx[I_positive]).flatten())
 
     # thresholded the TF domain
-    Sxx_thresholded = threshold.soft_threshold(Sxx, gammaN)
+    if threshold_type == 'soft':
+        Sxx_thresholded = threshold.soft_threshold(Sxx, gammaN)
+    elif threshold_type == 'hard':
+        Sxx_thresholded = threshold.hard_threshold(Sxx, gammaN)
 
     time_temp, data_denoised = sgn.istft(Sxx_thresholded, fs, nperseg=int(twin/dt),
                                          noverlap=int(toverlap/dt), window=win_type)
@@ -172,7 +175,8 @@ for i_event in range(len(catalog)):
         # STFT thresholding denoise
         data_denoised = STFT_thresholding_denoise(twin=twin, 
                                                   toverlap=toverlap,
-                                                  win_type=win_type)
+                                                  win_type=win_type,
+                                                  threshold_type='hard')
         # get the waveforms and noise at each channel
         waveform_dict[channel] = data0
         waveform_denoised_dict[channel] = data_denoised
