@@ -28,7 +28,7 @@ sys.path.append('./')
 
 # %% define the refactoring functions
 
-def STFT_thresholding_denoise(twin=100, toverlap=50, win_type='hann', threshold_type='soft'):
+def stft_thresholding_denoise(twin=100, toverlap=50, win_type='hann', threshold_type='soft'):
     # apply the thresholding method in the STFT to separate the noise and signals
     f, t, Sxx = sgn.stft(data, fs, nperseg=int(twin / dt),
                          noverlap=int(toverlap / dt), window=win_type)
@@ -125,7 +125,7 @@ if not os.path.exists(noise_output_dir):
     os.makedirs(noise_output_dir)
 # %%
 plt.close('all')
-for i_event in range(len(catalog)):
+for i_event in [20]:#range(len(catalog)):
     event = catalog[i_event]
     # extract the event information
     event_time = event.origins[0].time
@@ -177,7 +177,7 @@ for i_event in range(len(catalog)):
         win_type = 'hann'
 
         # STFT thresholding denoise
-        data_denoised = STFT_thresholding_denoise(twin=twin,
+        data_denoised = stft_thresholding_denoise(twin=twin,
                                                   toverlap=toverlap,
                                                   win_type=win_type,
                                                   threshold_type='soft')
