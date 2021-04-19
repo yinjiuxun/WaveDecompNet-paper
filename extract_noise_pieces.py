@@ -199,22 +199,22 @@ for i_event in [20]:#range(len(catalog)):
     # save the noise only
     save_noise(noise_output_dir + '/' + event_name + '.asdf')
 
-# #%% Try read the asdf data
-# ff = asdf.open('./waveforms/events_data_processed/IU.XMAS.M7.3.20190714-091050.asdf')
-# ff.tree
-# time_wave = ff.tree['waveform_time']
-# wave_1 = ff.tree['waveforms']['BH1']
-# wave_2 = ff.tree['waveforms_denoised']['BH1']
-# plt.plot(time_wave, wave_1)
-# plt.plot(time_wave, wave_2)
-# plt.plot(time_wave, wave_1 - wave_2)
-# plt.show()
+#%% Try read the asdf data
+ff = asdf.open('./waveforms/events_data_processed/IU.XMAS.M7.3.20190714-091050.asdf')
+ff.tree
+time_wave = ff.tree['waveform_time']
+wave_1 = ff.tree['waveforms']['BH1']
+wave_2 = ff.tree['waveforms_denoised']['BH1']
+plt.plot(time_wave, wave_1)
+plt.plot(time_wave, wave_2)
+plt.plot(time_wave, wave_1 - wave_2)
+plt.show()
 
 
-# ff = asdf.open('./waveforms/noise/IU.XMAS.M7.3.20190714-091050.asdf')
-# ff.tree
-# time_wave = ff.tree['noise_time']
-# wave_1 = ff.tree['noise']['BH1']
-# plt.figure()
-# plt.plot(time_wave, wave_1)
-# plt.show()
+ff = asdf.open('./waveforms/noise/IU.XMAS.M7.3.20190714-091050.asdf')
+ff.tree
+time_wave = ff.tree['noise_time']
+wave_1 = ff.tree['noise']['BH1']
+plt.figure()
+plt.plot(time_wave, wave_1)
+plt.show()
