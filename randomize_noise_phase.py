@@ -8,7 +8,6 @@ Created on Mon Apr 19 12:38:02 2021
 # %%
 import os
 import numpy as np
-from numpy import random as rd
 import scipy
 import sys
 import glob
@@ -20,16 +19,47 @@ import asdf
 # functions for STFT (spectrogram)
 from scipy import signal as sgn
 
-# %% Try read the asdf data
-# ff = asdf.open('./waveforms/events_data_processed/IU.XMAS.M7.3.20190714-091050.asdf')
-# ff.tree
-# time_wave = ff.tree['waveform_time']
-# wave_1 = ff.tree['waveforms']['BH1']
-# wave_2 = ff.tree['waveforms_denoised']['BH1']
+# %% Randomize the phase in the Fourier domain
 
-asdf_files = temp = glob.glob('./waveforms/noise/*.asdf')
-asdf_files = temp = glob.glob(
-    './waveforms/noise/IU.XMAS.M6.0.20190118-131832.asdf')
+
+def randomization_noise(noise, rng=np.random.default_rng(None)):
+
+    s = scipy.fft.fft(noise)
+    phase_angle_shift = (rng.random(len(s))-0.5)*2*np.pi
+    # make sure the inverse transform is real
+    phase_angle_shift[0] = 0
+    phase_angle_shift[int(len(s)/2+1):(len(s)+1)] = -1 * \
+        np.flip(phase_angle_shift[1:int(len(s)/2+1)])
+
+    phase_shift = np.exp(np.ones(s.shape)*phase_angle_shift*1j)
+    # s_shifted = np.abs(s) * phase_shift
+
+    # TODO: try only shift frequency below 10Hz
+    freq = scipy.fft.fftfreq(len(s), dt)
+    II_freq = abs(freq) <= 10
+
+    s_shifted = s.copy()
+    s_shifted[II_freq] = np.abs(s[II_freq]) * phase_shift[II_freq]
+
+    noise_random = np.real(scipy.fft.ifft(s_shifted))
+    return noise_random
+
+# TODO: a new function to produce many randomized noise
+
+
+def produce_randomized_noise(noise, duration, num_of_random):
+    a = 1
+
+    # %% Try read the asdf data
+    # ff = asdf.open('./waveforms/events_data_processed/IU.XMAS.M7.3.20190714-091050.asdf')
+    # ff.tree
+    # time_wave = ff.tree['waveform_time']
+    # wave_1 = ff.tree['waveforms']['BH1']
+    # wave_2 = ff.tree['waveforms_denoised']['BH1']
+
+
+asdf_files = glob.glob('./waveforms/noise/*.asdf')
+asdf_files = [asdf_files[np.random.randint(0, len(asdf_files))]]
 
 for ifile, asdf_file in enumerate(asdf_files[0:1]):
     ff = asdf.open(asdf_file)
@@ -42,26 +72,15 @@ for ifile, asdf_file in enumerate(asdf_files[0:1]):
     noise_BHZ = ff.tree['noise']['BHZ']
     print(asdf_file)
 
+rng = np.random.default_rng(seed=1)
+noise_BH1_random = randomization_noise(noise_BH1, rng=rng)
 
-# %% Randomize the phase in the Fourier domain
-s = scipy.fft.fft(noise_BH1)
-phase_angle_shift = (rd.rand(len(s))-0.5)*2*np.pi
-# make sure the inverse transform is real
-phase_angle_shift[0] = 0
-phase_angle_shift[int(len(s)/2+1):(len(s)+1)] = -1 * \
-    np.flip(phase_angle_shift[1:int(len(s)/2+1)])
-
-
-phase_shift = np.exp(np.ones(s.shape)*phase_angle_shift*1j)
-s_shifted = np.abs(s) * phase_shift
-
-noise_BH1_random = np.real(scipy.fft.ifft(s_shifted))
-
+plt.close('all')
 plt.figure()
 plt.plot(time_noise, noise_BH1, '-r')
 plt.plot(time_noise, noise_BH1_random, '-b')
 
-# %% Compare the STFT distribution of noise and randomized noise, looks better.
+# % Compare the STFT distribution of noise and randomized noise, looks better.
 # the randomization of noise in the Fourier domain seems to be able to wipe out
 # the signal residual while keep the general STFT structure of noise
 
@@ -79,7 +98,7 @@ plt.figure()
 plt.subplot(121)
 plt.pcolormesh(t, f, np.abs(Sxx), shading='auto', vmax=vmax/1.2)
 plt.title('STFT of origianl noise')
-plt.ylim(0, 2)
+plt.ylim(0, 20)
 
 # apply the thresholding method in the STFT to separate the noise and signals
 f, t, Sxx = sgn.stft(noise_BH1_random, fs, nperseg=int(twin / dt),
@@ -88,7 +107,7 @@ f, t, Sxx = sgn.stft(noise_BH1_random, fs, nperseg=int(twin / dt),
 plt.subplot(122)
 plt.pcolormesh(t, f, np.abs(Sxx), shading='auto', vmax=vmax/1.2)
 plt.title('STFT of randomized noise')
-plt.ylim(0, 2)
+plt.ylim(0, 20)
 plt.show()
 
 # %% Randomize the phase in the STFT domain
