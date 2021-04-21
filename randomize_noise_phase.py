@@ -20,15 +20,16 @@ import asdf
 # functions for STFT (spectrogram)
 from scipy import signal as sgn
 
-#%% Try read the asdf data
+# %% Try read the asdf data
 # ff = asdf.open('./waveforms/events_data_processed/IU.XMAS.M7.3.20190714-091050.asdf')
 # ff.tree
 # time_wave = ff.tree['waveform_time']
 # wave_1 = ff.tree['waveforms']['BH1']
 # wave_2 = ff.tree['waveforms_denoised']['BH1']
 
-asdf_files = temp=glob.glob('./waveforms/noise/*.asdf')
-asdf_files = temp=glob.glob('./waveforms/noise/IU.XMAS.M6.0.20190118-131832.asdf')
+asdf_files = temp = glob.glob('./waveforms/noise/*.asdf')
+asdf_files = temp = glob.glob(
+    './waveforms/noise/IU.XMAS.M6.0.20190118-131832.asdf')
 
 for ifile, asdf_file in enumerate(asdf_files[0:1]):
     ff = asdf.open(asdf_file)
@@ -40,55 +41,57 @@ for ifile, asdf_file in enumerate(asdf_files[0:1]):
     noise_BH2 = ff.tree['noise']['BH2']
     noise_BHZ = ff.tree['noise']['BHZ']
     print(asdf_file)
-    
-    
-#%% Randomize the phase in the Fourier domain
+
+
+# %% Randomize the phase in the Fourier domain
 s = scipy.fft.fft(noise_BH1)
 phase_angle_shift = (rd.rand(len(s))-0.5)*2*np.pi
 # make sure the inverse transform is real
 phase_angle_shift[0] = 0
-phase_angle_shift[int(len(s)/2+1):(len(s)+1)] = -1 * np.flip(phase_angle_shift[1:int(len(s)/2+1)])
+phase_angle_shift[int(len(s)/2+1):(len(s)+1)] = -1 * \
+    np.flip(phase_angle_shift[1:int(len(s)/2+1)])
 
 
 phase_shift = np.exp(np.ones(s.shape)*phase_angle_shift*1j)
 s_shifted = np.abs(s) * phase_shift
 
 noise_BH1_random = np.real(scipy.fft.ifft(s_shifted))
-    
+
 plt.figure()
 plt.plot(time_noise, noise_BH1, '-r')
 plt.plot(time_noise, noise_BH1_random, '-b')
 
-#%% Compare the STFT distribution of noise and randomized noise, looks better.
-# the randomization of noise in the Fourier domain seems to be able to wipe out 
+# %% Compare the STFT distribution of noise and randomized noise, looks better.
+# the randomization of noise in the Fourier domain seems to be able to wipe out
 # the signal residual while keep the general STFT structure of noise
-twin=100
-toverlap=50
-win_type='hann'
+
+# TODO: refactor this part to generate randomized noise
+twin = 100
+toverlap = 50
+win_type = 'hann'
 
 # apply the thresholding method in the STFT to separate the noise and signals
 f, t, Sxx = sgn.stft(noise_BH1, fs, nperseg=int(twin / dt),
-                         noverlap=int(toverlap / dt), window=win_type)
+                     noverlap=int(toverlap / dt), window=win_type)
 vmax = np.amax(abs(Sxx))
 
 plt.figure()
 plt.subplot(121)
 plt.pcolormesh(t, f, np.abs(Sxx), shading='auto', vmax=vmax/1.2)
 plt.title('STFT of origianl noise')
-plt.ylim(0,2)
-
+plt.ylim(0, 2)
 
 # apply the thresholding method in the STFT to separate the noise and signals
 f, t, Sxx = sgn.stft(noise_BH1_random, fs, nperseg=int(twin / dt),
-                         noverlap=int(toverlap / dt), window=win_type)
+                     noverlap=int(toverlap / dt), window=win_type)
 
 plt.subplot(122)
 plt.pcolormesh(t, f, np.abs(Sxx), shading='auto', vmax=vmax/1.2)
 plt.title('STFT of randomized noise')
-plt.ylim(0,2)
+plt.ylim(0, 2)
 plt.show()
 
-#%% Randomize the phase in the STFT domain
+# %% Randomize the phase in the STFT domain
 
 # twin=100
 # toverlap=50
