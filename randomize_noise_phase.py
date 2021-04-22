@@ -95,19 +95,31 @@ f, t, Sxx = sgn.stft(noise_BH1, fs, nperseg=int(twin / dt),
 vmax = np.amax(abs(Sxx))
 
 plt.figure()
-plt.subplot(121)
+plt.subplot(221)
 plt.pcolormesh(t, f, np.abs(Sxx), shading='auto', vmax=vmax/1.2)
 plt.title('STFT of origianl noise')
 plt.ylim(0, 20)
+
+plt.subplot(223)
+plt.pcolormesh(t, f, np.abs(Sxx), shading='auto', vmax=vmax/1.2)
+plt.title('STFT of origianl noise')
+plt.ylim(0, 1)
+plt.show()
 
 # apply the thresholding method in the STFT to separate the noise and signals
 f, t, Sxx = sgn.stft(noise_BH1_random, fs, nperseg=int(twin / dt),
                      noverlap=int(toverlap / dt), window=win_type)
 
-plt.subplot(122)
+plt.subplot(222)
 plt.pcolormesh(t, f, np.abs(Sxx), shading='auto', vmax=vmax/1.2)
 plt.title('STFT of randomized noise')
 plt.ylim(0, 20)
+plt.show()
+
+plt.subplot(224)
+plt.pcolormesh(t, f, np.abs(Sxx), shading='auto', vmax=vmax/1.2)
+plt.title('STFT of randomized noise')
+plt.ylim(0, 1)
 plt.show()
 
 # %% Randomize the phase in the STFT domain
