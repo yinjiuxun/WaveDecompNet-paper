@@ -23,6 +23,10 @@ from scipy import signal as sgn
 
 
 def randomization_noise(noise, rng=np.random.default_rng(None)):
+    '''function to produce randomized noise by shiftint the phase
+    randomization_noise(noise, rng=np.random.default_rng(None))
+    return randomized noise
+    '''
 
     s = scipy.fft.fft(noise)
     phase_angle_shift = (rng.random(len(s))-0.5)*2*np.pi
@@ -32,23 +36,36 @@ def randomization_noise(noise, rng=np.random.default_rng(None)):
         np.flip(phase_angle_shift[1:int(len(s)/2+1)])
 
     phase_shift = np.exp(np.ones(s.shape)*phase_angle_shift*1j)
+
+    # Here apply the phase shift in the entire domain
     # s_shifted = np.abs(s) * phase_shift
 
-    # TODO: try only shift frequency below 10Hz
+    # Instead, try only shift frequency below 10Hz
     freq = scipy.fft.fftfreq(len(s), dt)
     II_freq = abs(freq) <= 10
-
     s_shifted = s.copy()
     s_shifted[II_freq] = np.abs(s[II_freq]) * phase_shift[II_freq]
 
     noise_random = np.real(scipy.fft.ifft(s_shifted))
     return noise_random
 
-# TODO: a new function to produce many randomized noise
 
+def produce_randomized_noise(noise, num_of_random,
+                             rng=np.random.default_rng(None)):
+    '''function to produce num_of_random randomized noise
+    produce_randomized_noise(noise, num_of_random,
+                             rng=np.random.default_rng(None))
+    return np array with shape of num_of_random x npt_noise
+    '''
 
-def produce_randomized_noise(noise, duration, num_of_random):
-    a = 1
+    noise_array = []
+    # randomly produce num_of_random pieces of random noise
+    for i in range(num_of_random):
+        noise_random = randomization_noise(noise, rng=rng)
+        noise_array.append(noise_random)
+
+    noise_array = np.array(noise_array)
+    return noise_array
 
     # %% Try read the asdf data
     # ff = asdf.open('./waveforms/events_data_processed/IU.XMAS.M7.3.20190714-091050.asdf')
