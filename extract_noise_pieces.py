@@ -135,7 +135,7 @@ if not os.path.exists(noise_output_dir):
     os.makedirs(noise_output_dir)
 # %%
 plt.close('all')
-for i_event in [20]:  # range(len(catalog)):
+for i_event in range(len(catalog)):
     event = catalog[i_event]
     # extract the event information
     event_time = event.origins[0].time
