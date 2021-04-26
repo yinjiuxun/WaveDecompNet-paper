@@ -16,6 +16,9 @@ from matplotlib import pyplot as plt
 # import the ASDF format module
 import asdf
 
+# import the HDF5 module
+import h5py
+
 # import the Obspy modules that we will use in this exercise
 import obspy
 
@@ -35,7 +38,8 @@ def stft_thresholding_denoise(twin=100, toverlap=50, win_type='hann', threshold_
 
     # apply STFT and calculate the soft threshold value gammaN
     Sxx0 = Sxx.copy()
-    Sxx0 = Sxx0[:, t < 3500]  # use the waveform before P arrival to get the noise statistics
+    # use the waveform before P arrival to get the noise statistics
+    Sxx0 = Sxx0[:, t < 3500]
     I_positive = np.abs(Sxx0) > 1e-16
     gammaN = np.sqrt(
         2 * np.log(len(Sxx0[I_positive]))) * np.std(np.abs(Sxx0[I_positive]).flatten()) / 0.6745
@@ -78,31 +82,37 @@ def plot_waveforms():
 
 
 def save_event_waveforms(output_name):
-    # save the event information and denoised waveform to ASDF files
-    tree = {
-        'event_name': event_name,
-        'event_mag': event_mag,
-        'event_time': event_time.datetime,
-        'event_lon': event_lon,
-        'event_lat': event_lat,
-        'event_dep': event_dep,
-        'waveform_time': time,
-        'waveforms': waveform_dict,
-        'waveforms_denoised': waveform_denoised_dict
-    }
+    with h5py.File(output_name, 'w') as f:
+        f.attrs.create('event_name', event_name)
+        f.attrs.create('event_mag', event_mag)
+        f.attrs.create(
+            'event_time', event_time.datetime.strftime('%Y%m%d-%H:%M:%S'))
+        f.attrs.create('event_lon', event_lon)
+        f.attrs.create('event_lat', event_lat)
+        f.attrs.create('event_dep', event_dep)
+        f.create_dataset('time', data=time)
 
-    waveform_ff = asdf.AsdfFile(tree)
-    waveform_ff.write_to(output_name)
+        # original waveforms
+        grp = f.create_group('waveforms')
+        grp.create_dataset("BH1", data=waveform_dict['BH1'])
+        grp.create_dataset("BH2", data=waveform_dict['BH2'])
+        grp.create_dataset("BHZ", data=waveform_dict['BHZ'])
+        # denoised waveforms
+        grp = f.create_group('waveforms_denoised')
+        grp.create_dataset("BH1", data=waveform_denoised_dict['BH1'])
+        grp.create_dataset("BH2", data=waveform_denoised_dict['BH2'])
+        grp.create_dataset("BHZ", data=waveform_denoised_dict['BHZ'])
 
 
 def save_noise(output_name):
-    # save the separated noise to ASDF files
-    tree = {
-        'noise': noise_dict,
-        'noise_time': time
-    }
-    noise_ff = asdf.AsdfFile(tree)
-    noise_ff.write_to(output_name)
+    with h5py.File(output_name, 'w') as f:
+        f.create_dataset('noise_time', data=time)
+
+        # storing the noise in each components
+        grp = f.create_group('noise')
+        grp.create_dataset("BH1", data=noise_dict['BH1'])
+        grp.create_dataset("BH2", data=noise_dict['BH2'])
+        grp.create_dataset("BHZ", data=noise_dict['BHZ'])
 
 
 # %% loop over catalog to read waveforms
@@ -125,7 +135,7 @@ if not os.path.exists(noise_output_dir):
     os.makedirs(noise_output_dir)
 # %%
 plt.close('all')
-for i_event in [20]:#range(len(catalog)):
+for i_event in [20]:  # range(len(catalog)):
     event = catalog[i_event]
     # extract the event information
     event_time = event.origins[0].time
@@ -194,9 +204,8 @@ for i_event in [20]:#range(len(catalog)):
     plt.close('all')
 
     # save the waveforms in ASDF format
-    save_event_waveforms(processed_waveform_output_dir + '/' + event_name + '.asdf')
+    save_event_waveforms(processed_waveform_output_dir +
+                         '/' + event_name + '.hdf5')
 
     # save the noise only
-    save_noise(noise_output_dir + '/' + event_name + '.asdf')
-
-
+    save_noise(noise_output_dir + '/' + event_name + '.hdf5')
