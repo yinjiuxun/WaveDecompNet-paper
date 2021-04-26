@@ -13,8 +13,8 @@ import sys
 import glob
 from matplotlib import pyplot as plt
 
-# import the ASDF format module
-import asdf
+# import the HDF5 format module
+import h5py
 
 # functions for STFT (spectrogram)
 from scipy import signal as sgn
@@ -75,19 +75,20 @@ def produce_randomized_noise(noise, num_of_random,
     # wave_2 = ff.tree['waveforms_denoised']['BH1']
 
 
-asdf_files = glob.glob('./waveforms/noise/*.asdf')
-asdf_files = [asdf_files[np.random.randint(0, len(asdf_files))]]
+hdf5_files = glob.glob('./waveforms/noise/*.hdf5')
+hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
 
-for ifile, asdf_file in enumerate(asdf_files[0:1]):
-    ff = asdf.open(asdf_file)
-    ff.tree
-    time_noise = ff.tree['noise_time']
-    dt = time_noise[1]-time_noise[0]
-    fs = 1/dt
-    noise_BH1 = ff.tree['noise']['BH1']
-    noise_BH2 = ff.tree['noise']['BH2']
-    noise_BHZ = ff.tree['noise']['BHZ']
-    print(asdf_file)
+# TODO: change to read HDF5 format
+for ifile, hdf5_file in enumerate(hdf5_files[0:1]):
+    
+    with h5py.File(hdf5_file, 'r') as f:
+        time_noise = f['noise_time'][:]
+        dt = time_noise[1]-time_noise[0]
+        fs = 1/dt
+        noise_BH1 = f['noise']['BH1'][:]
+        noise_BH2 = f['noise']['BH2'][:]
+        noise_BHZ = f['noise']['BHZ'][:]
+        print(hdf5_file)
 
 rng = np.random.default_rng(seed=1)
 noise_BH1_random = randomization_noise(noise_BH1, rng=rng)
