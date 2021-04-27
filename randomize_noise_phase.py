@@ -129,7 +129,7 @@ Y_train = []
 hdf5_files = glob.glob('./waveforms/noise/*.hdf5')
 #hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
 
-N_random = 10  # randomized noise for each noise data
+N_random = 5  # randomized noise for each noise data
 for ifile, hdf5_file in enumerate(hdf5_files):#[0:1]):
 
     with h5py.File(hdf5_file, 'r') as f:
@@ -142,7 +142,7 @@ for ifile, hdf5_file in enumerate(hdf5_files):#[0:1]):
         print(hdf5_file)
 
     rng = np.random.default_rng(seed=1)
-    noise_BH1_random = randomization_noise(noise_BH1, rng=rng)
+    #noise_BH1_random = randomization_noise(noise_BH1, rng=rng)
 
     # plot_and_compare_randomized_noise()
     noise_BHZ_random = produce_randomized_noise(noise_BHZ, N_random, rng=rng)
@@ -157,25 +157,29 @@ for ifile, hdf5_file in enumerate(hdf5_files):#[0:1]):
     npt_ricker = int(ricker_len/dt)
     N_segments = int(noise_BHZ_random.shape[1]/npt_ricker)
     syn_time = np.arange(0, npt_ricker) * dt
-
-    for i_seg in range(N_segments):
-
-        # random parameters for the synthetics to set
-        peak_loc = np.random.random() * ricker_len
-        fc = np.random.random() * 5
-        amp = np.random.random() * 10
-
-        syn_seismic = ricker.ricker(
-            f=fc, len=ricker_len, dt=dt, peak_loc=peak_loc)
-        syn_seismic = amp * np.std(noise_BHZ) * syn_seismic
-        
-        
-
-        syn_signal = noise_BHZ[i_seg * npt_ricker:(i_seg + 1) * npt_ricker]  \
-            + syn_seismic
-        
-        X_train.append(syn_signal)
-        Y_train.append(syn_seismic)
+    
+    # loop over each piece of randomized noise
+    for i_noise in range(N_random):
+        noise_BHZ_now = noise_BHZ_random[i_noise, :]
+        # loop over each segment
+        for i_seg in range(N_segments):
+    
+            # random parameters for the synthetics to set
+            peak_loc = np.random.random() * ricker_len
+            fc = np.random.random() * 5
+            amp = np.random.random() * 10
+    
+            syn_seismic = ricker.ricker(
+                f=fc, len=ricker_len, dt=dt, peak_loc=peak_loc)
+            syn_seismic = amp * np.std(noise_BHZ_now) * syn_seismic
+            
+            
+    
+            syn_signal = noise_BHZ_now[i_seg * npt_ricker:(i_seg + 1) * npt_ricker]  \
+                + syn_seismic
+            
+            X_train.append(syn_signal)
+            Y_train.append(syn_seismic)
         
 X_train = np.array(X_train)
 Y_train = np.array(Y_train)
@@ -188,11 +192,13 @@ with h5py.File('training_datasets.hdf5', 'w') as f:
 
 
 #%%
-# plt.figure()
-# plt.subplot(211)
-# plt.plot(syn_time, syn_seismic * amp * np.std(noise_BHZ))
-# plt.subplot(212)
-# plt.plot(syn_time, syn_signal)
+i = np.random.randint(0,X_train.shape[0])
+plt.figure(1)
+plt.subplot(211)
+plt.plot(syn_time, Y_train[i,:])
+plt.subplot(212)
+plt.plot(syn_time, X_train[i,:])
+plt.show()
 
 
 # %% #TODO: cut the noise pieces into several short segments
