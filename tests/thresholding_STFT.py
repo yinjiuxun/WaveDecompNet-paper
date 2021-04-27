@@ -185,3 +185,44 @@ plt.plot(time_list[1], noise_series)
 plt.plot(time_list[1], wave_list[1], '-k', alpha=0.4)
 plt.plot(time_list[1], wave_list_denoised[1], '-r', alpha=0.4)
 plt.show()
+
+#%% Randomization in STFT domain
+# Randomize the phase in the STFT domain
+
+twin=100
+toverlap=50
+win_type='hann'
+
+# apply the thresholding method in the STFT to separate the noise and signals
+f, t, Sxx = sgn.stft(noise_BH1, fs, nperseg=int(twin / dt),
+                          noverlap=int(toverlap / dt), window=win_type)
+vmax = np.amax(abs(Sxx))
+
+plt.figure()
+plt.pcolormesh(t, f, np.abs(Sxx), shading='auto', vmax=vmax/1.2)
+plt.show()
+
+# # check the distribution of STFT phase
+# phase_Sxx = np.angle(Sxx.flatten())
+# plt.figure()
+# plt.hist(phase_Sxx)
+# plt.show()
+# # checked: normal distribution between -pi to pi
+
+# produce the random phase shift
+phase_angle_shift = (rd.rand(Sxx.shape[0], Sxx.shape[1])-0.5)*2*np.pi
+phase_shift = np.exp(np.ones(Sxx.shape)*phase_angle_shift*1j)
+
+Sxx_shifted = np.abs(Sxx) * phase_shift
+
+
+time_temp, noise_BH1_random = sgn.istft(Sxx_shifted, fs, nperseg=int(twin / dt),
+                                          noverlap=int(toverlap / dt), window=win_type)
+
+# interpolate the denoised waveform to the same time axis as the original waveforms
+noise_BH1_random = np.interp(time_noise, time_temp, noise_BH1_random, left=0, right=0)
+
+plt.figure()
+plt.plot(time_noise, noise_BH1, '-r')
+plt.plot(time_noise, noise_BH1_random, '-b')
+plt.show()
