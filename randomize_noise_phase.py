@@ -23,9 +23,6 @@ from scipy import signal as sgn
 import ricker
 
 
-# %% Randomize the phase in the Fourier domain
-
-
 def randomization_noise(noise, rng=np.random.default_rng(None)):
     """function to produce randomized noise by shiftint the phase
     randomization_noise(noise, rng=np.random.default_rng(None))
@@ -46,9 +43,9 @@ def randomization_noise(noise, rng=np.random.default_rng(None)):
 
     # Instead, try only shift frequency below 10Hz
     freq = scipy.fft.fftfreq(len(s), dt)
-    II_freq = abs(freq) <= 10
+    ii_freq = abs(freq) <= 10
     s_shifted = s.copy()
-    s_shifted[II_freq] = np.abs(s[II_freq]) * phase_shift[II_freq]
+    s_shifted[ii_freq] = np.abs(s[ii_freq]) * phase_shift[ii_freq]
 
     noise_random = np.real(scipy.fft.ifft(s_shifted))
     return noise_random
@@ -72,11 +69,12 @@ def produce_randomized_noise(noise, num_of_random,
     return noise_array
 
 
-def plot_and_compare_randomized_noise():
+def plot_and_compare_randomized_noise(noise):
     plt.close('all')
     plt.figure()
-    plt.plot(time_noise, noise_BH1, '-r')
-    plt.plot(time_noise, noise_BH1_random, '-b')
+    plt.plot(time_noise, noise, '-r')
+    noise_random = randomization_noise(noise)
+    plt.plot(time_noise, noise_random, '-b')
 
     # % Compare the STFT distribution of noise and randomized noise, looks better.
     # the randomization of noise in the Fourier domain seems to be able to wipe out
@@ -87,8 +85,8 @@ def plot_and_compare_randomized_noise():
     toverlap = 50
     win_type = 'hann'
 
-    # apply the thresholding method in the STFT to separate the noise and signals
-    f, t, Sxx = sgn.stft(noise_BH1, fs, nperseg=int(twin / dt),
+    # compare the STFT before and after randomization
+    f, t, Sxx = sgn.stft(noise, fs, nperseg=int(twin / dt),
                          noverlap=int(toverlap / dt), window=win_type)
     vmax = np.amax(abs(Sxx))
 
@@ -105,7 +103,7 @@ def plot_and_compare_randomized_noise():
     plt.show()
 
     # apply the thresholding method in the STFT to separate the noise and signals
-    f, t, Sxx = sgn.stft(noise_BH1_random, fs, nperseg=int(twin / dt),
+    f, t, Sxx = sgn.stft(noise_random, fs, nperseg=int(twin / dt),
                          noverlap=int(toverlap / dt), window=win_type)
 
     plt.subplot(222)
@@ -121,6 +119,17 @@ def plot_and_compare_randomized_noise():
     plt.show()
 
 
+def random_ricker():
+    peak_loc = np.random.random() * synthetic_length
+    fc = np.random.random() * 5
+    amp = np.random.random() * 10
+
+    syn_signal = ricker.ricker(f=fc, len=synthetic_length, dt=dt, peak_loc=peak_loc)
+    syn_signal = amp * np.std(noise_BHZ_now) * syn_signal
+
+    return syn_signal
+
+
 # %%
 # initialize X_train and Y_train
 X_train = []
@@ -131,7 +140,8 @@ hdf5_files = glob.glob('./waveforms/noise/*.hdf5')
 # hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
 
 N_random = 5  # randomized noise for each noise data
-for ifile, hdf5_file in enumerate(hdf5_files):  # [0:1]):
+
+for hdf5_file in hdf5_files:  # [0:1]):
 
     with h5py.File(hdf5_file, 'r') as f:
         time_noise = f['noise_time'][:]
@@ -143,38 +153,29 @@ for ifile, hdf5_file in enumerate(hdf5_files):  # [0:1]):
         print(hdf5_file)
 
     rng = np.random.default_rng(seed=1)
-    # noise_BH1_random = randomization_noise(noise_BH1, rng=rng)
 
-    # plot_and_compare_randomized_noise()
     noise_BHZ_random = produce_randomized_noise(noise_BHZ, N_random, rng=rng)
 
     # % % #TODO: prepare the synthetic seismic signals
     # use ricker wavelet first? Only look at BHZ component first
     # the input synthetic waveforms can be other types
 
-    # duration and number of points in the Ricker wavelet
-    ricker_len = 60
-    npt_ricker = int(ricker_len / dt)
-    N_segments = int(noise_BHZ_random.shape[1] / npt_ricker)
-    syn_time = np.arange(0, npt_ricker) * dt
+    # duration and number of points in the synthetic waveforms
+    synthetic_length = 60
+    npt_synthetic = int(synthetic_length / dt)
+    N_segments = int(noise_BHZ_random.shape[1] / npt_synthetic)
+    syn_time = np.arange(0, npt_synthetic) * dt
 
     # loop over each piece of randomized noise
     for i_noise in range(N_random):
         noise_BHZ_now = noise_BHZ_random[i_noise, :]
         # loop over each segment
         for i_seg in range(N_segments):
-            # random parameters for the synthetics to set
-            peak_loc = np.random.random() * ricker_len
-            fc = np.random.random() * 5
-            amp = np.random.random() * 10
+            # produce the randomized synthetic signal
+            syn_seismic = random_ricker()
 
-            syn_seismic = ricker.ricker(
-                f=fc, len=ricker_len, dt=dt, peak_loc=peak_loc)
-            syn_seismic = amp * np.std(noise_BHZ_now) * syn_seismic
-
-            syn_signal = noise_BHZ_now[i_seg * npt_ricker:(i_seg + 1) * npt_ricker] \
-                         + syn_seismic
-
+            syn_signal = noise_BHZ_now[i_seg * npt_synthetic:(i_seg + 1) * npt_synthetic] + syn_seismic
+            # append the randomized results
             X_train.append(syn_signal)
             Y_train.append(syn_seismic)
 
@@ -196,11 +197,17 @@ plt.subplot(212)
 plt.plot(syn_time, X_train[i, :])
 plt.show()
 
-# %% #TODO: cut the noise pieces into several short segments
+# %% Visualize the randomization of noise
+hdf5_temp = hdf5_files[np.random.randint(0, len(hdf5_files))]
+with h5py.File(hdf5_temp, 'r') as f:
+    time_noise = f['noise_time'][:]
+    dt = time_noise[1] - time_noise[0]
+    fs = 1 / dt
+    noise_BH1 = f['noise']['BH1'][:]
+    noise_BH2 = f['noise']['BH2'][:]
+    noise_BHZ = f['noise']['BHZ'][:]
 
-
-# %% #TODO: randomly combine the synthetic signal with noise, reshape to the
-# proper dimension: nsample * nt * 1
+plot_and_compare_randomized_noise(noise_BHZ)
 
 
 # Not in use now
