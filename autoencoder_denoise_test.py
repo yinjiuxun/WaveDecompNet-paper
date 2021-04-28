@@ -92,13 +92,14 @@ model.add(Conv1D(16, 7, padding='same', activation='relu'))
 model.add(UpSampling1D(2))
 model.add(Conv1D(8, 7, padding='same', activation='relu'))
 model.add(Conv1D(1, 7, padding='same'))
-model.add(LeakyReLU(alpha=0.1))
+model.add(LeakyReLU(alpha=0.5))
 
 print(model.summary())
 # %% Compile the model
 # binary_crossentropy
 model.compile(loss='mean_squared_error',
-              optimizer='adam')
+              optimizer='adam',
+              metrics='accuracy')
 
 # %% train the model
 from keras.callbacks import EarlyStopping
@@ -110,13 +111,19 @@ model_train = model.fit(X_train, Y_train,
                         verbose=1,
                         callbacks=[early_stopping_monitor],
                         validation_data=(X_validate, Y_validate))
-# %%
-Y_predict = model.predict(X_test)
 
-# %%
-i = np.random.randint(0, X_test.shape[0])
-plt.figure()
-plt.plot(time, X_test[i,:,0], '-k')
-plt.plot(time, Y_test[i,:,0], '-b')
-plt.plot(time, Y_predict[i,:,0], '-r')
-plt.show()
+# %% Save the model
+model.save('./Ricker_Autoencoder_model.hdf5')
+
+# %% Save the datasets
+with h5py.File('./Ricker_Autoencoder_model_datasets.hdf5', 'w') as f:
+    f.create_dataset('time', data=time)
+    f.create_dataset('X_train', data=X_train)
+    f.create_dataset('X_validate', data=X_validate)
+    f.create_dataset('X_test', data=X_test)
+    f.create_dataset('Y_train', data=Y_train)
+    f.create_dataset('Y_validate', data=Y_validate)
+    f.create_dataset('Y_test', data=Y_test)
+
+
+
