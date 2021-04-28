@@ -53,7 +53,7 @@ Y_train = Y_train.reshape(-1, Y_train.shape[1], 1)
 
 # 3. split to training (60%), validation (20%) and test (20%)
 X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train, test_size=0.4, random_state=13)
-X_validate, Y_validate, X_test, Y_test = train_test_split(X_test, Y_test, test_size=0.5, random_state=20)
+X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test, test_size=0.5, random_state=20)
 
 # %% build the architecture
 # %% Model the Data
@@ -62,7 +62,7 @@ EPOCHS = 300
 
 import keras
 from keras.models import Sequential
-from keras.layers import Conv1D, AveragePooling1D, MaxPooling1D, UpSampling1D
+from keras.layers import Conv1D, AveragePooling1D, MaxPooling1D, UpSampling1D, LeakyReLU
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import LSTM, GRU, Bidirectional
 import tensorflow as tf
@@ -92,13 +92,13 @@ model.add(Conv1D(16, 7, padding='same', activation='relu'))
 model.add(UpSampling1D(2))
 model.add(Conv1D(8, 7, padding='same', activation='relu'))
 model.add(Conv1D(1, 7, padding='same'))
+model.add(LeakyReLU(alpha=0.1))
 
 print(model.summary())
 # %% Compile the model
 # binary_crossentropy
 model.compile(loss='mean_squared_error',
-              optimizer='adam',
-              metrics='accuracy')
+              optimizer='adam')
 
 # %% train the model
 from keras.callbacks import EarlyStopping
@@ -110,3 +110,13 @@ model_train = model.fit(X_train, Y_train,
                         verbose=1,
                         callbacks=[early_stopping_monitor],
                         validation_data=(X_validate, Y_validate))
+# %%
+Y_predict = model.predict(X_test)
+
+# %%
+i = np.random.randint(0, X_test.shape[0])
+plt.figure()
+plt.plot(time, X_test[i,:,0], '-k')
+plt.plot(time, Y_test[i,:,0], '-b')
+plt.plot(time, Y_predict[i,:,0], '-r')
+plt.show()
