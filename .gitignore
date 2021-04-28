@@ -1,3 +1,4 @@
 waveforms
 training_datasets.hdf5
+Ricker_Autoencoder_model.hdf5
 Ricker_Autoencoder_model_datasets.hdf5
