@@ -5,9 +5,9 @@ import h5py
 import keras
 
 # %% load model
-model = keras.models.load_model('./Ricker_Autoencoder_model.hdf5')
+model = keras.models.load_model('./Model_and_datasets/Ricker_Autoencoder_model.hdf5')
 # %% load dataset
-with h5py.File('./Ricker_Autoencoder_model_datasets.hdf5', 'r') as f:
+with h5py.File('./Model_and_datasets/Ricker_Autoencoder_model_datasets.hdf5', 'r') as f:
     time = f['time'][:]
     X_test = f['X_test'][:]
     Y_test = f['Y_test'][:]
@@ -28,9 +28,9 @@ for i, axi in enumerate(ax):
 ax[-2].set_xlabel('Time (s)')
 ax[-1].set_xlabel('Time (s)')
 plt.show()
-plt.savefig('./Ricker_Model_prediction2.png')
+plt.savefig('./Figures/Ricker_Model_prediction.png')
 
 
-# # %% Visualize the model
-# from keras.utils.vis_utils import plot_model
-# plot_model(model, to_file='./model_plot.png', show_shapes=True, show_layer_names=True)
+# %% Visualize the model
+from keras.utils.vis_utils import plot_model
+plot_model(model, to_file='./Figures/model_plot.png', show_shapes=True, show_layer_names=True)
