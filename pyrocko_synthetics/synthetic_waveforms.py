@@ -42,7 +42,7 @@ source_dc = DCSource(
     rake=60.,
     magnitude=6.)
 
-source_dc.stf = seismosizer.HalfSinusoidSTF(duration=50)
+source_dc.stf = seismosizer.HalfSinusoidSTF(duration=20)
 
 # Processing that data will return a pyrocko.gf.Reponse object.
 response = engine.process(source_dc, targets)
@@ -54,6 +54,8 @@ plt.close('all')
 fig, ax = plt.subplots(3,1, sharex=True)
 for i in range(len(synthetic_traces)):
     ax[i].plot(synthetic_traces[i].ydata)
+    ax[i].set_xlabel('Time (s)')
+    ax[i].set_ylabel('Disp. in ' + channel_codes[i] + ' (m)')
 plt.show()
 # # In addition to that it is also possible to extract interpolated travel times
 # # of phases which have been defined in the store's config file.
