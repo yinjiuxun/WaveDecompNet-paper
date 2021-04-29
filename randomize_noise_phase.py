@@ -121,7 +121,7 @@ def plot_and_compare_randomized_noise(noise):
 
 def random_ricker():
     peak_loc = np.random.random() * synthetic_length
-    fc = np.random.random() * 5
+    fc = np.e**np.random.uniform(low=np.log(1e-2), high=np.log(5))
     amp = np.random.random() * 10
 
     syn_signal = ricker.ricker(f=fc, len=synthetic_length, dt=dt, peak_loc=peak_loc)
