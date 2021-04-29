@@ -62,37 +62,76 @@ EPOCHS = 300
 
 import keras
 from keras.models import Sequential
-from keras.layers import Conv1D, AveragePooling1D, MaxPooling1D, UpSampling1D, LeakyReLU
+from keras.layers import Conv1D, AveragePooling1D, MaxPooling1D, UpSampling1D, LeakyReLU, Conv1DTranspose
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import LSTM, GRU, Bidirectional
 import tensorflow as tf
 
-model = Sequential()
-model.add(Conv1D(8, 7, padding='same', activation='relu', input_shape=(2400, 1)))
-model.add(MaxPooling1D(2))
-model.add(Conv1D(16, 7, padding='same', activation='relu'))
-model.add(MaxPooling1D(2))
-model.add(Conv1D(16, 5, padding='same', activation='relu'))
-model.add(MaxPooling1D(2))
-model.add(Conv1D(32, 5, padding='same', activation='relu'))
-model.add(MaxPooling1D(2))
-model.add(Conv1D(32, 3, padding='same', activation='relu'))
-model.add(MaxPooling1D(3))
-model.add(Dropout(rate=0.1))
-model.add(Bidirectional(LSTM(units=16, return_sequences=True, dropout=0.1)))
-model.add(LSTM(units=16, return_sequences=True))
-model.add(UpSampling1D(3))
-model.add(Conv1D(32, 3, padding='same', activation='relu'))
-model.add(UpSampling1D(2))
-model.add(Conv1D(32, 5, padding='same', activation='relu'))
-model.add(UpSampling1D(2))
-model.add(Conv1D(16, 5, padding='same', activation='relu'))
-model.add(UpSampling1D(2))
-model.add(Conv1D(16, 7, padding='same', activation='relu'))
-model.add(UpSampling1D(2))
-model.add(Conv1D(8, 7, padding='same', activation='relu'))
-model.add(Conv1D(1, 7, padding='same'))
-model.add(LeakyReLU(alpha=0.5))
+
+def autoencoder_test1():
+    model = Sequential()
+    model.add(Conv1D(8, 7, padding='same', activation='relu', input_shape=(2400, 1)))
+    model.add(MaxPooling1D(2))
+    model.add(Conv1D(16, 7, padding='same', activation='relu'))
+    model.add(MaxPooling1D(2))
+    model.add(Conv1D(16, 5, padding='same', activation='relu'))
+    model.add(MaxPooling1D(2))
+    model.add(Conv1D(32, 5, padding='same', activation='relu'))
+    model.add(MaxPooling1D(2))
+    model.add(Conv1D(32, 3, padding='same', activation='relu'))
+    model.add(MaxPooling1D(3))
+    model.add(Dropout(rate=0.1))
+    model.add(Bidirectional(LSTM(units=16, return_sequences=True, dropout=0.1)))
+    model.add(LSTM(units=16, return_sequences=True))
+    model.add(UpSampling1D(3))
+    model.add(Conv1D(32, 3, padding='same', activation='relu'))
+    model.add(UpSampling1D(2))
+    model.add(Conv1D(32, 5, padding='same', activation='relu'))
+    model.add(UpSampling1D(2))
+    model.add(Conv1D(16, 5, padding='same', activation='relu'))
+    model.add(UpSampling1D(2))
+    model.add(Conv1D(16, 7, padding='same', activation='relu'))
+    model.add(UpSampling1D(2))
+    model.add(Conv1D(8, 7, padding='same', activation='relu'))
+    model.add(Conv1D(1, 7, padding='same'))
+    model.add(LeakyReLU(alpha=0.5))
+
+    return model
+
+
+def autoencoder_test2():
+    # use Conv1DTranspose instead
+    model = Sequential()
+    model.add(Conv1D(8, 7, padding='same', activation='relu', input_shape=(2400, 1)))
+    model.add(MaxPooling1D(2))
+    model.add(Conv1D(16, 7, padding='same', activation='relu'))
+    model.add(MaxPooling1D(2))
+    model.add(Conv1D(16, 5, padding='same', activation='relu'))
+    model.add(MaxPooling1D(2))
+    model.add(Conv1D(32, 5, padding='same', activation='relu'))
+    model.add(MaxPooling1D(2))
+    model.add(Conv1D(32, 3, padding='same', activation='relu'))
+    model.add(MaxPooling1D(3))
+    model.add(Dropout(rate=0.1))
+    model.add(Bidirectional(LSTM(units=16, return_sequences=True, dropout=0.1)))
+    model.add(LSTM(units=16, return_sequences=True))
+    model.add(UpSampling1D(3))
+    model.add(Conv1DTranspose(32, 3, padding='same', activation='relu'))
+    model.add(UpSampling1D(2))
+    model.add(Conv1DTranspose(32, 5, padding='same', activation='relu'))
+    model.add(UpSampling1D(2))
+    model.add(Conv1DTranspose(16, 5, padding='same', activation='relu'))
+    model.add(UpSampling1D(2))
+    model.add(Conv1DTranspose(16, 7, padding='same', activation='relu'))
+    model.add(UpSampling1D(2))
+    model.add(Conv1DTranspose(8, 7, padding='same', activation='relu'))
+    model.add(Conv1DTranspose(1, 7, padding='same'))
+    model.add(LeakyReLU(alpha=0.5))
+
+    return model
+
+
+model = autoencoder_test2()
 
 print(model.summary())
 # %% Compile the model
@@ -113,10 +152,10 @@ model_train = model.fit(X_train, Y_train,
                         validation_data=(X_validate, Y_validate))
 
 # %% Save the model
-model.save('./Ricker_Autoencoder_model.hdf5')
+model.save('./Ricker_Autoencoder_model_2.hdf5')
 
 # %% Save the datasets
-with h5py.File('./Ricker_Autoencoder_model_datasets.hdf5', 'w') as f:
+with h5py.File('./Ricker_Autoencoder_model_datasets_2.hdf5', 'w') as f:
     f.create_dataset('time', data=time)
     f.create_dataset('X_train', data=X_train)
     f.create_dataset('X_validate', data=X_validate)
@@ -124,6 +163,3 @@ with h5py.File('./Ricker_Autoencoder_model_datasets.hdf5', 'w') as f:
     f.create_dataset('Y_train', data=Y_train)
     f.create_dataset('Y_validate', data=Y_validate)
     f.create_dataset('Y_test', data=Y_test)
-
-
-
