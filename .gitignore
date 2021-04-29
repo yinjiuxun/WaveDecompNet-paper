@@ -1,5 +1,4 @@
 waveforms
 training_datasets.hdf5
-Ricker_Autoencoder_model.hdf5
-Ricker_Autoencoder_model_datasets.hdf5
 pyrocko_synthetics/ak135_2000km_1Hz/
+Model_and_datasets/
