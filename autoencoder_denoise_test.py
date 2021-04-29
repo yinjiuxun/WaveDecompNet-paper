@@ -99,7 +99,7 @@ def autoencoder_test1():
     return model
 
 
-def autoencoder_test2():
+def autoencoder_test_Conv1DTranspose():
     # use Conv1DTranspose instead
     model = Sequential()
     model.add(Conv1D(8, 7, padding='same', activation='relu', input_shape=(2400, 1)))
@@ -131,7 +131,7 @@ def autoencoder_test2():
     return model
 
 
-model = autoencoder_test2()
+model = autoencoder_test_Conv1DTranspose()
 
 print(model.summary())
 # %% Compile the model
@@ -143,7 +143,7 @@ model.compile(loss='mean_squared_error',
 # %% train the model
 from keras.callbacks import EarlyStopping
 
-early_stopping_monitor = EarlyStopping(monitor='val_loss', patience=6)
+early_stopping_monitor = EarlyStopping(monitor='val_loss', patience=10)
 model_train = model.fit(X_train, Y_train,
                         batch_size=BATCH_SIZE,
                         epochs=EPOCHS,
@@ -151,15 +151,31 @@ model_train = model.fit(X_train, Y_train,
                         callbacks=[early_stopping_monitor],
                         validation_data=(X_validate, Y_validate))
 
+# %% Show loss evolution
+loss = model_train.history['loss']
+val_loss = model_train.history['val_loss']
+plt.figure()
+plt.plot(loss, 'o', label='loss')
+plt.plot(val_loss, '-', label='Validation loss')
+plt.legend()
+plt.title('Ricker_Autoencoder_model_Conv1DTranspose')
+plt.show()
+plt.savefig('./Figures/Loss_evolution.png')
+
 # %% Save the model
-model.save('./Ricker_Autoencoder_model_2.hdf5')
+model_dataset_dir = './Model_and_datasets'
+if ~os.path.exists(model_dataset_dir):
+    os.mkdir(model_dataset_dir)
+model.save(model_dataset_dir + '/Ricker_Autoencoder_model_Conv1DTranspose.hdf5')
 
 # %% Save the datasets
-with h5py.File('./Ricker_Autoencoder_model_datasets_2.hdf5', 'w') as f:
-    f.create_dataset('time', data=time)
-    f.create_dataset('X_train', data=X_train)
-    f.create_dataset('X_validate', data=X_validate)
-    f.create_dataset('X_test', data=X_test)
-    f.create_dataset('Y_train', data=Y_train)
-    f.create_dataset('Y_validate', data=Y_validate)
-    f.create_dataset('Y_test', data=Y_test)
+model_datasets = model_dataset_dir + '/Ricker_Autoencoder_model_datasets.hdf5'
+if ~os.path.exists(model_datasets):
+    with h5py.File(model_datasets, 'w') as f:
+        f.create_dataset('time', data=time)
+        f.create_dataset('X_train', data=X_train)
+        f.create_dataset('X_validate', data=X_validate)
+        f.create_dataset('X_test', data=X_test)
+        f.create_dataset('Y_train', data=Y_train)
+        f.create_dataset('Y_validate', data=Y_validate)
+        f.create_dataset('Y_test', data=Y_test)
