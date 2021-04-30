@@ -5,7 +5,7 @@ import h5py
 import keras
 
 # %% load model
-model = keras.models.load_model('./Model_and_datasets/Ricker_Autoencoder_model.hdf5')
+model = keras.models.load_model('./Model_and_datasets/Ricker_Autoencoder_model_Conv1DTranspose.hdf5')
 # %% load dataset
 with h5py.File('./Model_and_datasets/Ricker_Autoencoder_model_datasets.hdf5', 'r') as f:
     time = f['time'][:]

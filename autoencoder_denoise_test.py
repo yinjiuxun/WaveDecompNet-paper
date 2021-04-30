@@ -164,13 +164,13 @@ plt.savefig('./Figures/Loss_evolution.png')
 
 # %% Save the model
 model_dataset_dir = './Model_and_datasets'
-if ~os.path.exists(model_dataset_dir):
+if not os.path.exists(model_dataset_dir):
     os.mkdir(model_dataset_dir)
 model.save(model_dataset_dir + '/Ricker_Autoencoder_model_Conv1DTranspose.hdf5')
 
 # %% Save the datasets
 model_datasets = model_dataset_dir + '/Ricker_Autoencoder_model_datasets.hdf5'
-if ~os.path.exists(model_datasets):
+if not os.path.exists(model_datasets):
     with h5py.File(model_datasets, 'w') as f:
         f.create_dataset('time', data=time)
         f.create_dataset('X_train', data=X_train)
