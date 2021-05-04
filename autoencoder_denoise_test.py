@@ -62,7 +62,7 @@ EPOCHS = 300
 
 import keras
 from keras.models import Sequential
-from keras.layers import Conv1D, AveragePooling1D, MaxPooling1D, UpSampling1D, LeakyReLU#, Conv1DTranspose
+from keras.layers import Conv1D, AveragePooling1D, MaxPooling1D, UpSampling1D, LeakyReLU, Conv1DTranspose
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import LSTM, GRU, Bidirectional
 import tensorflow as tf
@@ -80,9 +80,9 @@ def autoencoder_test1():
     model.add(MaxPooling1D(2))
     model.add(Conv1D(32, 3, padding='same', activation='relu'))
     model.add(MaxPooling1D(3))
-    # model.add(Dropout(rate=0.1))
-    # model.add(Bidirectional(LSTM(units=16, return_sequences=True, dropout=0.1)))
-    # model.add(LSTM(units=16, return_sequences=True))
+    model.add(Dropout(rate=0.1))
+    model.add(Bidirectional(LSTM(units=16, return_sequences=True, dropout=0.1)))
+    model.add(LSTM(units=16, return_sequences=True))
     model.add(UpSampling1D(3))
     model.add(Conv1D(32, 3, padding='same', activation='relu'))
     model.add(UpSampling1D(2))
@@ -131,8 +131,8 @@ def autoencoder_test_Conv1DTranspose():
     return model
 
 
-#model = autoencoder_test_Conv1DTranspose()
-model = autoencoder_test1()
+model = autoencoder_test_Conv1DTranspose()
+#model = autoencoder_test1()
 
 print(model.summary())
 # %% Compile the model
