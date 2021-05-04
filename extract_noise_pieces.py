@@ -13,9 +13,6 @@ import sys
 import datetime
 from matplotlib import pyplot as plt
 
-# import the ASDF format module
-import asdf
-
 # import the HDF5 module
 import h5py
 
@@ -83,10 +80,12 @@ def plot_waveforms():
 
 def save_event_waveforms(output_name):
     with h5py.File(output_name, 'w') as f:
-        f.attrs.create('event_name', event_name)
+        # f.attrs.create('event_name', event_name)
+        f.attrs['event_name'] = event_name
         f.attrs.create('event_mag', event_mag)
-        f.attrs.create(
-            'event_time', event_time.datetime.strftime('%Y%m%d-%H:%M:%S'))
+        # f.attrs.create(
+        #    'event_time', event_time.datetime.strftime('%Y%m%d-%H:%M:%S'))
+        f.attrs['event_time'] = event_time.datetime.strftime('%Y%m%d-%H:%M:%S')
         f.attrs.create('event_lon', event_lon)
         f.attrs.create('event_lat', event_lat)
         f.attrs.create('event_dep', event_dep)
@@ -118,7 +117,7 @@ def save_noise(output_name):
 # %% loop over catalog to read waveforms
 working_dir = './waveforms'
 # Read catalog first
-catalog = obspy.read_events(working_dir + '/events_by_distance.xml')
+catalog = obspy.read_events(working_dir + '/events_by_distance.xml', format='QUAKEML')
 print(catalog)
 
 # %% make output directory
