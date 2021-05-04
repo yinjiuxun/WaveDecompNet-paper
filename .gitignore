@@ -1,4 +1,5 @@
 waveforms
+stations
 training_datasets.hdf5
 pyrocko_synthetics/ak135_2000km_1Hz/
 Model_and_datasets/
