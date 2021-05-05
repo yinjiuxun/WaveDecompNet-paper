@@ -19,9 +19,12 @@ import h5py
 # functions for STFT (spectrogram)
 from scipy import signal as sgn
 
-# import Ricker
-import ricker
-
+# load the module to generate random waveforms
+sys.path.append('./pyrocko_synthetics')
+# 3-component synthetic seismograms from Pyrocko
+from synthetic_waveforms import pyrocko_synthesis, random_pyrocko_synthetics
+# random Ricker wavelet
+from synthetic_waveforms import random_ricker
 
 def randomization_noise(noise, rng=np.random.default_rng(None)):
     """function to produce randomized noise by shiftint the phase
@@ -118,17 +121,27 @@ def plot_and_compare_randomized_noise(noise):
     plt.ylim(0, 1)
     plt.show()
 
+def downsample_series(time, series, f_downsampe):
+    """Down sample the time series given a lower sampling frequency f_downsample,
+    time_new, series_downsample, dt_new = downsample_series(time, series, f_downsampe)
 
-def random_ricker():
-    peak_loc = np.random.random() * synthetic_length
-    fc = 1/np.random.uniform(low=0.1, high=30)
-    amp = np.random.random() * 10
+    The time series has been lowpass filtered (f_filter=f_downsample/2) first,
+    and then downsampled through interpolation.
+    """
+    # lowpass filter
+    b, a = sgn.butter(4, f_downsampe / 2 * 2 * dt)
+    series_filt = sgn.filtfilt(b, a, series)
+    # downsample through interpolation
+    dt_new = 1 / f_downsampe
+    time_new = np.arange(time[0], time[-1], dt_new)
+    series_downsample = np.interp(time_new, time, series_filt)
 
-    syn_signal = ricker.ricker(f=fc, len=synthetic_length, dt=dt, peak_loc=peak_loc)
-    syn_signal = amp * np.std(noise_BHZ_now) * syn_signal
+    # plt.figure()
+    # plt.plot(time_noise, noise_BH1, '-k')
+    # plt.plot(time, series_filt, '-r')
+    # plt.plot(time_new, series_downsample, '-b')
 
-    return syn_signal
-
+    return time_new, series_downsample, dt_new
 
 # %%
 # initialize X_train and Y_train
@@ -141,25 +154,29 @@ hdf5_files = glob.glob('./waveforms/noise/*.hdf5')
 
 N_random = 5  # randomized noise for each noise data
 
+
 for hdf5_file in hdf5_files:  # [0:1]):
 
     with h5py.File(hdf5_file, 'r') as f:
         time_noise = f['noise_time'][:]
         dt = time_noise[1] - time_noise[0]
-        fs = 1 / dt
         noise_BH1 = f['noise']['BH1'][:]
         noise_BH2 = f['noise']['BH2'][:]
         noise_BHZ = f['noise']['BHZ'][:]
         print(hdf5_file)
 
-    rng = np.random.default_rng(seed=1)
+    # %% downsample the noise piece by specific the frequency
+    f_downsample = 1
+    time_noise, noise_BHZ, dt = downsample_series(time=time_noise, series=noise_BHZ, f_downsampe=f_downsample)
 
+    # sampling rate
+    fs = 1 / dt
+
+    # produce N_random pieces of randomized noise
+    rng = np.random.default_rng(seed=1)
     noise_BHZ_random = produce_randomized_noise(noise_BHZ, N_random, rng=rng)
 
     # % % #TODO: prepare the synthetic seismic signals
-    # use ricker wavelet first? Only look at BHZ component first
-    # the input synthetic waveforms can be other types
-
     # duration and number of points in the synthetic waveforms
     synthetic_length = 60
     npt_synthetic = int(synthetic_length / dt)
@@ -172,8 +189,9 @@ for hdf5_file in hdf5_files:  # [0:1]):
         # loop over each segment
         for i_seg in range(N_segments):
             # produce the randomized synthetic signal
-            syn_seismic = random_ricker()
+            syn_seismic = random_ricker(synthetic_length, dt)  # Ricker wavelet
 
+            syn_seismic = np.std(noise_BHZ_now) * syn_seismic
             syn_signal = noise_BHZ_now[i_seg * npt_synthetic:(i_seg + 1) * npt_synthetic] + syn_seismic
             # append the randomized results
             X_train.append(syn_signal)
@@ -208,7 +226,6 @@ with h5py.File(hdf5_temp, 'r') as f:
     noise_BHZ = f['noise']['BHZ'][:]
 
 plot_and_compare_randomized_noise(noise_BHZ)
-
 
 # Not in use now
 # #%% Some sort of dispersive signal
