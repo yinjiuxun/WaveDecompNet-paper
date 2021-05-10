@@ -26,6 +26,7 @@ from synthetic_waveforms import pyrocko_synthesis, random_pyrocko_synthetics
 # random Ricker wavelet
 from synthetic_waveforms import random_ricker
 
+
 def randomization_noise(noise, rng=np.random.default_rng(None)):
     """function to produce randomized noise by shiftint the phase
     randomization_noise(noise, rng=np.random.default_rng(None))
@@ -121,6 +122,7 @@ def plot_and_compare_randomized_noise(noise):
     plt.ylim(0, 1)
     plt.show()
 
+
 def downsample_series(time, series, f_downsampe):
     """Down sample the time series given a lower sampling frequency f_downsample,
     time_new, series_downsample, dt_new = downsample_series(time, series, f_downsampe)
@@ -133,7 +135,7 @@ def downsample_series(time, series, f_downsampe):
     series_filt = sgn.filtfilt(b, a, series)
     # downsample through interpolation
     dt_new = 1 / f_downsampe
-    time_new = np.arange(time[0], time[-1], dt_new)
+    time_new = np.arange(time[0], time[-1] + dt_new, dt_new)
     series_downsample = np.interp(time_new, time, series_filt)
 
     # plt.figure()
@@ -143,6 +145,7 @@ def downsample_series(time, series, f_downsampe):
 
     return time_new, series_downsample, dt_new
 
+
 # %%
 # initialize X_train and Y_train
 X_train = []
@@ -150,12 +153,11 @@ Y_train = []
 
 # load the data
 hdf5_files = glob.glob('./waveforms/noise/*.hdf5')
-# hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
+#hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
 
-N_random = 5  # randomized noise for each noise data
+N_random = 50  # randomized noise for each noise data
 
-
-for hdf5_file in hdf5_files:  # [0:1]):
+for hdf5_file in hdf5_files:
 
     with h5py.File(hdf5_file, 'r') as f:
         time_noise = f['noise_time'][:]
@@ -166,7 +168,7 @@ for hdf5_file in hdf5_files:  # [0:1]):
         print(hdf5_file)
 
     # %% downsample the noise piece by specific the frequency
-    f_downsample = 1
+    f_downsample = 1.0  # Hz
     time_noise, noise_BHZ, dt = downsample_series(time=time_noise, series=noise_BHZ, f_downsampe=f_downsample)
 
     # sampling rate
@@ -178,7 +180,7 @@ for hdf5_file in hdf5_files:  # [0:1]):
 
     # % % #TODO: prepare the synthetic seismic signals
     # duration and number of points in the synthetic waveforms
-    synthetic_length = 60
+    synthetic_length = 600
     npt_synthetic = int(synthetic_length / dt)
     N_segments = int(noise_BHZ_random.shape[1] / npt_synthetic)
     syn_time = np.arange(0, npt_synthetic) * dt
@@ -189,10 +191,24 @@ for hdf5_file in hdf5_files:  # [0:1]):
         # loop over each segment
         for i_seg in range(N_segments):
             # produce the randomized synthetic signal
-            syn_seismic = random_ricker(synthetic_length, dt)  # Ricker wavelet
+            # syn_seismic = random_ricker(synthetic_length, dt)  # Ricker wavelet
+
+            # produce the randomized synthetic seismograms from pyrocko
+            time_synthetics, synthetic_waveforms, _, channels = random_pyrocko_synthetics(
+                store_superdirs=['./pyrocko_synthetics'], store_id='ak135_2000km_1Hz')
+
+            # interpolate to the same time axis
+            f_interp = scipy.interpolate.interp1d(time_synthetics, synthetic_waveforms, kind='linear',
+                                                  bounds_error=False, fill_value=0)
+            synthetic_waveforms = f_interp(syn_time)
+
+            # focus on the Z component first
+            syn_seismic = synthetic_waveforms[2,:]
+            # plt.plot(syn_time, syn_seismic)
 
             syn_seismic = np.std(noise_BHZ_now) * syn_seismic
             syn_signal = noise_BHZ_now[i_seg * npt_synthetic:(i_seg + 1) * npt_synthetic] + syn_seismic
+
             # append the randomized results
             X_train.append(syn_signal)
             Y_train.append(syn_seismic)
@@ -201,13 +217,14 @@ X_train = np.array(X_train)
 Y_train = np.array(Y_train)
 
 # %% save the prepared data
-with h5py.File('training_datasets.hdf5', 'w') as f:
+with h5py.File('training_datasets_pyrocko_Z.hdf5', 'w') as f:
     f.create_dataset('time', data=syn_time)
     f.create_dataset('X_train', data=X_train)
     f.create_dataset('Y_train', data=Y_train)
 
 # %%
 i = np.random.randint(0, X_train.shape[0])
+plt.close('all')
 plt.figure(1)
 plt.subplot(211)
 plt.plot(syn_time, Y_train[i, :])
