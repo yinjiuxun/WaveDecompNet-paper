@@ -79,16 +79,16 @@ def pyrocko_synthesis(src_info, store_superdirs, store_id, channel_codes='ENZ'):
     return synthetics
 
 
-def random_pyrocko_synthetics(store_superdirs, store_id):
+def random_pyrocko_synthetics(store_superdirs, store_id, max_amplitude=10):
     """
 
     Randomly produce the synthetic velocity waveforms in ENZ components
-    time, synthetic_waveforms, src_info = random_pyrocko_synthetics(store_superdirs, store_id)
+    time, synthetic_waveforms, src_info, channel_codes = random_pyrocko_synthetics(store_superdirs, store_id)
 
     """
     # Generate random number of parameters
     channel_codes = 'ENZ'
-
+    amp = np.random.random() * max_amplitude
     while True:
         lat = np.random.uniform(-14, 14)
         lon = np.random.uniform(-14, 14)
@@ -120,9 +120,9 @@ def random_pyrocko_synthetics(store_superdirs, store_id):
         synthetic_waveforms.append(vel)
 
     synthetic_waveforms = np.array(synthetic_waveforms)
-    synthetic_waveforms = synthetic_waveforms / np.amax(abs(synthetic_waveforms))
+    synthetic_waveforms = amp * synthetic_waveforms / np.amax(abs(synthetic_waveforms))
 
-    return time, synthetic_waveforms, src_info
+    return time, synthetic_waveforms, src_info, channel_codes
 
 # # Test the functions and visualize the waveforms
 # # Ricker wavelets
@@ -133,17 +133,17 @@ def random_pyrocko_synthetics(store_superdirs, store_id):
 # plt.close('all')
 # plt.plot(time, ricker_waveform)
 # plt.show()
-#
-# Pyrocko synthetics
-time, synthetic_waveforms, src_info = random_pyrocko_synthetics(store_superdirs=['./pyrocko_synthetics'],
-                                                         store_id='ak135_2000km_1Hz')
-channel_codes = 'ENZ'
-plt.close('all')
-fig, ax = plt.subplots(3, 1, sharex=True, sharey=True)
-for i in range(3):
-    ax[i].plot(time, synthetic_waveforms[i, :])
-    ax[i].set_xlabel('Time (s)')
-    ax[i].set_ylabel('Vel. in ' + channel_codes[i] + ' (m/s)')
-plt.show()
+
+
+# # Pyrocko synthetics
+# time, synthetic_waveforms, src_info, channels = random_pyrocko_synthetics(store_superdirs=['./pyrocko_synthetics'],
+#                                                          store_id='ak135_2000km_1Hz')
+# plt.close('all')
+# fig, ax = plt.subplots(3, 1, sharex=True, sharey=True)
+# for i in range(3):
+#     ax[i].plot(time, synthetic_waveforms[i, :])
+#     ax[i].set_xlabel('Time (s)')
+#     ax[i].set_ylabel('Vel. in ' + channels[i] + ' (m/s)')
+# plt.show()
 
 
