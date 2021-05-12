@@ -155,7 +155,7 @@ Y_train = []
 hdf5_files = glob.glob('./waveforms/noise/*.hdf5')
 #hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
 
-N_random = 200  # randomized noise for each noise data
+N_random = 50  # randomized noise for each noise data
 
 for hdf5_file in hdf5_files:
 
@@ -169,14 +169,20 @@ for hdf5_file in hdf5_files:
 
     # %% downsample the noise piece by specific the frequency
     f_downsample = 1.0  # Hz
+    _, noise_BH1, _ = downsample_series(time=time_noise, series=noise_BH1, f_downsampe=f_downsample)
+    _, noise_BH2, _ = downsample_series(time=time_noise, series=noise_BH2, f_downsampe=f_downsample)
     time_noise, noise_BHZ, dt = downsample_series(time=time_noise, series=noise_BHZ, f_downsampe=f_downsample)
 
     # sampling rate
     fs = 1 / dt
 
     # produce N_random pieces of randomized noise
-    rng = np.random.default_rng(seed=1)
-    noise_BHZ_random = produce_randomized_noise(noise_BHZ, N_random, rng=rng)
+    rng1 = np.random.default_rng(seed=1)
+    rng2 = np.random.default_rng(seed=2)
+    rngz = np.random.default_rng(seed=3)
+    noise_BH1_random = produce_randomized_noise(noise_BH1, N_random, rng=rng1)
+    noise_BH2_random = produce_randomized_noise(noise_BH2, N_random, rng=rng2)
+    noise_BHZ_random = produce_randomized_noise(noise_BHZ, N_random, rng=rngz)
 
     # % % #TODO: prepare the synthetic seismic signals
     # duration and number of points in the synthetic waveforms
@@ -187,7 +193,17 @@ for hdf5_file in hdf5_files:
 
     # loop over each piece of randomized noise
     for i_noise in range(N_random):
+        # current noise piece
+        noise_BH1_now = noise_BH1_random[i_noise, :]
+        noise_BH2_now = noise_BH2_random[i_noise, :]
         noise_BHZ_now = noise_BHZ_random[i_noise, :]
+
+        # combine the noise into one np array
+        noise_array = np.array([noise_BH1_now, noise_BH2_now, noise_BHZ_now])
+
+        # get the std of current noises (from all three components)
+        noise_std = np.std(noise_array)
+
         # loop over each segment
         for i_seg in range(N_segments):
             # produce the randomized synthetic signal
@@ -202,22 +218,25 @@ for hdf5_file in hdf5_files:
                                                   bounds_error=False, fill_value=0)
             synthetic_waveforms = f_interp(syn_time)
 
-            # focus on the Z component first
-            syn_seismic = synthetic_waveforms[2,:]
-            # plt.plot(syn_time, syn_seismic)
-
-            syn_seismic = np.std(noise_BHZ_now) * syn_seismic
-            syn_signal = noise_BHZ_now[i_seg * npt_synthetic:(i_seg + 1) * npt_synthetic] + syn_seismic
+            synthetic_waveforms = noise_std * synthetic_waveforms
+            syn_signal = noise_array[:, i_seg * npt_synthetic:(i_seg + 1) * npt_synthetic] + synthetic_waveforms
+            # # check the waveforms
+            # plt.close('all')
+            # plt.subplot(211)
+            # plt.plot(synthetic_waveforms.T)
+            # plt.subplot(212)
+            # plt.plot(syn_signal.T)
+            # plt.show()
 
             # append the randomized results
             X_train.append(syn_signal)
-            Y_train.append(syn_seismic)
+            Y_train.append(synthetic_waveforms)
 
 X_train = np.array(X_train)
 Y_train = np.array(Y_train)
 
 # %% save the prepared data
-with h5py.File('training_datasets_pyrocko_Z.hdf5', 'w') as f:
+with h5py.File('training_datasets_pyrocko_ENZ.hdf5', 'w') as f:
     f.create_dataset('time', data=syn_time)
     f.create_dataset('X_train', data=X_train)
     f.create_dataset('Y_train', data=Y_train)
