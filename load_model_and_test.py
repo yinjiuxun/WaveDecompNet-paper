@@ -19,7 +19,7 @@ components = "ENZ"
 # %% Visualize the results
 i_show = np.random.randint(0, X_test.shape[0], 5)
 plt.close('all')
-fig, ax = plt.subplots(5, 3, figsize=(16, 12), num=1, sharey=True, sharex=True)
+fig, ax = plt.subplots(5, 3, figsize=(10, 8), num=1, sharey=True, sharex=True)
 for i in range(5):
     for j in range(3):
         ax[i, j].plot(time, X_test[i_show[i], :, j], '-k', label='X test')
