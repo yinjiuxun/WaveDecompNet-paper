@@ -19,6 +19,8 @@ import h5py
 # functions for STFT (spectrogram)
 from scipy import signal as sgn
 
+from utilities import downsample_series
+
 # load the module to generate random waveforms
 sys.path.append('./pyrocko_synthetics')
 # 3-component synthetic seismograms from Pyrocko
@@ -123,27 +125,6 @@ def plot_and_compare_randomized_noise(noise):
     plt.show()
 
 
-def downsample_series(time, series, f_downsampe):
-    """Down sample the time series given a lower sampling frequency f_downsample,
-    time_new, series_downsample, dt_new = downsample_series(time, series, f_downsampe)
-
-    The time series has been lowpass filtered (f_filter=f_downsample/2) first,
-    and then downsampled through interpolation.
-    """
-    # lowpass filter
-    b, a = sgn.butter(4, f_downsampe / 2 * 2 * dt)
-    series_filt = sgn.filtfilt(b, a, series)
-    # downsample through interpolation
-    dt_new = 1 / f_downsampe
-    time_new = np.arange(time[0], time[-1] + dt_new, dt_new)
-    series_downsample = np.interp(time_new, time, series_filt)
-
-    # plt.figure()
-    # plt.plot(time_noise, noise_BH1, '-k')
-    # plt.plot(time, series_filt, '-r')
-    # plt.plot(time_new, series_downsample, '-b')
-
-    return time_new, series_downsample, dt_new
 
 
 # %%
@@ -153,7 +134,7 @@ Y_train = []
 
 # load the data
 hdf5_files = glob.glob('./waveforms/noise/*.hdf5')
-#hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
+hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
 
 N_random = 50  # randomized noise for each noise data
 
@@ -221,12 +202,12 @@ for hdf5_file in hdf5_files:
             synthetic_waveforms = noise_std * synthetic_waveforms
             syn_signal = noise_array[:, i_seg * npt_synthetic:(i_seg + 1) * npt_synthetic] + synthetic_waveforms
             # # check the waveforms
-            # plt.close('all')
-            # plt.subplot(211)
-            # plt.plot(synthetic_waveforms.T)
-            # plt.subplot(212)
-            # plt.plot(syn_signal.T)
-            # plt.show()
+            plt.close('all')
+            plt.subplot(211)
+            plt.plot(synthetic_waveforms.T)
+            plt.subplot(212)
+            plt.plot(syn_signal.T)
+            plt.show()
 
             # append the randomized results
             X_train.append(syn_signal)
