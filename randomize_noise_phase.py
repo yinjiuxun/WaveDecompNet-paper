@@ -155,7 +155,7 @@ Y_train = []
 hdf5_files = glob.glob('./waveforms/noise/*.hdf5')
 #hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
 
-N_random = 50  # randomized noise for each noise data
+N_random = 200  # randomized noise for each noise data
 
 for hdf5_file in hdf5_files:
 
