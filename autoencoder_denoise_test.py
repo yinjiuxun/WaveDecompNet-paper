@@ -192,6 +192,34 @@ def autoencoder_test_Conv1DTranspose_ENZ():
 
     return model
 
+def autoencoder_test_Conv1DTranspose_ENZ2():
+    # use Conv1DTranspose instead
+    model = Sequential()
+    model.add(Conv1D(8, 7, padding='same', activation='relu', input_shape=X_train.shape[1:]))
+    model.add(MaxPooling1D(2)) #300
+    model.add(Conv1D(16, 7, padding='same', activation='relu'))
+    model.add(MaxPooling1D(2)) #150
+    model.add(Conv1D(16, 5, padding='same', activation='relu'))
+    model.add(MaxPooling1D(2)) #75
+    model.add(Conv1D(32, 3, padding='same', activation='relu'))
+    model.add(MaxPooling1D(3, padding='same')) #25
+    model.add(Dropout(rate=0.1))
+    model.add(Bidirectional(LSTM(units=16, return_sequences=True, dropout=0.1)))
+    model.add(LSTM(units=16, return_sequences=True))
+    model.add(UpSampling1D(3)) #75
+    model.add(Conv1DTranspose(32, 3, padding='same', activation='relu'))
+    model.add(UpSampling1D(2)) #152
+    model.add(Conv1DTranspose(16, 5, padding='same', activation='relu'))
+    model.add(UpSampling1D(2)) #300
+    model.add(Conv1DTranspose(16, 7, padding='same', activation='relu'))
+    model.add(UpSampling1D(2)) #600
+    model.add(Conv1DTranspose(8, 7, padding='same', activation='relu'))
+    model.add(Conv1DTranspose(3, 7, padding='same'))
+    model.add(LeakyReLU(alpha=0.5))
+
+    return model
+
+#model = autoencoder_test_Conv1DTranspose_ENZ2()
 model = autoencoder_test_Conv1DTranspose_ENZ()
 #model = autoencoder_test_Conv1DTranspose2()
 #model = autoencoder_test1()
@@ -205,7 +233,7 @@ model.compile(loss='mean_squared_error',
 # %% train the model
 from keras.callbacks import EarlyStopping
 
-early_stopping_monitor = EarlyStopping(monitor='val_loss', patience=10)
+early_stopping_monitor = EarlyStopping(monitor='val_loss', patience=20)
 model_train = model.fit(X_train, Y_train,
                         batch_size=BATCH_SIZE,
                         epochs=EPOCHS,
