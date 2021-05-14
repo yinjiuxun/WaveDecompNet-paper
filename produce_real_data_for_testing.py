@@ -21,6 +21,7 @@ def ml_denoise(waveform_dir, file_name, t_shift):
     time, waveform_BHZ, dt = downsample_series(time=time, series=waveform_BHZ, f_downsampe=f_downsample)
 
     waveforms = np.array([waveform_BH1, waveform_BH2, waveform_BHZ])
+    waveforms_all = waveforms.copy()
 
     # get the 10-minutes long data
     time_new = np.arange(0, 600) + t_shift
@@ -41,7 +42,7 @@ def ml_denoise(waveform_dir, file_name, t_shift):
 
     waveforms_predicted = np.squeeze(Y_predict).T * traces_std + traces_mean
 
-    return time_new, waveforms, waveforms_predicted
+    return time_new, waveforms, waveforms_predicted, waveforms_all
 
 
 # %% load the trained model
@@ -51,11 +52,33 @@ model = keras.models.load_model('./Model_and_datasets/Synthetic_seismogram_Z_Con
 waveform_dir = "./waveforms/events_data_processed"
 file_name = "IU.XMAS.M6.3.20190519-145650.hdf5"
 
-_, ax = plt.subplots(3, 1, sharex=True, sharey=True, num=1)
+_, ax = plt.subplots(3, 1, sharex=True, sharey=True, num=1, figsize=(5.5,12))
 
-for t_shift in np.arange(0,5400,500):
-    time_new, waveforms, waveforms_predicted = ml_denoise(waveform_dir=waveform_dir, file_name=file_name, t_shift=t_shift)
-
+_, _, waveforms_predicted_pre, waveforms_all = ml_denoise(waveform_dir=waveform_dir, file_name=file_name,
+                                                                 t_shift=0)
+step = 300
+overlap = 600 - step
+waveforms_predicted_all = np.zeros(waveforms_all.shape)
+for t_shift in np.arange(0, 6900, step):
+    time_new, waveforms, waveforms_predicted, _ = ml_denoise(waveform_dir=waveform_dir, file_name=file_name, t_shift=t_shift)
     for i, axi in enumerate(ax):
         axi.plot(time_new, waveforms[i, :], '-k', zorder=1)
         axi.plot(time_new, waveforms_predicted[i, :], '-r', zorder=10)
+    if i == 2:
+        axi.set_xlabel('Time (s)')
+
+plt.savefig("./Figures/real_waveforms/" + file_name[:-5] + '.png')
+
+# TODO: Find out a way to merge the predicted waveforms
+# for t_shift in np.arange(600, 6900, step):
+#     time_new, _, waveforms_predicted, _ = ml_denoise(waveform_dir=waveform_dir, file_name=file_name, t_shift=t_shift)
+#     waveforms_predicted_all[:, (t_shift-600):(t_shift-600+step)] = waveforms_predicted_pre[:, 0:step]
+#     waveforms_predicted_all[:, (t_shift-600+step):t_shift] = (waveforms_predicted_pre[:, step:] + waveforms_predicted[:, 0:overlap])/2
+#
+#     waveforms_predicted_pre = waveforms_predicted.copy()
+#
+#     if t_shift == 6600:
+
+
+
+
