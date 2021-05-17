@@ -40,9 +40,10 @@ def ml_denoise(waveform_dir, file_name, t_shift):
     # denoise the waveforms
     Y_predict = model.predict(waveforms_new)
 
-    waveforms_predicted = np.squeeze(Y_predict).T * traces_std + traces_mean
+    waveforms_new = np.squeeze(waveforms_new).T * traces_std
+    waveforms_predicted = np.squeeze(Y_predict).T * traces_std #+ traces_mean
 
-    return time_new, waveforms, waveforms_predicted, waveforms_all
+    return time_new, waveforms_new, waveforms_predicted, waveforms_all
 
 
 # %% load the trained model
@@ -56,7 +57,7 @@ _, ax = plt.subplots(3, 1, sharex=True, sharey=True, num=1, figsize=(5.5,12))
 
 _, _, waveforms_predicted_pre, waveforms_all = ml_denoise(waveform_dir=waveform_dir, file_name=file_name,
                                                                  t_shift=0)
-step = 300
+step = 600
 overlap = 600 - step
 waveforms_predicted_all = np.zeros(waveforms_all.shape)
 for t_shift in np.arange(0, 6900, step):
