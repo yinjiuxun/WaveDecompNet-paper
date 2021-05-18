@@ -5,7 +5,7 @@ import h5py
 import keras
 
 # %% load model
-model = keras.models.load_model('./Model_and_datasets/Synthetic_seismogram_Z_Conv1DTranspose_ENZ.hdf5')
+model = keras.models.load_model('./Model_and_datasets/Synthetic_seismogram_Z_Conv1DTranspose_ENZ2.hdf5')
 # %% load dataset
 with h5py.File('./Model_and_datasets/Synthetic_seismogram_Autoencoder_model_datasets_ENZ.hdf5', 'r') as f:
     time = f['time'][:]
