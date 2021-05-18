@@ -19,7 +19,7 @@ components = "ENZ"
 # %% Visualize the results, comparing waveforms and their spectra
 i_show = np.random.randint(0, X_test.shape[0], 5)
 plt.close("all")
-fig, ax = plt.subplots(5, 3, figsize=(10, 8), num=1, sharey=True, sharex=True)
+fig, ax = plt.subplots(5, 3, figsize=(12, 10), num=1, sharey=True, sharex=True)
 for i in range(5):
     for j in range(3):
         ax[i, j].plot(time, X_test[i_show[i], :, j], '-k', label='X test')
@@ -36,7 +36,7 @@ plt.show()
 
 # %% Compare the Fourier spectrum
 from utilities import waveform_fft
-fig, ax = plt.subplots(5, 3, figsize=(10, 8), num=2, sharey=True, sharex=True)
+fig, ax = plt.subplots(5, 3, figsize=(12, 10), num=2, sharey=True, sharex=True)
 for i in range(5):
     for j in range(3):
         dt = time[1]-time[0]
@@ -56,12 +56,37 @@ for i in range(5):
             ax[i, j].set_xlabel("Freq (Hz)")
 plt.show()
 
-# %% TODO: Compare the spectrograms
+# %%Compare the spectrogram
+from utilities import waveform_stft
+fig, ax = plt.subplots(5, 3, figsize=(12, 10), num=3, sharey=True, sharex=True)
+for i in range(5):
+    for j in range(3):
+        dt = time[1]-time[0]
+        _, _, sxx1 = waveform_stft(X_test[i_show[i], :, j], dt,twin=30, toverlap=5)
+        _, _, sxx2 = waveform_stft(Y_test[i_show[i], :, j], dt,twin=30, toverlap=5)
+        freq, time_spec, sxx3 = waveform_stft(Y_predict[i_show[i], :, j], dt,twin=30, toverlap=5)
+
+        vmax = np.amax([np.amax(sxx1), np.amax(sxx2), np.amax(sxx3)])
+        level = np.arange(0.2,1,0.2) * vmax
+
+        ax[i, j].contourf(time_spec, freq, sxx1, vmax=vmax, alpha=0.5)
+        ax[i, j].contour(time_spec, freq, sxx2, levels=level, colors='b', alpha=0.8)
+        ax[i, j].contour(time_spec, freq, sxx3, levels=level, colors='r', alpha=0.9)
+
+        if i == 0:
+            ax[i, j].set_title(components[j])
+        if j == 0:
+            ax[i, j].set_ylabel("Freq (Hz)")
+        if i == 4:
+            ax[i, j].set_xlabel("Time (s)")
+plt.show()
 
 plt.figure(1)
 plt.savefig('./Figures/Model_prediction_ENZ_waveforms.png')
 plt.figure(2)
 plt.savefig('./Figures/Model_prediction_ENZ_spectra.png')
+plt.figure(3)
+plt.savefig('./Figures/Model_prediction_ENZ_spectrogram.png')
 
 # %% Visualize the model
 from keras.utils.vis_utils import plot_model
