@@ -93,7 +93,7 @@ def random_pyrocko_synthetics(store_superdirs, store_id, max_amplitude=10):
         lat = np.random.uniform(-14, 14)
         lon = np.random.uniform(-14, 14)
         depth = np.random.uniform(5e3, 3e4)
-        strike = np.random.uniform(-180, -180)
+        strike = np.random.uniform(-180, 180)
         dip = np.random.uniform(0, 90)
         rake = np.random.uniform(-180, 180)
         duration = np.random.uniform(0, 50)
@@ -106,7 +106,8 @@ def random_pyrocko_synthetics(store_superdirs, store_id, max_amplitude=10):
                                                  store_id=store_id)
             break
         except:
-            print('Parameters out of range')
+            pass
+        #     print('Parameters out of range')
 
     time = np.arange(synthetic_traces[0].tmin, synthetic_traces[0].tmax + synthetic_traces[0].deltat,
                      synthetic_traces[0].deltat)
@@ -145,5 +146,3 @@ def random_pyrocko_synthetics(store_superdirs, store_id, max_amplitude=10):
 #     ax[i].set_xlabel('Time (s)')
 #     ax[i].set_ylabel('Vel. in ' + channels[i] + ' (m/s)')
 # plt.show()
-
-

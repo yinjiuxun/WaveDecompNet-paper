@@ -76,7 +76,6 @@ def produce_randomized_noise(noise, num_of_random,
 
 
 def plot_and_compare_randomized_noise(noise):
-    plt.close('all')
     plt.figure()
     plt.plot(time_noise, noise, '-r')
     noise_random = randomization_noise(noise)
@@ -133,12 +132,14 @@ X_train = []
 Y_train = []
 
 # load the data
-hdf5_files = glob.glob('./waveforms/noise/*.hdf5')
-hdf5_files = [hdf5_files[np.random.randint(0, len(hdf5_files))]]
+hdf5_files = np.array(glob.glob('./waveforms/noise/*.hdf5'))
+#hdf5_files = hdf5_files[np.random.randint(0, len(hdf5_files), 10, dtype="int")]
 
 N_random = 50  # randomized noise for each noise data
+# store the randomly produced source information
+lat, lon, depth, strike, dip, rake, duration = [], [], [], [], [], [], []
 
-for hdf5_file in hdf5_files:
+for i_hdf5, hdf5_file in enumerate(hdf5_files):
 
     with h5py.File(hdf5_file, 'r') as f:
         time_noise = f['noise_time'][:]
@@ -146,7 +147,8 @@ for hdf5_file in hdf5_files:
         noise_BH1 = f['noise']['BH1'][:]
         noise_BH2 = f['noise']['BH2'][:]
         noise_BHZ = f['noise']['BHZ'][:]
-        print(hdf5_file)
+
+    print(hdf5_file + f"--- {(i_hdf5 + 1)/len(hdf5_files) * 100:.2f}% --")
 
     # %% downsample the noise piece by specific the frequency
     f_downsample = 1.0  # Hz
@@ -191,8 +193,17 @@ for hdf5_file in hdf5_files:
             # syn_seismic = random_ricker(synthetic_length, dt)  # Ricker wavelet
 
             # produce the randomized synthetic seismograms from pyrocko
-            time_synthetics, synthetic_waveforms, _, channels = random_pyrocko_synthetics(
+            time_synthetics, synthetic_waveforms, src_info, channels = random_pyrocko_synthetics(
                 store_superdirs=['./pyrocko_synthetics'], store_id='ak135_2000km_1Hz')
+
+            # save the source parameters
+            lat.append(src_info["lat"])
+            lon.append(src_info["lon"])
+            depth.append(src_info["depth"])
+            strike.append(src_info["strike"])
+            dip.append(src_info["dip"])
+            rake.append(src_info["rake"])
+            duration.append(src_info["duration"])
 
             # interpolate to the same time axis
             f_interp = scipy.interpolate.interp1d(time_synthetics, synthetic_waveforms, kind='linear',
@@ -201,13 +212,6 @@ for hdf5_file in hdf5_files:
 
             synthetic_waveforms = noise_std * synthetic_waveforms
             syn_signal = noise_array[:, i_seg * npt_synthetic:(i_seg + 1) * npt_synthetic] + synthetic_waveforms
-            # # check the waveforms
-            plt.close('all')
-            plt.subplot(211)
-            plt.plot(synthetic_waveforms.T)
-            plt.subplot(212)
-            plt.plot(syn_signal.T)
-            plt.show()
 
             # append the randomized results
             X_train.append(syn_signal)
@@ -216,23 +220,46 @@ for hdf5_file in hdf5_files:
 X_train = np.array(X_train)
 Y_train = np.array(Y_train)
 
+
+# %% save the randomly produced source parameters
+with h5py.File('source_parameters_pyrocko_ENZ.hdf5', 'w') as f:
+    f.create_dataset('lat', data=lat)
+    f.create_dataset('lon', data=lon)
+    f.create_dataset('depth', data=depth)
+    f.create_dataset('strike', data=strike)
+    f.create_dataset('dip', data=dip)
+    f.create_dataset('rake', data=rake)
+    f.create_dataset('duration', data=duration)
+
+
 # %% save the prepared data
 with h5py.File('training_datasets_pyrocko_ENZ.hdf5', 'w') as f:
     f.create_dataset('time', data=syn_time)
     f.create_dataset('X_train', data=X_train)
     f.create_dataset('Y_train', data=Y_train)
 
-# %%
+# Not in use now
+# %% Visualization
+# visualize the distribution of the source parameters
+plt.figure(30)
+source_parameter_list = [lat, lon, depth, strike, dip, rake, duration]
+source_parameter_name = ["lat", "lon", "depth", "strike", "dip", "rake", "duration"]
+
+for i_src, src_parameter in enumerate(source_parameter_list):
+    plt.subplot(2,4,i_src + 1)
+    plt.hist(src_parameter)
+    plt.title(source_parameter_name[i_src])
+
+# visualize the synthetic signals
 i = np.random.randint(0, X_train.shape[0])
-plt.close('all')
-plt.figure(1)
+plt.figure(10)
 plt.subplot(211)
-plt.plot(syn_time, Y_train[i, :])
+plt.plot(syn_time, np.squeeze(Y_train[i, :]).T)
 plt.subplot(212)
-plt.plot(syn_time, X_train[i, :])
+plt.plot(syn_time, np.squeeze(X_train[i, :]).T)
 plt.show()
 
-# %% Visualize the randomization of noise
+# visualize the randomly produced noise
 hdf5_temp = hdf5_files[np.random.randint(0, len(hdf5_files))]
 with h5py.File(hdf5_temp, 'r') as f:
     time_noise = f['noise_time'][:]
@@ -244,7 +271,7 @@ with h5py.File(hdf5_temp, 'r') as f:
 
 plot_and_compare_randomized_noise(noise_BHZ)
 
-# Not in use now
+
 # #%% Some sort of dispersive signal
 # time = np.arange(0,4800)*dt+10
 # syn_seismic = np.sin(8*np.pi*10**(time/25)/20)/(time+2)**2
