@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.signal as sgn
+from scipy.fft import fft, fftfreq
+
 
 def downsample_series(time, series, f_downsampe):
     """Down sample the time series given a lower sampling frequency f_downsample,
@@ -23,3 +25,15 @@ def downsample_series(time, series, f_downsampe):
     # plt.plot(time_new, series_downsample, '-b')
 
     return time_new, series_downsample, dt_new
+
+
+def waveform_fft(waveform, dt):
+    """ return the Fourier spectrum of the waveform
+    freq, sp = waveform_fft(waveform, dt)
+    """
+    sp = fft(waveform)
+    freq = fftfreq(waveform.size, d=dt)
+
+    sp_positive = abs(sp[freq > 0])
+    freq_positive = freq[freq > 0]
+    return freq_positive, sp_positive
