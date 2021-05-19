@@ -233,7 +233,7 @@ model.compile(loss='mean_squared_error',
 # %% train the model
 from keras.callbacks import EarlyStopping
 
-early_stopping_monitor = EarlyStopping(monitor='val_loss', patience=20)
+early_stopping_monitor = EarlyStopping(monitor='val_loss', patience=40)
 model_train = model.fit(X_train, Y_train,
                         batch_size=BATCH_SIZE,
                         epochs=EPOCHS,

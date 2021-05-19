@@ -5,12 +5,14 @@ import h5py
 import keras
 
 # %% load model
-model = keras.models.load_model('./Model_and_datasets/Synthetic_seismogram_Z_Conv1DTranspose_ENZ2.hdf5')
+model = keras.models.load_model('./Model_and_datasets/Synthetic_seismogram_Z_Conv1DTranspose_ENZ.hdf5')
 # %% load dataset
 with h5py.File('./Model_and_datasets/Synthetic_seismogram_Autoencoder_model_datasets_ENZ.hdf5', 'r') as f:
     time = f['time'][:]
     X_test = f['X_test'][:]
     Y_test = f['Y_test'][:]
+    X_train = f['X_train'][:]
+    Y_train = f['Y_train'][:]
 
 # %% predict the waveforms
 Y_predict = model.predict(X_test)
