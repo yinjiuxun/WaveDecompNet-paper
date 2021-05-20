@@ -95,6 +95,12 @@ from autoencoder_models import autoencoder_Conv1DTranspose_ENZ
 model, model_name = autoencoder_Conv1DTranspose_ENZ(input_shape=X_train.shape[1:])
 
 print(model.summary())
+# %% Output the network architecture into a text file
+from contextlib import redirect_stdout
+with open(f"./Model_and_datasets/{model_name}_Model_summary.txt", "w") as f:
+    with redirect_stdout(f):
+        model.summary()
+
 # %% Compile the model
 model.compile(loss='mean_squared_error', optimizer='adam')
 
