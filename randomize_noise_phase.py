@@ -241,15 +241,30 @@ with h5py.File('training_datasets_pyrocko_ENZ.hdf5', 'w') as f:
 # Not in use now
 # %% Visualization
 # visualize the distribution of the source parameters
-plt.figure(30)
-source_parameter_list = [lat, lon, depth, strike, dip, rake, duration]
-source_parameter_name = ["lat", "lon", "depth", "strike", "dip", "rake", "duration"]
+with h5py.File("source_parameters_pyrocko_ENZ.hdf5", "r") as f:
+    lat = f["lat"][:]
+    lon = f["lon"][:]
+    depth = f["depth"][:]
+    strike = f["strike"][:]
+    dip = f["dip"][:]
+    rake = f["rake"][:]
+    duration = f["duration"][:]
+
+plt.figure(30, figsize=(14, 10))
+source_parameter_list = [depth/1e3, duration, strike, dip, rake]
+source_parameter_name = ["depth (km) ", "duration (s)", "strike", "dip", "rake"]
+plt.subplot(2, 3, 1)
+plt.scatter(lon, lat, s=0.5, c=depth, alpha=0.2)
+plt.xlabel('Lon')
+plt.ylabel('Lat')
+plt.title("Spatial distribution")
 
 for i_src, src_parameter in enumerate(source_parameter_list):
-    plt.subplot(2,4,i_src + 1)
-    plt.hist(src_parameter)
+    plt.subplot(2,3,i_src + 2)
+    plt.hist(src_parameter, bins=100)
     plt.title(source_parameter_name[i_src])
 
+plt.savefig('./Figures/Pyrocko_source_parameters.png')
 # visualize the synthetic signals
 i = np.random.randint(0, X_train.shape[0])
 plt.figure(10)
