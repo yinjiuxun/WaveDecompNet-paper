@@ -6,15 +6,24 @@ import keras
 from sklearn.model_selection import train_test_split
 
 # %% Need to specify model_name first
-model_name = 'autoencoder_Conv1DTranspose_ENZ'
+model_name = 'AE_ENZ_BatchNormalization2'
+#model_name = 'autoencoder_Conv1DTranspose_ENZ'
+#model_name = 'autoencoder_25features_Conv1DTranspose_ENZ'
+# model_name = 'autoencoder_Conv1DTranspose_ENZ_Bing'
 
-# %% load model
-model = keras.models.load_model('./Model_and_datasets/' + f'/{model_name}_Model.hdf5')
 # %% load dataset
 with h5py.File('./Model_and_datasets/processed_synthetic_datasets_ENZ.hdf5', 'r') as f:
     time = f['time'][:]
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
+
+# %% load model
+model = keras.models.load_model('./Model_and_datasets/' + f'{model_name}_Model.hdf5')
+
+# %% Show loss evolution
+with h5py.File('./Model_and_datasets/' + f'{model_name}_Training_history.hdf5', 'r') as f:
+    loss = f['loss'][:]
+    val_loss = f['val_loss'][:]
 
 # split the model based on the information provided by the model
 with h5py.File('./Model_and_datasets/' + f'/{model_name}_Dataset_split.hdf5', 'r') as f:
@@ -24,6 +33,18 @@ with h5py.File('./Model_and_datasets/' + f'/{model_name}_Dataset_split.hdf5', 'r
 
 X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train, train_size=0.6, random_state=rand_seed1)
 X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test, test_size=0.5, random_state=rand_seed2)
+
+# %% model evaluation
+test_eval = model.evaluate(X_test, Y_test, verbose=0)
+
+plt.figure()
+plt.plot(loss, 'o', label='Training loss')
+plt.plot(val_loss, '-', label='Validation loss')
+plt.plot([1, len(loss)], [test_eval, test_eval], '-', label='Test loss', linewidth=4)
+plt.legend()
+plt.title(model_name)
+plt.show()
+plt.savefig(f"./Figures/{model_name}_Loss_evolution.png")
 
 # %% predict the waveforms
 Y_predict = model.predict(X_test)
@@ -106,11 +127,12 @@ plt.savefig(f'./Figures/{model_name}_Prediction_spectrogram.png')
 
 # %% Visualize the model
 from keras.utils.vis_utils import plot_model
-plot_model(model, to_file=f'./Figures/{model_name}_Visual_model.png', show_shapes=True, show_layer_names=True)
 
+plot_model(model, to_file=f'./Figures/{model_name}_Visual_model.png', show_shapes=True, show_layer_names=True)
 
 # %% Output the network architecture into a text file
 from contextlib import redirect_stdout
+
 with open(f"./Model_and_datasets/{model_name}_Model_summary.txt", "w") as f:
     with redirect_stdout(f):
         model.summary()

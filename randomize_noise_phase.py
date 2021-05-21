@@ -194,7 +194,7 @@ for i_hdf5, hdf5_file in enumerate(hdf5_files):
 
             # produce the randomized synthetic seismograms from pyrocko
             time_synthetics, synthetic_waveforms, src_info, channels = random_pyrocko_synthetics(
-                store_superdirs=['./pyrocko_synthetics'], store_id='ak135_2000km_1Hz')
+                store_superdirs=['./pyrocko_synthetics'], store_id='ak135_2000km_1Hz', max_amplitude=20)
 
             # save the source parameters
             lat.append(src_info["lat"])
@@ -222,7 +222,7 @@ Y_train = np.array(Y_train)
 
 
 # %% save the randomly produced source parameters
-with h5py.File('source_parameters_pyrocko_ENZ.hdf5', 'w') as f:
+with h5py.File('source_parameters_pyrocko_ENZ2.hdf5', 'w') as f:
     f.create_dataset('lat', data=lat)
     f.create_dataset('lon', data=lon)
     f.create_dataset('depth', data=depth)
@@ -233,7 +233,7 @@ with h5py.File('source_parameters_pyrocko_ENZ.hdf5', 'w') as f:
 
 
 # %% save the prepared data
-with h5py.File('training_datasets_pyrocko_ENZ.hdf5', 'w') as f:
+with h5py.File('training_datasets_pyrocko_ENZ2.hdf5', 'w') as f:
     f.create_dataset('time', data=syn_time)
     f.create_dataset('X_train', data=X_train)
     f.create_dataset('Y_train', data=Y_train)
@@ -241,7 +241,7 @@ with h5py.File('training_datasets_pyrocko_ENZ.hdf5', 'w') as f:
 # Not in use now
 # %% Visualization
 # visualize the distribution of the source parameters
-with h5py.File("source_parameters_pyrocko_ENZ.hdf5", "r") as f:
+with h5py.File("source_parameters_pyrocko_ENZ2.hdf5", "r") as f:
     lat = f["lat"][:]
     lon = f["lon"][:]
     depth = f["depth"][:]
@@ -264,7 +264,7 @@ for i_src, src_parameter in enumerate(source_parameter_list):
     plt.hist(src_parameter, bins=100)
     plt.title(source_parameter_name[i_src])
 
-plt.savefig('./Figures/Pyrocko_source_parameters.png')
+plt.savefig('./Figures/Pyrocko_source_parameters2.png')
 # visualize the synthetic signals
 i = np.random.randint(0, X_train.shape[0])
 plt.figure(10)

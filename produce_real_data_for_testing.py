@@ -3,6 +3,7 @@ import h5py
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 import keras
+import os, glob
 
 from utilities import downsample_series
 
@@ -41,34 +42,41 @@ def ml_denoise(waveform_dir, file_name, t_shift):
     Y_predict = model.predict(waveforms_new)
 
     waveforms_new = np.squeeze(waveforms_new).T * traces_std
-    waveforms_predicted = np.squeeze(Y_predict).T * traces_std #+ traces_mean
+    waveforms_predicted = np.squeeze(Y_predict).T * traces_std  # + traces_mean
 
     return time_new, waveforms_new, waveforms_predicted, waveforms_all
 
 
-# %% load the trained model
-model = keras.models.load_model('./Model_and_datasets/Synthetic_seismogram_Z_Conv1DTranspose_ENZ.hdf5')
+# %% Need to specify model_name first
+model_name = 'autoencoder_Conv1DTranspose_ENZ'
+
+# %% load model
+model = keras.models.load_model('./Model_and_datasets/' + f'/{model_name}_Model.hdf5')
+
+# %% make a directory to hold the realistic waveform results
+output_dir = f"./Figures/real_waveforms/{model_name}"
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
 
 # load the waveforms
 waveform_dir = "./waveforms/events_data_processed"
-file_name = "IU.XMAS.M6.3.20190519-145650.hdf5"
+waveform_files = np.array(os.listdir(waveform_dir))
+#waveform_files = np.array(glob.glob(waveform_dir + '/*.hdf5'))
+for file_name in waveform_files:
+    # file_name = "IU.XMAS.M6.3.20190519-145650.hdf5"
+    step = 600
+    plt.close('all')
+    _, ax = plt.subplots(3, 1, sharex=True, sharey=True, num=1, figsize=(5.5, 12))
+    for t_shift in np.arange(0, 6900, step):
+        time_new, waveforms, waveforms_predicted, _ = ml_denoise(waveform_dir=waveform_dir, file_name=file_name,
+                                                                 t_shift=t_shift)
+        for i, axi in enumerate(ax):
+            axi.plot(time_new, waveforms[i, :], '-k', zorder=1)
+            axi.plot(time_new, waveforms_predicted[i, :], '-r', zorder=10)
+        if i == 2:
+            axi.set_xlabel('Time (s)')
 
-_, ax = plt.subplots(3, 1, sharex=True, sharey=True, num=1, figsize=(5.5,12))
-
-_, _, waveforms_predicted_pre, waveforms_all = ml_denoise(waveform_dir=waveform_dir, file_name=file_name,
-                                                                 t_shift=0)
-step = 600
-overlap = 600 - step
-waveforms_predicted_all = np.zeros(waveforms_all.shape)
-for t_shift in np.arange(0, 6900, step):
-    time_new, waveforms, waveforms_predicted, _ = ml_denoise(waveform_dir=waveform_dir, file_name=file_name, t_shift=t_shift)
-    for i, axi in enumerate(ax):
-        axi.plot(time_new, waveforms[i, :], '-k', zorder=1)
-        axi.plot(time_new, waveforms_predicted[i, :], '-r', zorder=10)
-    if i == 2:
-        axi.set_xlabel('Time (s)')
-
-plt.savefig("./Figures/real_waveforms/" + file_name[:-5] + '.png')
+    plt.savefig(output_dir + "/" + file_name[:-5] + '.png')
 
 # TODO: Find out a way to merge the predicted waveforms
 # for t_shift in np.arange(600, 6900, step):
@@ -79,7 +87,3 @@ plt.savefig("./Figures/real_waveforms/" + file_name[:-5] + '.png')
 #     waveforms_predicted_pre = waveforms_predicted.copy()
 #
 #     if t_shift == 6600:
-
-
-
-
