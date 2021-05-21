@@ -63,12 +63,12 @@ X_train = np.moveaxis(X_train, 1, -1)
 Y_train = np.moveaxis(Y_train, 1, -1)
 
 # %% Check the dataset
-plt.close('all')
-i = np.random.randint(0, X_train.shape[0])
-_, ax = plt.subplots(3,1, sharex=True, sharey=True)
-for i_component, axi in enumerate(ax):
-    axi.plot(time, X_train[i, :, i_component], '-b')
-    axi.plot(time, Y_train[i, :, i_component], '-r')
+# plt.close('all')
+# i = np.random.randint(0, X_train.shape[0])
+# _, ax = plt.subplots(3,1, sharex=True, sharey=True)
+# for i_component, axi in enumerate(ax):
+#     axi.plot(time, X_train[i, :, i_component], '-b')
+#     axi.plot(time, Y_train[i, :, i_component], '-r')
 
 # %% Save the pre-processed datasets
 model_datasets = model_dataset_dir + '/processed_synthetic_datasets_ENZ.hdf5'
@@ -85,18 +85,27 @@ rand_seed2 = 20
 X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train, train_size=0.6, random_state=rand_seed1)
 X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test, test_size=0.5, random_state=rand_seed2)
 
-
 # %% build the architecture
 # %% Model the Data
-BATCH_SIZE = 128
-EPOCHS = 300
+BATCH_SIZE = 256
+EPOCHS = 600
 
-from autoencoder_models import autoencoder_Conv1DTranspose_ENZ
-model, model_name = autoencoder_Conv1DTranspose_ENZ(input_shape=X_train.shape[1:])
+# from autoencoder_models import autoencoder_Conv1DTranspose_ENZ
+# model, model_name = autoencoder_Conv1DTranspose_ENZ(input_shape=X_train.shape[1:])
+
+# from autoencoder_models import autoencoder_Conv1DTranspose_ENZ2
+# model, model_name = autoencoder_Conv1DTranspose_ENZ2(input_shape=X_train.shape[1:])
+
+# from autoencoder_models import autoencoder_Conv1DTranspose_ENZ3
+# model, model_name = autoencoder_Conv1DTranspose_ENZ3(input_shape=X_train.shape[1:])
+
+from autoencoder_models import autoencoder_Conv1DTranspose_ENZ5
+model, model_name = autoencoder_Conv1DTranspose_ENZ5(input_shape=X_train.shape[1:])
 
 print(model.summary())
 # %% Output the network architecture into a text file
 from contextlib import redirect_stdout
+
 with open(f"./Model_and_datasets/{model_name}_Model_summary.txt", "w") as f:
     with redirect_stdout(f):
         model.summary()
@@ -124,7 +133,6 @@ plt.plot(val_loss, '-', label='Validation loss')
 plt.legend()
 plt.title(model_name)
 plt.show()
-plt.savefig(f"./Figures/{model_name}_Loss_evolution.png")
 
 # %% Save the model
 model.save(model_dataset_dir + f'/{model_name}_Model.hdf5')
@@ -136,5 +144,16 @@ with h5py.File(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', 'w') as 
     f.attrs['rand_seed1'] = rand_seed1
     f.attrs['rand_seed2'] = rand_seed2
 
+# store the model training history
+with h5py.File(model_dataset_dir + f'/{model_name}_Training_history.hdf5', 'w') as f:
+    for key, item in model_train.history.items():
+        f.create_dataset(key, data=item)
 
 
+# %% copy the results to another computer
+import shutil
+target = "C:/Users/Working/OneDrive - Harvard University/Seisdenoise"
+shutil.copy2(model_dataset_dir + f'/{model_name}_Model_summary.txt', target)
+shutil.copy2(model_dataset_dir + f'/{model_name}_Model.hdf5', target)
+shutil.copy2(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', target)
+shutil.copy2(model_dataset_dir + f'/{model_name}_Training_history.hdf5', target)

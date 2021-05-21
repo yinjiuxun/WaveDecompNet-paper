@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 model_name = 'autoencoder_Conv1DTranspose_ENZ'
 
 # %% load model
-model = keras.models.load_model('./Model_and_datasets/' + f'/{model_name}_Model.hdf5')
+model = keras.models.load_model('./Model_and_datasets/' + f'{model_name}_Model.hdf5')
 # %% load dataset
 with h5py.File('./Model_and_datasets/processed_synthetic_datasets_ENZ.hdf5', 'r') as f:
     time = f['time'][:]
