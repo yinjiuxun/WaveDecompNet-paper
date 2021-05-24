@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.signal as sgn
 from scipy.fft import fft, fftfreq
-from scipy.signal import stft
+from scipy.signal import stft, istft
 
 
 def downsample_series(time, series, f_downsampe):
@@ -40,13 +40,23 @@ def waveform_fft(waveform, dt):
     return freq_positive, sp_positive
 
 
-def waveform_stft(waveform, dt, twin=60, toverlap=20, win_type='hann'):
+def waveform_stft(waveform, dt, twin=60, toverlap=20, win_type='hann', complex=False):
     """ return the spectrogram of the waveform
     freq, time, sxx = waveform_stft(waveform, dt, twin=60, toverlap=20, win_type='hann')
     """
     fs = 1 / dt
     # apply the thresholding method in the STFT to separate the noise and signals
-    f, t, sxx = sgn.stft(waveform, fs, nperseg=int(twin / dt),
-                         noverlap=int(toverlap / dt), window=win_type)
-    sxx_abs = abs(sxx)
-    return f, t, sxx_abs
+    f, t, sxx = stft(waveform, fs, nperseg=int(twin / dt),
+                     noverlap=int(toverlap / dt), window=win_type)
+
+    if complex:
+        return f, t, sxx
+    else:
+        sxx_abs = abs(sxx)
+        return f, t, sxx_abs
+
+
+def waveform_inverse_stft(Sxx, dt, twin=60, toverlap=20, win_type='hann'):
+    fs = 1 / dt
+    time, waveform = istft(Sxx, fs=fs, nperseg=int(twin / dt), noverlap=int(toverlap / dt), window=win_type)
+    return time, waveform
