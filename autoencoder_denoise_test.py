@@ -18,6 +18,9 @@ model_dataset_dir = './Model_and_datasets_spectrogram'
 if not os.path.exists(model_dataset_dir):
     os.mkdir(model_dataset_dir)
 
+# specify the final path to copy all the model result (transfer to another computer)
+target = "C:/Users/Working/OneDrive - Harvard University/Seisdenoise"
+
 # %% Read the pre-processed datasets
 model_datasets = model_dataset_dir + '/processed_synthetic_datasets_ENZ.hdf5'
 model_datasets = model_dataset_dir + '/training_datasets_spectrogram_real_imag_standard.hdf5'
@@ -110,7 +113,6 @@ with h5py.File(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', 'w') as 
 
 # %% copy the results to another computer
 import shutil
-target = "C:/Users/Working/OneDrive - Harvard University/Seisdenoise"
 shutil.copy2(model_dataset_dir + f'/{model_name}_Model_summary.txt', target)
 shutil.copy2(model_dataset_dir + f'/{model_name}_Model.hdf5', target)
 shutil.copy2(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', target)
