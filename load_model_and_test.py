@@ -6,10 +6,11 @@ import keras
 from sklearn.model_selection import train_test_split
 
 # %% Need to specify model_name first
-model_name = 'AE_ENZ_BatchNormalization2'
+#model_name = 'AE_ENZ_BatchNormalization2'
 #model_name = 'autoencoder_Conv1DTranspose_ENZ'
 #model_name = 'autoencoder_25features_Conv1DTranspose_ENZ'
 # model_name = 'autoencoder_Conv1DTranspose_ENZ_Bing'
+model_name = 'AE_ENZ_LeakyReLU'
 
 # %% load dataset
 with h5py.File('./Model_and_datasets/processed_synthetic_datasets_ENZ.hdf5', 'r') as f:
