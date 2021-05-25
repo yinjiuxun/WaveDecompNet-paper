@@ -5,10 +5,10 @@ import keras
 from sklearn.model_selection import train_test_split
 
 # %% Need to specify model_name first
-model_name = 'spectrogram'
+model_name = 'spectrogram_real_imag'
 
 # %% load dataset
-with h5py.File('./training_datasets_spectrogram_amp_phase.hdf5', 'r') as f:
+with h5py.File('./training_datasets_spectrogram_real_imag.hdf5', 'r') as f:
     twin = f.attrs['twin']
     toverlap = f.attrs['toverlap']
     win_type = f.attrs['win_type']
@@ -35,14 +35,36 @@ test_eval = model.evaluate(X_test, Y_test, verbose=0)
 Y_predict = model.predict(X_test)
 
 # %% Check the spectrograms
+plt.close("all")
 i_model = np.random.randint(0, X_test.shape[0])
-fig, ax = plt.subplots(6, 3, sharex=True, sharey=True)
+fig, ax = plt.subplots(6, 3, sharex=True, sharey=True, num=1)
 for i in range(6):
-    ax[i, 0].pcolormesh(X_test[i_model, :, :, i], vmax=1, vmin=0)
+    ax[i, 0].pcolormesh(X_test[i_model, :, :, i])
 for i in range(6):
-    ax[i, 1].pcolormesh(Y_test[i_model, :, :, i], vmax=1, vmin=0)
+    ax[i, 1].pcolormesh(Y_test[i_model, :, :, i])
 for i in range(6):
-    ax[i, 2].pcolormesh(Y_predict[i_model, :, :, i], vmax=1, vmin=0)
+    ax[i, 2].pcolormesh(Y_predict[i_model, :, :, i])
 
 
 # %% inverse transform to time domain
+# %%  to test STFT and inverse STFT
+from utilities import waveform_stft, waveform_inverse_stft
+dt = 1
+
+fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, num=2)
+# %% inverse transform to recover the waveform
+i = 0
+for i in range(3):
+    Sxx_X = (X_test[i_model, :, :, i*2] - 0.5) + (X_test[i_model, :, :, i*2+1] - 0.5) * 1j
+    Sxx_Y = (Y_test[i_model, :, :, i*2] - 0.5) + (Y_test[i_model, :, :, i*2+1] - 0.5) * 1j
+    Sxx_Y_predict = (Y_predict[i_model, :, :, i*2] - 0.5) + (Y_predict[i_model, :, :, i*2+1] - 0.5) * 1j
+
+    _, X_waveform = waveform_inverse_stft(Sxx_X, dt=dt, twin=twin, toverlap=toverlap)
+    _, Y_waveform = waveform_inverse_stft(Sxx_Y, dt=dt, twin=twin, toverlap=toverlap)
+    time2, Y_waveform_predict = waveform_inverse_stft(Sxx_Y_predict, dt=dt, twin=twin, toverlap=toverlap)
+
+    ax[i, 0].plot(time2, X_waveform)
+    ax[i, 1].plot(time2, Y_waveform)
+
+    ax[i, 2].plot(time2, Y_waveform)
+    ax[i, 2].plot(time2, Y_waveform_predict)
