@@ -17,8 +17,11 @@ def image_scale_Standard(img, mean, std):
     return img
 
 
-def extract_real_imag_parts(X_waveform, Y_waveform):
-    """ Extract the normalized real and imaginary part of the spectrograms"""
+def extract_real_imag_parts(X_waveform, Y_waveform, normalization):
+    """ Extract the normalized real and imaginary part of the spectrograms
+    X_real, X_imag, Y_real, Y_imag, f, t, offset = extract_real_imag_parts(X_waveform, Y_waveform, normalization)
+    normalization can be "minmax", "standard"
+    """
     _, _, Sxx_X = waveform_stft(X_waveform, dt,
                                 twin=twin, toverlap=toverlap, win_type=win_type, complex=True)
     f, t, Sxx_Y = waveform_stft(Y_waveform, dt,
@@ -35,54 +38,27 @@ def extract_real_imag_parts(X_waveform, Y_waveform):
     Y_real = np.real(Sxx_Y)
     Y_imag = np.imag(Sxx_Y)
 
-    # # MinMax normalization
-    # img_min = np.amin(np.abs(Sxx_X))
-    # img_max = np.amax(np.abs(Sxx_X))
-    # X_real = image_scale_MinMax(X_real, img_min, img_max, feature_range=(0.5, 1))
-    # X_imag = image_scale_MinMax(X_imag, img_min, img_max, feature_range=(0.5, 1))
-    # Y_real = image_scale_MinMax(Y_real, img_min, img_max, feature_range=(0.5, 1))
-    # Y_imag = image_scale_MinMax(Y_imag, img_min, img_max, feature_range=(0.5, 1))
+    # # MinMax normalization TODO: still looking for better way to avoid specifying offset
+    if normalization == 'minmax':
+        img_min = np.amin(np.abs(Sxx_X))
+        img_max = np.amax(np.abs(Sxx_X))
+        X_real = image_scale_MinMax(X_real, img_min, img_max, feature_range=(0.5, 1))
+        X_imag = image_scale_MinMax(X_imag, img_min, img_max, feature_range=(0.5, 1))
+        Y_real = image_scale_MinMax(Y_real, img_min, img_max, feature_range=(0.5, 1))
+        Y_imag = image_scale_MinMax(Y_imag, img_min, img_max, feature_range=(0.5, 1))
+        offset = 0.5
 
-    # Standard normalization
-    mean_real, std_real = np.mean(X_real.flatten()), np.std(X_real.flatten())
-    mean_imag, std_imag = np.mean(X_imag.flatten()), np.std(X_imag.flatten())
-    X_real = image_scale_Standard(X_real, mean_real, std_real)
-    X_imag = image_scale_Standard(X_real, mean_imag, std_imag)
-    Y_real = image_scale_Standard(Y_real, mean_real, std_real)
-    Y_imag = image_scale_Standard(Y_imag, mean_imag, std_imag)
+    # Standard normalization (zero-mean, unit-variance)
+    if normalization == 'standard':
+        mean_real, std_real = np.mean(X_real.flatten()), np.std(X_real.flatten())
+        mean_imag, std_imag = np.mean(X_imag.flatten()), np.std(X_imag.flatten())
+        X_real = image_scale_Standard(X_real, mean_real, std_real)
+        X_imag = image_scale_Standard(X_real, mean_imag, std_imag)
+        Y_real = image_scale_Standard(Y_real, mean_real, std_real)
+        Y_imag = image_scale_Standard(Y_imag, mean_imag, std_imag)
+        offset = 0.0
 
-    return X_real, X_imag, Y_real, Y_imag, f, t
-
-
-def extract_amplitude_phase_parts(X_waveform, Y_waveform):
-    """ Extract the normalized amplitude and phase part of the spectrograms"""
-    _, _, Sxx_X = waveform_stft(X_waveform, dt,
-                                twin=twin, toverlap=toverlap, win_type=win_type, complex=True)
-    f, t, Sxx_Y = waveform_stft(Y_waveform, dt,
-                                twin=twin, toverlap=toverlap, win_type=win_type, complex=True)
-
-    # set a better shape
-    t = t[:-1]
-    Sxx_X = Sxx_X[:, :-1]
-    Sxx_Y = Sxx_Y[:, :-1]
-
-    img_min_abs = 0
-    img_max_abs = np.amax(np.abs(Sxx_X))
-    img_min_phs = -np.pi
-    img_max_phs = np.pi
-
-    # extract and scale each part
-    X_abs = np.abs(Sxx_X)
-    X_phs = np.angle(Sxx_X)
-    Y_abs = np.abs(Sxx_Y)
-    Y_phs = np.angle(Sxx_Y)
-
-    X_abs = image_scale_MinMax(X_abs, img_min_abs, img_max_abs, feature_range=(0, 0.95))
-    X_phs = image_scale_MinMax(X_phs, img_min_phs, img_max_phs, feature_range=(0, 1))
-    Y_abs = image_scale_MinMax(Y_abs, img_min_abs, img_max_abs, feature_range=(0, 0.95))
-    Y_phs = image_scale_MinMax(Y_phs, img_min_phs, img_max_phs, feature_range=(0, 1))
-
-    return X_abs, X_phs, Y_abs, Y_phs, f, t
+    return X_real, X_imag, Y_real, Y_imag, f, t, offset
 
 
 # %% Import the data
@@ -109,12 +85,9 @@ for i_tr in range(X_train_original.shape[0]):  # loop over traces
     spectrogram_X_curr, spectrogram_Y_curr = [], []
     for i_com in range(3):  # loop over components
         # # this is to extract the real and imaginary part of the spectrogram
-        X1, X2, Y1, Y2, freq, time_win = extract_real_imag_parts(X_train_original[i_tr, i_com, :],
-                                                                 Y_train_original[i_tr, i_com, :])
-
-        # # this is to extract the amplitude and phase part of the spectrogram
-        # X1, X2, Y1, Y2, freq, time_win = extract_amplitude_phase_parts(X_train_original[i_tr, i_com, :],
-        #                                                      Y_train_original[i_tr, i_com, :])
+        X1, X2, Y1, Y2, freq, time_win, offset = extract_real_imag_parts(X_train_original[i_tr, i_com, :],
+                                                                         Y_train_original[i_tr, i_com, :],
+                                                                         normalization='minmax')
 
         # append spectrogram of each component for X and Y datasets
         spectrogram_X_curr.append(X1)
@@ -135,12 +108,13 @@ spectrogram_X = np.moveaxis(spectrogram_X, 1, -1)
 spectrogram_Y = np.moveaxis(spectrogram_Y, 1, -1)
 
 # %% save the prepared data
-dataset_file_name = 'training_datasets_spectrogram_real_imag_standard.hdf5'
+dataset_file_name = 'training_datasets_spectrogram_real_imag_minmax.hdf5'
 with h5py.File(dataset_file_name, 'w') as f:
     f.attrs['twin'] = twin
     f.attrs['toverlap'] = toverlap
     f.attrs['win_type'] = win_type
     f.attrs['dt'] = dt
+    f.attrs['offset'] = offset
     f.create_dataset('frequency', data=freq)
     f.create_dataset('time_win', data=time_win)
     f.create_dataset('X_train', data=spectrogram_X)
@@ -211,3 +185,37 @@ with h5py.File(dataset_file_name, 'w') as f:
 # plt.subplot(224)
 # plt.plot(time, Y_waveform)
 # plt.plot(time2, Y_waveform_rec)
+
+
+
+
+# ============== Not IN USE =============
+# def extract_amplitude_phase_parts(X_waveform, Y_waveform):
+#     """ Extract the normalized amplitude and phase part of the spectrograms"""
+#     _, _, Sxx_X = waveform_stft(X_waveform, dt,
+#                                 twin=twin, toverlap=toverlap, win_type=win_type, complex=True)
+#     f, t, Sxx_Y = waveform_stft(Y_waveform, dt,
+#                                 twin=twin, toverlap=toverlap, win_type=win_type, complex=True)
+#
+#     # set a better shape
+#     t = t[:-1]
+#     Sxx_X = Sxx_X[:, :-1]
+#     Sxx_Y = Sxx_Y[:, :-1]
+#
+#     img_min_abs = 0
+#     img_max_abs = np.amax(np.abs(Sxx_X))
+#     img_min_phs = -np.pi
+#     img_max_phs = np.pi
+#
+#     # extract and scale each part
+#     X_abs = np.abs(Sxx_X)
+#     X_phs = np.angle(Sxx_X)
+#     Y_abs = np.abs(Sxx_Y)
+#     Y_phs = np.angle(Sxx_Y)
+#
+#     X_abs = image_scale_MinMax(X_abs, img_min_abs, img_max_abs, feature_range=(0, 0.95))
+#     X_phs = image_scale_MinMax(X_phs, img_min_phs, img_max_phs, feature_range=(0, 1))
+#     Y_abs = image_scale_MinMax(Y_abs, img_min_abs, img_max_abs, feature_range=(0, 0.95))
+#     Y_phs = image_scale_MinMax(Y_phs, img_min_phs, img_max_phs, feature_range=(0, 1))
+#
+#     return X_abs, X_phs, Y_abs, Y_phs, f, t
