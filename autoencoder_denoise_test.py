@@ -24,10 +24,9 @@ target = "C:/Users/Working/OneDrive - Harvard University/Seisdenoise"
 # %% Read the pre-processed datasets
 model_datasets = model_dataset_dir + '/processed_synthetic_datasets_ENZ.hdf5'
 model_datasets = model_dataset_dir + '/training_datasets_spectrogram_real_imag_standard.hdf5'
-if not os.path.exists(model_datasets):
-    with h5py.File(model_datasets, 'r') as f:
-        X_train = f['X_train'][:]
-        Y_train = f['Y_train'][:]
+with h5py.File(model_datasets, 'r') as f:
+    X_train = f['X_train'][:]
+    Y_train = f['Y_train'][:]
 
 # 3. split to training (60%), validation (20%) and test (20%)
 train_size = 0.6
@@ -66,7 +65,7 @@ model, model_name = autoencoder_Conv2D_Spectrogram2(input_shape=X_train.shape[1:
 # %% Output the network architecture into a text file
 model.summary()
 from contextlib import redirect_stdout
-with open(f"./Model_and_datasets/{model_name}_Model_summary.txt", "w") as f:
+with open(model_dataset_dir + f"/{model_name}_Model_summary.txt", "w") as f:
     with redirect_stdout(f):
         model.summary()
 

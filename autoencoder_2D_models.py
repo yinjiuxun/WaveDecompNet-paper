@@ -55,5 +55,6 @@ def autoencoder_Conv2D_Spectrogram2(input_shape):
     #model.add(BatchNormalization())
     model.add(Conv2DTranspose(6, 1, padding='same'))
     model.add(LeakyReLU(alpha=0.5))
+    model.add(BatchNormalization()) #NEW
 
     return model, model_name
