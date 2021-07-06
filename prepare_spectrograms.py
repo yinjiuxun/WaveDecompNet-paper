@@ -65,8 +65,7 @@ def extract_real_imag_parts(X_waveform, Y_waveform, normalization):
         std_noisy_signal = np.std(Sxx_X)
         X_real = X_real/std_noisy_signal
         X_imag = X_imag/std_noisy_signal
-        Sxx_noise = Sxx_noise
-        Y_1 = 1/(1 + abs(Sxx_noise)/abs(Sxx_X) + 1e-6)
+        Y_1 = 1/(1 + abs(Sxx_noise)/(abs(Sxx_Y) + 1e-6))
         Y_2 = 1 - Y_1
 
     return X_real, X_imag, Y_1, Y_2, f, t, offset

@@ -82,7 +82,8 @@ i = 0
 for i in range(3):
     Sxx_X = (X_test[i_model, :, :, i*2] - offset) + (X_test[i_model, :, :, i*2+1] - offset) * 1j
     Sxx_Y = (Y_test[i_model, :, :, i*2] - offset) + (Y_test[i_model, :, :, i*2+1] - offset) * 1j
-    Sxx_Y_predict = (Y_predict[i_model, :, :, i*2] - offset) + (Y_predict[i_model, :, :, i*2+1] - offset) * 1j
+    Sxx_Y = X_test[i_model, :, :, i*2] * Y_test[i_model, :, :, i * 2] + X_test[i_model, :, :, i*2+1] * Y_test[i_model, :, :, i * 2] * 1j
+    Sxx_Y_predict = X_test[i_model, :, :, i*2] * Y_predict[i_model, :, :, i*2] + X_test[i_model, :, :, i*2+1] * Y_predict[i_model, :, :, i*2] * 1j
 
     _, X_waveform = waveform_inverse_stft(Sxx_X, dt=dt, twin=twin, toverlap=toverlap)
     _, Y_waveform = waveform_inverse_stft(Sxx_Y, dt=dt, twin=twin, toverlap=toverlap)
