@@ -31,12 +31,14 @@ def extract_real_imag_parts(X_waveform, Y_waveform, normalization):
     t = t[:-1]
     Sxx_X = Sxx_X[:, :-1]
     Sxx_Y = Sxx_Y[:, :-1]
+    Sxx_noise = Sxx_X - Sxx_Y
 
     # extract and scale each part
     X_real = np.real(Sxx_X)
     X_imag = np.imag(Sxx_X)
-    Y_real = np.real(Sxx_Y)
-    Y_imag = np.imag(Sxx_Y)
+    Y_1 = np.real(Sxx_Y)
+    Y_2 = np.imag(Sxx_Y)
+    offset = 0.0
 
     # # MinMax normalization TODO: still looking for better way to avoid specifying offset
     if normalization == 'minmax':
@@ -44,8 +46,8 @@ def extract_real_imag_parts(X_waveform, Y_waveform, normalization):
         img_max = np.amax(np.abs(Sxx_X))
         X_real = image_scale_MinMax(X_real, img_min, img_max, feature_range=(0.5, 1))
         X_imag = image_scale_MinMax(X_imag, img_min, img_max, feature_range=(0.5, 1))
-        Y_real = image_scale_MinMax(Y_real, img_min, img_max, feature_range=(0.5, 1))
-        Y_imag = image_scale_MinMax(Y_imag, img_min, img_max, feature_range=(0.5, 1))
+        Y_1 = image_scale_MinMax(Y_1, img_min, img_max, feature_range=(0.5, 1))
+        Y_2 = image_scale_MinMax(Y_2, img_min, img_max, feature_range=(0.5, 1))
         offset = 0.5
 
     # Standard normalization (zero-mean, unit-variance)
@@ -54,11 +56,20 @@ def extract_real_imag_parts(X_waveform, Y_waveform, normalization):
         mean_imag, std_imag = np.mean(X_imag.flatten()), np.std(X_imag.flatten())
         X_real = image_scale_Standard(X_real, mean_real, std_real)
         X_imag = image_scale_Standard(X_real, mean_imag, std_imag)
-        Y_real = image_scale_Standard(Y_real, mean_real, std_real)
-        Y_imag = image_scale_Standard(Y_imag, mean_imag, std_imag)
+        Y_1 = image_scale_Standard(Y_1, mean_real, std_real)
+        Y_2 = image_scale_Standard(Y_2, mean_imag, std_imag)
         offset = 0.0
 
-    return X_real, X_imag, Y_real, Y_imag, f, t, offset
+    # Return the signal and noise mask (Zhu et al., 2019)
+    if normalization == 'mask':
+        std_noisy_signal = np.std(Sxx_X)
+        X_real = X_real/std_noisy_signal
+        X_imag = X_imag/std_noisy_signal
+        Sxx_noise = Sxx_noise
+        Y_1 = 1/(1 + abs(Sxx_noise)/abs(Sxx_X) + 1e-6)
+        Y_2 = 1 - Y_1
+
+    return X_real, X_imag, Y_1, Y_2, f, t, offset
 
 
 # %% Import the data
@@ -87,7 +98,7 @@ for i_tr in range(X_train_original.shape[0]):  # loop over traces
         # # this is to extract the real and imaginary part of the spectrogram
         X1, X2, Y1, Y2, freq, time_win, offset = extract_real_imag_parts(X_train_original[i_tr, i_com, :],
                                                                          Y_train_original[i_tr, i_com, :],
-                                                                         normalization='minmax')
+                                                                         normalization='mask')
 
         # append spectrogram of each component for X and Y datasets
         spectrogram_X_curr.append(X1)
@@ -108,7 +119,7 @@ spectrogram_X = np.moveaxis(spectrogram_X, 1, -1)
 spectrogram_Y = np.moveaxis(spectrogram_Y, 1, -1)
 
 # %% save the prepared data
-dataset_file_name = 'training_datasets_spectrogram_real_imag_minmax.hdf5'
+dataset_file_name = 'training_datasets_spectrogram_mask.hdf5'
 with h5py.File(dataset_file_name, 'w') as f:
     f.attrs['twin'] = twin
     f.attrs['toverlap'] = toverlap
