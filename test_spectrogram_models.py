@@ -5,10 +5,10 @@ import keras
 from sklearn.model_selection import train_test_split
 
 # %% Need to specify model_name first
-model_name = 'spectrogram_real_imag_MinMax'
+model_name = 'spectrogram_mask_softmax'
 
 # %% load dataset
-with h5py.File('./training_datasets_spectrogram_real_imag_minmax.hdf5', 'r') as f:
+with h5py.File('./training_datasets_spectrogram_mask.hdf5', 'r') as f:
     twin = f.attrs['twin']
     toverlap = f.attrs['toverlap']
     win_type = f.attrs['win_type']
@@ -72,7 +72,7 @@ for i in range(6):
 titles = ['X', 'Y', 'Y predict']
 for i in range(3):
     ax[0, i].set_title(titles[i])
-
+# TODO: Add the processing for masking
 # %% inverse transform to time domain
 # %%  to test STFT and inverse STFT
 from utilities import waveform_stft, waveform_inverse_stft
