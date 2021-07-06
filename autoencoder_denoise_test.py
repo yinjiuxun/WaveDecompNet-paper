@@ -22,8 +22,7 @@ if not os.path.exists(model_dataset_dir):
 target = "C:/Users/Working/OneDrive - Harvard University/Seisdenoise"
 
 # %% Read the pre-processed datasets
-model_datasets = model_dataset_dir + '/processed_synthetic_datasets_ENZ.hdf5'
-model_datasets = model_dataset_dir + '/training_datasets_spectrogram_real_imag_standard.hdf5'
+model_datasets = model_dataset_dir + '/training_datasets_spectrogram_mask.hdf5'
 with h5py.File(model_datasets, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
