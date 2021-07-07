@@ -65,21 +65,21 @@ def autoencoder_Conv2D_Spectrogram3(input_shape):
     model_name = "spectrogram_mask_softmax"
     model = Sequential()
     model.add(Conv2D(16, 5, padding='same', activation='relu', input_shape=input_shape))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     model.add(MaxPooling2D((2, 2)))
     model.add(Conv2D(32, 3, padding='same', activation='relu'))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     model.add(MaxPooling2D((2, 2)))  # 150
     model.add(Conv2D(64, 3, padding='same', activation='relu'))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     model.add(Conv2D(64, 3, padding='same', activation='relu'))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     model.add(UpSampling2D((2, 2)))  # 150
     model.add(Conv2DTranspose(32, 3, padding='same', activation='relu'))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     model.add(UpSampling2D((2, 2)))  # 150
     model.add(Conv2DTranspose(16, 5, padding='same', activation='relu'))
-    model.add(BatchNormalization())
+    #model.add(BatchNormalization())
     model.add(Conv2DTranspose(6, 1, padding='same', activation='softmax'))
 
 

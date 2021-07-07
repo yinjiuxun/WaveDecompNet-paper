@@ -58,8 +58,8 @@ EPOCHS = 600
 
 
 # ========================= Spectrogram Conv2D models ==================================================================
-from autoencoder_2D_models import autoencoder_Conv2D_Spectrogram2
-model, model_name = autoencoder_Conv2D_Spectrogram2(input_shape=X_train.shape[1:])
+from autoencoder_2D_models import autoencoder_Conv2D_Spectrogram3
+model, model_name = autoencoder_Conv2D_Spectrogram3(input_shape=X_train.shape[1:])
 
 # %% Output the network architecture into a text file
 model.summary()
@@ -71,7 +71,8 @@ with open(model_dataset_dir + f"/{model_name}_Model_summary.txt", "w") as f:
 
 # %% Train the model
 # %% Compile the model
-model.compile(loss='mean_squared_error', optimizer='adam')
+#model.compile(loss='mean_squared_error', optimizer='adam')
+model.compile(loss='binary_crossentropy', optimizer='adam')
 # Specify an EarlyStopping
 from keras.callbacks import EarlyStopping
 early_stopping_monitor = EarlyStopping(monitor='val_loss', patience=40)
