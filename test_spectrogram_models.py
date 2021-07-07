@@ -72,7 +72,7 @@ for i in range(6):
 titles = ['X', 'Y', 'Y predict']
 for i in range(3):
     ax[0, i].set_title(titles[i])
-# TODO: Add the processing for masking
+# TODO: Add the processing for masking, check the scaling (currently the scaling is not right)
 # %% inverse transform to time domain
 # %%  to test STFT and inverse STFT
 from utilities import waveform_stft, waveform_inverse_stft
@@ -84,16 +84,22 @@ for i in range(3):
     Sxx_Y = (Y_test[i_model, :, :, i*2] - offset) + (Y_test[i_model, :, :, i*2+1] - offset) * 1j
     Sxx_Y = X_test[i_model, :, :, i*2] * Y_test[i_model, :, :, i * 2] + X_test[i_model, :, :, i*2+1] * Y_test[i_model, :, :, i * 2] * 1j
     Sxx_Y_predict = X_test[i_model, :, :, i*2] * Y_predict[i_model, :, :, i*2] + X_test[i_model, :, :, i*2+1] * Y_predict[i_model, :, :, i*2] * 1j
+    Sxx_noise_predict = X_test[i_model, :, :, i * 2] * Y_predict[i_model, :, :, i * 2 + 1] \
+                        + X_test[i_model, :, :,i * 2 + 1] * Y_predict[i_model, :,:, i * 2 + 1] * 1j
 
     _, X_waveform = waveform_inverse_stft(Sxx_X, dt=dt, twin=twin, toverlap=toverlap)
     _, Y_waveform = waveform_inverse_stft(Sxx_Y, dt=dt, twin=twin, toverlap=toverlap)
+    _, noise_waveform = waveform_inverse_stft(Sxx_noise_predict, dt=dt, twin=twin, toverlap=toverlap)
     time2, Y_waveform_predict = waveform_inverse_stft(Sxx_Y_predict, dt=dt, twin=twin, toverlap=toverlap)
 
+    scaling = np.amax(abs(X_waveform))/np.amax(abs(Y_waveform_predict))
+
     ax[i, 0].plot(time2, X_waveform)
+    ax[i, 0].plot(time2, noise_waveform*scaling)
     ax[i, 1].plot(time2, Y_waveform)
 
     ax[i, 2].plot(time2, Y_waveform)
-    ax[i, 2].plot(time2, Y_waveform_predict)
+    ax[i, 2].plot(time2, Y_waveform_predict*scaling)
 
 titles = ['E', 'N', 'Z']
 for i in range(3):
