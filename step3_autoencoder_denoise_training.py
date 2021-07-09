@@ -22,7 +22,7 @@ if not os.path.exists(model_dataset_dir):
 target = "C:/Users/Working/OneDrive - Harvard University/Seisdenoise"
 
 # %% Read the pre-processed datasets
-model_datasets = model_dataset_dir + '/training_datasets_spectrogram_mask.hdf5'
+model_datasets = './synthetic_noisy_waveforms/training_datasets_spectrogram_mask.hdf5'
 with h5py.File(model_datasets, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
@@ -60,6 +60,11 @@ EPOCHS = 600
 # ========================= Spectrogram Conv2D models ==================================================================
 from autoencoder_2D_models import autoencoder_Conv2D_Spectrogram4
 model, model_name = autoencoder_Conv2D_Spectrogram4(input_shape=X_train.shape[1:])
+
+# make the model output directory
+model_dataset_dir = model_dataset_dir + f'/{model_name}'
+if not os.path.exists(model_dataset_dir):
+    os.mkdir(model_dataset_dir)
 
 # %% Output the network architecture into a text file
 model.summary()
