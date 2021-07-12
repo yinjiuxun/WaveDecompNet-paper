@@ -239,7 +239,7 @@ with h5py.File(output_dir + '/source_parameters_pyrocko_ENZ.hdf5', 'w') as f:
 
 
 # %% save the prepared data
-with h5py.File(output_dir + '/training_waveforms_pyrocko_ENZ.hdf5', 'w') as f:
+with h5py.File(output_dir + '/synthetic_waveforms_pyrocko_ENZ.hdf5', 'w') as f:
     f.create_dataset('time', data=syn_time)
     f.create_dataset('X_train', data=X_train)
     f.create_dataset('Y_train', data=Y_train)
@@ -247,7 +247,7 @@ with h5py.File(output_dir + '/training_waveforms_pyrocko_ENZ.hdf5', 'w') as f:
 # Not in use now
 # %% Visualization
 # visualize the distribution of the source parameters
-with h5py.File(output_dir + '/training_waveforms_pyrocko_ENZ.hdf5', "r") as f:
+with h5py.File(output_dir + '/source_parameters_pyrocko_ENZ.hdf5', "r") as f:
     lat = f["lat"][:]
     lon = f["lon"][:]
     depth = f["depth"][:]
@@ -271,13 +271,20 @@ for i_src, src_parameter in enumerate(source_parameter_list):
     plt.title(source_parameter_name[i_src])
 
 plt.savefig('./Figures/Pyrocko_source_parameters2.png')
+
+
 # visualize the synthetic signals
+with h5py.File(output_dir + '/synthetic_waveforms_pyrocko_ENZ.hdf5', 'r') as f:
+    time = f["time"][:]
+    X_train = f["X_train"][:]
+    Y_train = f["Y_train"][:]
+
 i = np.random.randint(0, X_train.shape[0])
 plt.figure(10)
 plt.subplot(211)
-plt.plot(syn_time, np.squeeze(Y_train[i, :]).T)
+plt.plot(time, np.squeeze(Y_train[i, :]).T)
 plt.subplot(212)
-plt.plot(syn_time, np.squeeze(X_train[i, :]).T)
+plt.plot(time, np.squeeze(X_train[i, :]).T)
 plt.show()
 
 # visualize the randomly produced noise

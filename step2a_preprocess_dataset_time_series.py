@@ -5,15 +5,15 @@ import numpy as np
 import h5py
 
 # %% Import the data
-with h5py.File('./training_datasets_pyrocko_ENZ.hdf5', 'r') as f:
+with h5py.File('./synthetic_noisy_waveforms/synthetic_waveforms_pyrocko_ENZ.hdf5', 'r') as f:
     time = f['time'][:]
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
 
 # make the output directory
-model_dataset_dir = './Model_and_datasets_spectrogram'
-if not os.path.exists(model_dataset_dir):
-    os.mkdir(model_dataset_dir)
+training_dataset_dir = './training_datasets'
+if not os.path.exists(training_dataset_dir):
+    os.mkdir(training_dataset_dir)
 
 # Applying a more careful scaling for the data:
 # For X_train:
@@ -46,7 +46,7 @@ Y_train = np.moveaxis(Y_train, 1, -1)
 #     axi.plot(time, Y_train[i, :, i_component], '-r')
 
 # %% Save the pre-processed datasets
-model_datasets = model_dataset_dir + '/processed_synthetic_datasets_ENZ.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_waveform.hdf5'
 if not os.path.exists(model_datasets):
     with h5py.File(model_datasets, 'w') as f:
         f.create_dataset('time', data=time)

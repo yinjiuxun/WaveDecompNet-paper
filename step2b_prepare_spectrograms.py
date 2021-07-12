@@ -66,16 +66,20 @@ def extract_real_imag_parts(X_waveform, Y_waveform, normalization):
         mean_imag, std_imag = np.mean(X_imag.flatten()), np.std(X_imag.flatten())
         X_real = image_scale_Standard(X_real, mean_real, std_real)
         X_imag = image_scale_Standard(X_real, mean_imag, std_imag)
-        Y_1 = 1/(1 + abs(Sxx_noise)/(abs(Sxx_Y) + 1e-6))
-        Y_2 = 1 - Y_1
+        Y_1 = 1/(1 + abs(Sxx_noise)/(abs(Sxx_Y) + 1e-6)) # signal mask
+        Y_2 = 1 - Y_1 # noise mask
 
 
     return X_real, X_imag, Y_1, Y_2, f, t, offset
 
 
+# %%
+training_data_dir = "./training_datasets/"
+if not os.path.exists(training_data_dir):
+    os.mkdir(training_data_dir)
+
 # %% Import the data
-data_dir = "./synthetic_noisy_waveforms/"
-with h5py.File(data_dir + '/training_waveforms_pyrocko_ENZ.hdf5', 'r') as f:
+with h5py.File('./synthetic_noisy_waveforms/synthetic_waveforms_pyrocko_ENZ.hdf5', 'r') as f:
     time = f['time'][:]
     X_train_original = f['X_train'][:]
     Y_train_original = f['Y_train'][:]
@@ -126,8 +130,8 @@ spectrogram_X = np.moveaxis(spectrogram_X, 1, -1)
 spectrogram_Y = np.moveaxis(spectrogram_Y, 1, -1)
 
 # %% save the prepared data
-dataset_file_name = data_dir + '/training_datasets_spectrogram_mask.hdf5'
-with h5py.File(dataset_file_name, 'w') as f:
+training_dataset_name = training_data_dir + '/training_datasets_spectrogram_' + normalization + '.hdf5'
+with h5py.File(training_dataset_name, 'w') as f:
     f.attrs['twin'] = twin
     f.attrs['toverlap'] = toverlap
     f.attrs['win_type'] = win_type

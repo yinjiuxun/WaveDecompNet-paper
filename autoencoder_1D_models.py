@@ -36,6 +36,7 @@ def autoencoder_test1(input_shape):
     model.add(Conv1D(1, 7, padding='same'))
     model.add(LeakyReLU(alpha=0.5))
 
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model
 
 
@@ -64,6 +65,7 @@ def autoencoder_Conv1DTranspose(input_shape):
     model.add(Conv1DTranspose(1, 7, padding='same'))
     model.add(LeakyReLU(alpha=0.5))
 
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model
 
 
@@ -92,6 +94,7 @@ def autoencoder_Conv1DTranspose2(input_shape):
     model.add(Conv1DTranspose(1, 7, padding='same'))
     model.add(LeakyReLU(alpha=0.5))
 
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model
 
 
@@ -121,6 +124,7 @@ def autoencoder_Conv1DTranspose_ENZ(input_shape):
     model.add(Conv1DTranspose(3, 7, padding='same'))
     model.add(LeakyReLU(alpha=0.5))
 
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model, model_name
 
 
@@ -150,6 +154,7 @@ def autoencoder_Conv1DTranspose_ENZ2(input_shape):
     model.add(Conv1DTranspose(3, 7, padding='same'))
     model.add(LeakyReLU(alpha=0.5))
 
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model, model_name
 
 
@@ -179,6 +184,7 @@ def autoencoder_Conv1DTranspose_ENZ3(input_shape):
     model.add(Conv1DTranspose(3, 7, padding='same'))
     model.add(LeakyReLU(alpha=0.5))
 
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model, model_name
 
 
@@ -217,6 +223,7 @@ def autoencoder_Conv1DTranspose_ENZ4(input_shape):
     model.add(BatchNormalization())
     model.add(LeakyReLU(alpha=0.5))
 
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model, model_name
 
 
@@ -255,6 +262,7 @@ def autoencoder_Conv1DTranspose_ENZ5(input_shape):
     model.add(BatchNormalization())
     model.add(LeakyReLU(alpha=0.5))
 
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model, model_name
 
 
@@ -300,6 +308,7 @@ def autoencoder_Conv1DTranspose_ENZ6(input_shape):
     model.add(Conv1DTranspose(3, 7, padding='same'))
     model.add(LeakyReLU(alpha=0.5))
 
+    model.compile(loss='mean_squared_error', optimizer='adam')
     return model, model_name
 
 

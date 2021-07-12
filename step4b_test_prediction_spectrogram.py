@@ -8,7 +8,7 @@ import os
 # %% Need to specify model_name first
 model_name = 'spectrogram_mask_l1_softmax'
 model_dir = './Model_and_datasets_spectrogram' + f'/{model_name}'
-data_dir = './synthetic_noisy_waveforms'
+data_dir = './training_datasets'
 
 # %% load dataset
 with h5py.File(data_dir + '/training_datasets_spectrogram_mask.hdf5', 'r') as f:
@@ -38,6 +38,11 @@ X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test, test_s
 # %% model evaluation
 test_eval = model.evaluate(X_test, Y_test, verbose=0)
 
+# Output some figures
+figure_dir = model_dir + '/Figures'
+if not os.path.exists(figure_dir):
+    os.mkdir(figure_dir)
+
 # %% Show loss evolution
 with h5py.File(model_dir + '/' + f'{model_name}_Training_history.hdf5', 'r') as f:
     loss = f['loss'][:]
@@ -49,7 +54,7 @@ plt.plot([1, len(loss)], [test_eval, test_eval], '-', label='Test loss', linewid
 plt.legend()
 plt.title(model_name)
 plt.show()
-plt.savefig(f"./Figures/{model_name}_Loss_evolution.png")
+plt.savefig(figure_dir + f"/{model_name}_Loss_evolution.png")
 
 
 # %% predict the waveforms
@@ -111,13 +116,9 @@ titles = ['X', 'Y', 'Y predict']
 for i in range(3):
     ax[0, i].set_title(titles[i])
 
-# Output some figures
-figure_dir = model_dir + '/Figures'
-if not os.path.exists(figure_dir):
-    os.mkdir(figure_dir)
 
 plt.figure(1)
-plt.savefig(figure_dir + f'/{model_name}_Prediction_spectrogram.png')
+plt.savefig(figure_dir + f'/{model_name}_Prediction_spectrogram_model_{i_model}.png')
 plt.figure(2)
-plt.savefig(figure_dir + f'/{model_name}_Prediction_waveforms.png')
+plt.savefig(figure_dir + f'/{model_name}_Prediction_waveforms_model_{i_model}.png')
 
