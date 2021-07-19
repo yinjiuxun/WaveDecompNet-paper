@@ -50,8 +50,8 @@ EPOCHS = 600
 # from autoencoder_1D_models import autoencoder_Conv1DTranspose_ENZ5
 # model, model_name = autoencoder_Conv1DTranspose_ENZ5(input_shape=X_train.shape[1:])
 
-from autoencoder_1D_models import autoencoder_Conv1DTranspose_ENZ6
-model, model_name = autoencoder_Conv1DTranspose_ENZ6(input_shape=X_train.shape[1:])
+from autoencoder_1D_models import autoencoder_Conv1DTranspose_ENZ7
+model, model_name = autoencoder_Conv1DTranspose_ENZ7(input_shape=X_train.shape[1:])
 
 
 # make the model output directory
