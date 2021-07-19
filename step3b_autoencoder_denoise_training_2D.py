@@ -18,9 +18,6 @@ model_dataset_dir = './Model_and_datasets_spectrogram'
 if not os.path.exists(model_dataset_dir):
     os.mkdir(model_dataset_dir)
 
-# specify the final path to copy all the model result (transfer to another computer)
-target = "C:/Users/Working/OneDrive - Harvard University/Seisdenoise"
-
 # %% Read the pre-processed datasets
 model_datasets = './training_datasets/training_datasets_spectrogram_mask.hdf5'
 with h5py.File(model_datasets, 'r') as f:
@@ -114,11 +111,3 @@ with h5py.File(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', 'w') as 
     f.attrs['train_size'] = train_size
     f.attrs['rand_seed1'] = rand_seed1
     f.attrs['rand_seed2'] = rand_seed2
-
-
-# %% copy the results to another computer
-import shutil
-shutil.copy2(model_dataset_dir + f'/{model_name}_Model_summary.txt', target)
-shutil.copy2(model_dataset_dir + f'/{model_name}_Model.hdf5', target)
-shutil.copy2(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', target)
-shutil.copy2(model_dataset_dir + f'/{model_name}_Training_history.hdf5', target)

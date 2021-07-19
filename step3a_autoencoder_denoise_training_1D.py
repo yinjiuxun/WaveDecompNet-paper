@@ -17,8 +17,6 @@ model_dataset_dir = './Model_and_datasets_1D'
 if not os.path.exists(model_dataset_dir):
     os.mkdir(model_dataset_dir)
 
-# specify the final path to copy all the model result (transfer to another computer)
-target = "C:/Users/Working/OneDrive - Harvard University/Seisdenoise"
 
 # %% Read the pre-processed datasets
 model_datasets = './training_datasets/training_datasets_waveform.hdf5'
@@ -110,10 +108,3 @@ with h5py.File(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', 'w') as 
     f.attrs['rand_seed1'] = rand_seed1
     f.attrs['rand_seed2'] = rand_seed2
 
-
-# %% copy the results to another computer
-import shutil
-shutil.copy2(model_dataset_dir + f'/{model_name}_Model_summary.txt', target)
-shutil.copy2(model_dataset_dir + f'/{model_name}_Model.hdf5', target)
-shutil.copy2(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', target)
-shutil.copy2(model_dataset_dir + f'/{model_name}_Training_history.hdf5', target)
