@@ -6,7 +6,8 @@ from sklearn.model_selection import train_test_split
 import os
 
 # %% Need to specify model_name first
-model_name = 'spectrogram_mask_l1_softmax'
+model_name = 'spectrogram_mask_softmax'
+#model_name = 'spectrogram_mask_skip_connection'
 model_dir = './Model_and_datasets_spectrogram' + f'/{model_name}'
 data_dir = './training_datasets'
 

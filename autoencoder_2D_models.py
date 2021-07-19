@@ -1,8 +1,8 @@
 import keras
-from keras.models import Sequential
+from keras.models import Sequential, Model
 from keras.layers import Conv1D, AveragePooling1D, MaxPooling1D, UpSampling1D, LeakyReLU, Conv1DTranspose, \
-    BatchNormalization
-from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, LeakyReLU, Conv2DTranspose
+    BatchNormalization, ReLU
+from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, LeakyReLU, Conv2DTranspose, Add
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import LSTM, GRU, Bidirectional
 import tensorflow as tf
@@ -116,6 +116,30 @@ def autoencoder_Conv2D_Spectrogram4(input_shape):
 
     return model, model_name
 
+def autoencoder_Conv2D_Spectrogram5(input_shape):
+    """a model to deal with spectrogram data normalized to zero-mean and unit variance"""
+    model_name = "spectrogram_mask_skip_connection"
+    input_img = Input(shape=input_shape)
+    y1 = Conv2D(16, 5, padding='same', activation='relu')(input_img) # skip connection 1
+    y = MaxPooling2D((2, 2))(y1)
+    y2 = Conv2D(32, 3, padding='same', activation='relu')(y) # skip connection 2
+    y = MaxPooling2D((2, 2))(y2)
+    y = Conv2D(64, 3, padding='same', activation='relu')(y)
+    y = Conv2D(64, 3, padding='same', activation='relu')(y)
+    y = UpSampling2D((2, 2))(y)
+    y = Conv2DTranspose(32, 3, padding='same')(y)
+    y = Add()([y2, y])
+    y = ReLU()(y)
+    y = UpSampling2D((2, 2))(y)
+    y = Conv2DTranspose(16, 5, padding='same')(y)
+    y = Add()([y1, y])
+    y = ReLU()(y)
+    y = Conv2DTranspose(6, 1, padding='same', activation='softmax')(y)
+
+    model = Model(input_img, y)
+    model.compile(loss='mean_squared_logarithmic_error', optimizer='adam')
+
+    return model, model_name
 
 def autoencoder_Conv2D_Spectrogram76(input_shape):
     """a model to deal with spectrogram data normalized to zero-mean and unit variance"""
