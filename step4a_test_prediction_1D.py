@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import os
 
 # %% Need to specify model_name first
-model_name = 'AE_ENZ_LeakyReLU'
+model_name = 'AE_ENZ_LeakyReLU_skip_connection'
 model_dir = './Model_and_datasets_1D' + f'/{model_name}'
 data_dir = './training_datasets'
 
@@ -47,7 +47,7 @@ plt.plot(val_loss, '-', label='Validation loss')
 plt.plot([1, len(loss)], [test_eval, test_eval], '-', label='Test loss', linewidth=4)
 plt.legend()
 plt.title(model_name)
-plt.show()
+#plt.show()
 plt.savefig(figure_dir + f"/{model_name}_Loss_evolution.png")
 
 
@@ -74,7 +74,7 @@ ax[0, 0].legend()
 ax[0, 1].legend()
 ax[-1, 0].set_xlabel('Time (s)')
 ax[-1, 1].set_xlabel('Time (s)')
-plt.show()
+#plt.show()
 
 plt.figure(1)
 plt.savefig(figure_dir + f'/{model_name}_Prediction_waveform_model_{i_model}.png')
