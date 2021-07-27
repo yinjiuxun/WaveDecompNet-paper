@@ -2,6 +2,7 @@ import numpy as np
 import scipy.signal as sgn
 from scipy.fft import fft, fftfreq
 from scipy.signal import stft, istft
+from scipy.interpolate import interp1d
 
 
 def downsample_series(time, series, f_downsampe):
@@ -14,11 +15,13 @@ def downsample_series(time, series, f_downsampe):
     dt = time[1] - time[0]
     # lowpass filter
     b, a = sgn.butter(4, f_downsampe / 2 * 2 * dt)
-    series_filt = sgn.filtfilt(b, a, series)
+    series_filt = sgn.filtfilt(b, a, series, axis=0)
     # downsample through interpolation
     dt_new = 1 / f_downsampe
     time_new = np.arange(time[0], time[-1] + dt_new, dt_new)
-    series_downsample = np.interp(time_new, time, series_filt)
+    #series_downsample = np.interp(time_new, time, series_filt)
+    interp_f = interp1d(time, series_filt, axis=0, fill_value='extrapolate')
+    series_downsample = interp_f(time_new)
 
     # plt.figure()
     # plt.plot(time_noise, noise_BH1, '-k')
