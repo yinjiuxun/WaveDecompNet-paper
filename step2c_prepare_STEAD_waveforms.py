@@ -42,15 +42,21 @@ noise_list = df_noise['trace_name'].to_list()
 from utilities import downsample_series
 
 f_downsample = 10
-time =
+time = np.arange(0, 6000) * 0.01
+dtfl = h5py.File(file_name, 'r')
 for i, (earthquake, noise) in enumerate(zip(earthquake_list, noise_list)):
     print(i)
     print(earthquake)
     print(noise)
 
-    # downsample
-    time_new, series_downsample, dt_new = downsample_series(time, series, f_downsample)
+    quake_waveform = np.array(dtfl.get('data/'+str(earthquake)))
+    noise_waveform = np.array(dtfl.get('data/' + str(noise)))
 
+    # downsample
+    _, quake_waveform, dt_new = downsample_series(time, quake_waveform, f_downsample)
+    time_new, noise_waveform, dt_new = downsample_series(time, noise_waveform, f_downsample)
+    print(quake_waveform.shape)
+    print(noise_waveform.shape)
     # normalize the amplitude for both
 
     # random shift the signal
