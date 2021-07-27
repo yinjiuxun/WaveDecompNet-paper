@@ -20,7 +20,7 @@ def downsample_series(time, series, f_downsampe):
     dt_new = 1 / f_downsampe
     time_new = np.arange(time[0], time[-1] + dt_new, dt_new)
     #series_downsample = np.interp(time_new, time, series_filt)
-    interp_f = interp1d(time, series_filt, axis=0, fill_value='extrapolate')
+    interp_f = interp1d(time, series_filt, axis=0, bounds_error=False, fill_value=0.)
     series_downsample = interp_f(time_new)
 
     # plt.figure()
