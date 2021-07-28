@@ -21,7 +21,7 @@ print(f'total number of noises: {len(df_noise)}')
 
 
 # Set the number of waveforms that will be used during the training
-N_events = 50000
+N_events = 5000
 earthquake_seed = 101
 noise_seed = 102
 shift_seed = 103
@@ -39,7 +39,7 @@ rng_shift = default_rng(shift_seed)
 shift = rng_shift.uniform(-30, 60, N_events)
 
 rng_snr = default_rng(snr_seed)
-snr = 10 ** rng_snr.uniform(-1, 2, N_events)
+snr = 10 ** rng_snr.uniform(-1, 1, N_events)
 
 # Choose the earthquakes and noise from STEAD
 df_earthquakes = df_earthquakes.iloc[chosen_earthquake_index]
@@ -47,6 +47,12 @@ earthquake_list = df_earthquakes['trace_name'].to_list()
 
 df_noise = df_noise.iloc[chosen_noise_index]
 noise_list = df_noise['trace_name'].to_list()
+
+# make the output directory
+training_dataset_dir = './training_datasets'
+if not os.path.exists(training_dataset_dir):
+    os.mkdir(training_dataset_dir)
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform_update.hdf5'
 
 # Loop over each pair
 from utilities import downsample_series
@@ -57,79 +63,66 @@ time = np.arange(0, 6000) * 0.01
 dtfl = h5py.File(file_name, 'r')
 
 X_train, Y_train = [], []
+N_append = 1000  # numbers of waveforms for each chunk update
 for i, (earthquake, noise) in enumerate(zip(earthquake_list, noise_list)):
-    if i % 1000 == 0:
+    if i % N_append == 0:
         print(f'=============={i} / {N_events}=================')
 
-    t0 = t.time()
+    # this step takes the longest time!
     quake_waveform = np.array(dtfl.get('data/'+str(earthquake)))
     noise_waveform = np.array(dtfl.get('data/' + str(noise)))
-    t1 = t.time()
-    tread1 = t1 - t0 + tread1
 
     # downsample
-    t0 = t.time()
     _, quake_waveform, dt_new = downsample_series(time, quake_waveform, f_downsample)
     time_new, noise_waveform, dt_new = downsample_series(time, noise_waveform, f_downsample)
-    t1 = t.time()
-    tread2 = t1 - t0 + tread2
 
     # normalize the amplitude for both
-    t0 = t.time()
     quake_waveform = (quake_waveform - np.mean(quake_waveform, axis=0)) / (np.std(quake_waveform, axis=0) + 1e-12)
     noise_waveform = (noise_waveform - np.mean(noise_waveform, axis=0)) / (np.std(noise_waveform, axis=0) + 1e-12)
-    t1 = t.time()
-    tread3 = t1 - t0 + tread3
 
     # random shift the signal and scaled with snr
-    t0 = t.time()
     shift_func = interp1d(time_new + shift[i], quake_waveform, axis=0, kind='nearest', bounds_error=False, fill_value=0.)
     quake_waveform = snr[i] * shift_func(time_new)
-    t1 = t.time()
-    tread4 = t1 - t0 + tread4
 
     # combine the given snr, stack both signals
-    t0 = t.time()
     stacked_waveform = quake_waveform + noise_waveform
 
     # scale again
     scaling_std = np.std(stacked_waveform, axis=0)
     stacked_waveform = stacked_waveform / scaling_std
     quake_waveform = quake_waveform / scaling_std
-    t1 = t.time()
-    tread5 = t1 - t0 + tread5
 
     # concatenate
-    t0 = t.time()
     X_train.append(stacked_waveform)
     Y_train.append(quake_waveform)
-    t1 = t.time()
-    tread6 = t1 - t0 + tread6
 
-# Convert to the ndarray
-X_train = np.array(X_train)
-Y_train = np.array(Y_train)
+    if (i + 1) % N_append == 0:
+        # Convert to the ndarray
+        X_train = np.array(X_train)
+        Y_train = np.array(Y_train)
 
-# Remove some NaN points in the data
-X_train[np.isnan(X_train)] = 0
-Y_train[np.isnan(Y_train)] = 0
+        # Remove some NaN points in the data
+        X_train[np.isnan(X_train)] = 0
+        Y_train[np.isnan(Y_train)] = 0
 
-# make the output directory
-training_dataset_dir = './training_datasets'
-if not os.path.exists(training_dataset_dir):
-    os.mkdir(training_dataset_dir)
+        if i + 1 == N_append:  # create the hdf5 dataset first
+            with h5py.File(model_datasets, 'w') as f:
+                f.create_dataset('time', data=time_new)
+                f.create_dataset('X_train', data=X_train, compression="gzip", chunks=True, maxshape=(None, 600, 3))
+                f.create_dataset('Y_train', data=Y_train, compression="gzip", chunks=True, maxshape=(None, 600, 3))
+        else:  # update the hdf5 dataset
+            with h5py.File(model_datasets, 'a') as f:
+                f['X_train'].resize((f['X_train'].shape[0] + N_append), axis=0)
+                f['X_train'][-N_append:] = X_train
 
-# %% Save the pre-processed datasets
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform.hdf5'
-if not os.path.exists(model_datasets):
-    with h5py.File(model_datasets, 'w') as f:
-        f.create_dataset('time', data=time_new)
-        f.create_dataset('X_train', data=X_train)
-        f.create_dataset('Y_train', data=Y_train)
+                f['Y_train'].resize((f['Y_train'].shape[0] + N_append), axis=0)
+                f['Y_train'][-N_append:] = Y_train
+        X_train, Y_train = [], []
+
 
 # Check the datasets visually
 training_dataset_dir = './training_datasets'
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform_update.hdf5'
 
 with h5py.File(model_datasets, 'r') as f:
     time_new = f['time'][:]
@@ -144,30 +137,3 @@ for i, axi_i in enumerate(axi):
     axi_i.plot(time_new, Y_train[i_data, :, i].flatten(), '-b')
 axi[-1].set_xlabel('Time (s)')
 
-
-# TODO: consider the chunk-data update for storing h5 data
-# import numpy as np
-# import h5py
-#
-# f = h5py.File('MyDataset.h5', 'a')
-# for i in range(10):
-#
-#   # Data to be appended
-#   new_data = np.ones(shape=(100,64,64)) * i
-#   new_label = np.ones(shape=(100,1)) * (i+1)
-#
-#   if i == 0:
-#     # Create the dataset at first
-#     f.create_dataset('data', data=new_data, compression="gzip", chunks=True, maxshape=(None,64,64))
-#     f.create_dataset('label', data=new_label, compression="gzip", chunks=True, maxshape=(None,1))
-#   else:
-#     # Append new data to it
-#     f['data'].resize((f['data'].shape[0] + new_data.shape[0]), axis=0)
-#     f['data'][-new_data.shape[0]:] = new_data
-#
-#     f['label'].resize((f['label'].shape[0] + new_label.shape[0]), axis=0)
-#     f['label'][-new_label.shape[0]:] = new_label
-#
-#   print("I am on iteration {} and 'data' chunk has shape:{}".format(i,f['data'].shape))
-#
-# f.close()
