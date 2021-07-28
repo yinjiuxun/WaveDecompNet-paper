@@ -7,11 +7,11 @@ import os
 
 # %% Need to specify model_name first
 model_name = 'AE_ENZ_LeakyReLU_skip_connection'
-model_dir = './Model_and_datasets_1D' + f'/{model_name}'
+model_dir = './Model_and_datasets_1D_STEAD' + f'/{model_name}'
 data_dir = './training_datasets'
 
 # %% load dataset
-with h5py.File(data_dir + '/training_datasets_waveform.hdf5', 'r') as f:
+with h5py.File(data_dir + '/training_datasets_STEAD_waveform.hdf5', 'r') as f:
     time = f['time'][:]
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
@@ -63,8 +63,10 @@ vmax = None
 vmin = None
 for i in range(X_test.shape[2]):
     ax[i, 0].plot(time, X_test[i_model, :, i], '-k', label='X_input')
+    ax[i, 0].plot(time, Y_test[i_model, :, i], '-r', label='Y_true')
     ax[i, 1].plot(time, Y_test[i_model, :, i], '-r', label='Y_true')
-    ax[i, 1].plot(time, Y_predict[i_model, :, i], '-b', label='Y_predict')
+    ax[i, 1].plot(time, Y_predict[i_model, :, i], '-b', label='Y_predict', linewidth=0.8)
+
 
 titles = ['E', 'N', 'Z']
 for i in range(X_test.shape[2]):
