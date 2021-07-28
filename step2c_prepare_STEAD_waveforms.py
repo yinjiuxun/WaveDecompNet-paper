@@ -110,6 +110,10 @@ for i, (earthquake, noise) in enumerate(zip(earthquake_list, noise_list)):
 X_train = np.array(X_train)
 Y_train = np.array(Y_train)
 
+# Remove some NaN points in the data
+X_train[np.isnan(X_train)] = 0
+Y_train[np.isnan(Y_train)] = 0
+
 # make the output directory
 training_dataset_dir = './training_datasets'
 if not os.path.exists(training_dataset_dir):
@@ -123,6 +127,22 @@ if not os.path.exists(model_datasets):
         f.create_dataset('X_train', data=X_train)
         f.create_dataset('Y_train', data=Y_train)
 
+# Check the datasets visually
+training_dataset_dir = './training_datasets'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform.hdf5'
+
+with h5py.File(model_datasets, 'r') as f:
+    time_new = f['time'][:]
+    X_train = f['X_train'][:]
+    Y_train = f['Y_train'][:]
+
+i_data = np.random.choice(np.arange(X_train.shape[0]), 1)
+plt.close('all')
+fig, axi = plt.subplots(3, 1, sharex=True, sharey=True)
+for i, axi_i in enumerate(axi):
+    axi_i.plot(time_new, X_train[i_data, :, i].flatten(), '-r')
+    axi_i.plot(time_new, Y_train[i_data, :, i].flatten(), '-b')
+axi[-1].set_xlabel('Time (s)')
 
 
 # TODO: consider the chunk-data update for storing h5 data
