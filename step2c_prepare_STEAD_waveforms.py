@@ -21,7 +21,7 @@ print(f'total number of noises: {len(df_noise)}')
 
 
 # Set the number of waveforms that will be used during the training
-N_events = 5000
+N_events = 100000
 earthquake_seed = 101
 noise_seed = 102
 shift_seed = 103
