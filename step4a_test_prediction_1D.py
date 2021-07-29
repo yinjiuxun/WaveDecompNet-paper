@@ -64,8 +64,8 @@ vmin = None
 for i in range(X_test.shape[2]):
     ax[i, 0].plot(time, X_test[i_model, :, i], '-k', label='X_input')
     ax[i, 0].plot(time, Y_test[i_model, :, i], '-r', label='Y_true')
-    ax[i, 1].plot(time, Y_test[i_model, :, i], '-r', label='Y_true')
-    ax[i, 1].plot(time, Y_predict[i_model, :, i], '-b', label='Y_predict', linewidth=0.8)
+    ax[i, 1].plot(time, Y_test[i_model, :, i], '-r', label='Y_true', linewidth=1)
+    ax[i, 1].plot(time, Y_predict[i_model, :, i], '-b', label='Y_predict', linewidth=1)
 
 
 titles = ['E', 'N', 'Z']
@@ -81,4 +81,43 @@ ax[-1, 1].set_xlabel('Time (s)')
 plt.figure(1)
 plt.savefig(figure_dir + f'/{model_name}_Prediction_waveform_model_{i_model}.png')
 
-# TODO: Compare the spectrogram, quantify the model performance
+# TODO: quantify the model performance from waveform correlation
+norm_Y_test = np.linalg.norm(Y_test, axis=1)
+norm_Y_predict = np.linalg.norm(Y_predict, axis=1)
+corr_coef = np.sum(Y_test * Y_predict, axis=1) / (norm_Y_test + 1e-16) / (norm_Y_predict + 1e-16)
+
+# get the SNR
+noise_std = np.std((X_test - Y_test), axis=1)
+signal_std = np.std(Y_test, axis=1)
+denoised_signal_std = np.std(Y_predict, axis=1)
+
+SNR_before = 10 * np.log10(signal_std / (noise_std + 1e-16))
+SNR_after = 10 * np.log10(denoised_signal_std / (noise_std + 1e-16))
+
+# Maximum amplitude change
+max_amplitude_signal = np.max(Y_test, axis=1)
+max_amplitude_denoise = np.max(Y_predict, axis=1)
+amplitude_change = np.abs(max_amplitude_denoise - max_amplitude_signal) / (max_amplitude_denoise + 1e-16 )
+
+plt.close('all')
+plt.figure()
+plt.plot(SNR_before.flatten(), corr_coef.flatten(), '.')
+plt.ylabel('Corr. Coef.')
+plt.xlabel('SNR before denoising')
+plt.xlim(-50, 50)
+
+# fig, axi = plt.subplots(3, 1, figsize=(6, 10), sharex=True)
+# axi[0].plot(SNR_before.flatten(), SNR_after.flatten(), '.')
+# axi[0].set_ylabel('SNR after denoising')
+# axi[0].set_ylim(-20, 20)
+#
+# axi[1].plot(SNR_before.flatten(), corr_coef.flatten(), '.')
+# axi[1].set_ylabel('Corr. Coef.')
+#
+# axi[2].plot(SNR_before.flatten(), amplitude_change.flatten(), '.')
+# axi[2].set_ylabel('Max amplitude change')
+# axi[2].set_xlabel('SNR before denoising')
+#
+#
+
+
