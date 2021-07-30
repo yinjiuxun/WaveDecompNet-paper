@@ -13,13 +13,13 @@ import h5py
 from sklearn.model_selection import train_test_split
 
 # make the output directory
-model_dataset_dir = './Model_and_datasets_1D'
+model_dataset_dir = './Model_and_datasets_1D_STEAD'
 if not os.path.exists(model_dataset_dir):
     os.mkdir(model_dataset_dir)
 
 
 # %% Read the pre-processed datasets
-model_datasets = './training_datasets/training_datasets_waveform.hdf5'
+model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
 with h5py.File(model_datasets, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
