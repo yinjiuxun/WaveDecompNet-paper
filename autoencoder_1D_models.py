@@ -373,3 +373,99 @@ def autoencoder_Conv1DTranspose_ENZ7(input_shape):
     model = Model(input_img, y)
     model.compile(loss='mean_squared_error', optimizer='adam')
     return model, model_name
+
+
+def autoencoder_Conv1DTranspose_ENZ8(input_shape):
+    model_name = "AE_LeakyReLU_skip_connection_deep"
+    # use Conv1DTranspose instead
+    input_img = Input(shape=input_shape)
+    y = Conv1D(8, 9, padding='same')(input_img)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    y = Conv1D(8, 9, strides=2, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    #y = MaxPooling1D(2)(y)
+
+    y1 = Conv1D(16, 7, padding='same')(y)  # skip connection 1
+    y = LeakyReLU(alpha=0.5)(y1)
+    y = BatchNormalization()(y)
+
+    y = Conv1D(16, 7, strides=2, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    #y = MaxPooling1D(2)(y)
+
+    y2 = Conv1D(32, 5, padding='same')(y)  # skip connection 2
+    y = LeakyReLU(alpha=0.5)(y2)
+    y = BatchNormalization()(y)
+
+    y = Conv1D(32, 5, strides=2, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    #y = MaxPooling1D(2)(y)
+
+    y3 = Conv1D(64, 3, padding='same')(y)  # skip connection 3
+    y = LeakyReLU(alpha=0.5)(y3)
+    y = BatchNormalization()(y)
+
+    y = Conv1D(64, 3, strides=3, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    #y = MaxPooling1D(3, padding='same')(y)
+
+    y = Bidirectional(LSTM(units=16, return_sequences=True, dropout=0.1))(y)
+
+    y = UpSampling1D(3)(y)
+    y = Conv1DTranspose(64, 3, padding='same')(y)
+    y = Add()([y3, y])  # skip connection 3
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    y = Conv1D(64, 3, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    y = UpSampling1D(2)(y)
+
+    y = Conv1DTranspose(32, 5, padding='same')(y)
+    y = Add()([y2, y])  # skip connection 2
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    y = Conv1D(32, 5, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    y = UpSampling1D(2)(y)  # 300
+
+    y = Conv1DTranspose(16, 7, padding='same')(y)
+    y = Add()([y1, y])  # skip connection 1
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    y = Conv1D(16, 7, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    y = UpSampling1D(2)(y)  # 600
+
+    y = Conv1DTranspose(8, 7, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    y = Conv1D(8, 7, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+    y = BatchNormalization()(y)
+
+    y = Conv1DTranspose(3, 7, padding='same')(y)
+    y = LeakyReLU(alpha=0.5)(y)
+
+    model = Model(input_img, y)
+    model.compile(loss='mean_squared_error', optimizer='adam')
+    return model, model_name
