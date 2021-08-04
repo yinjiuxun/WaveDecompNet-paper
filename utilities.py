@@ -11,6 +11,19 @@ import os
 import h5py
 
 class WaveformDataset(Dataset):
+    def __init__(self, X_train, Y_train):
+        self.X_train = np.moveaxis(X_train, 1, -1)
+        self.Y_train = np.moveaxis(Y_train, 1, -1)
+
+    def __len__(self):
+        return self.X_train.shape[0]
+
+    def __getitem__(self, idx):
+        X_waveform = self.X_train[idx]
+        Y_waveform = self.X_train[idx]
+        return X_waveform, Y_waveform
+
+class WaveformDataset_h5(Dataset):
     def __init__(self, annotations_file):
         self.hdf5_file = h5py.File(annotations_file, 'r')
 

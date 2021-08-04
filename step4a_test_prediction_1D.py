@@ -100,24 +100,25 @@ max_amplitude_denoise = np.max(Y_predict, axis=1)
 amplitude_change = np.abs(max_amplitude_denoise - max_amplitude_signal) / (max_amplitude_denoise + 1e-16 )
 
 plt.close('all')
-plt.figure()
-plt.plot(SNR_before.flatten(), corr_coef.flatten(), '.')
-plt.ylabel('Corr. Coef.')
-plt.xlabel('SNR before denoising')
-plt.xlim(-50, 50)
+# plt.figure()
+# plt.plot(SNR_before.flatten(), corr_coef.flatten(), '.')
+# plt.ylabel('Corr. Coef.')
+# plt.xlabel('SNR before denoising')
+# plt.xlim(-50, 50)
 
-# fig, axi = plt.subplots(3, 1, figsize=(6, 10), sharex=True)
-# axi[0].plot(SNR_before.flatten(), SNR_after.flatten(), '.')
-# axi[0].set_ylabel('SNR after denoising')
-# axi[0].set_ylim(-20, 20)
-#
-# axi[1].plot(SNR_before.flatten(), corr_coef.flatten(), '.')
-# axi[1].set_ylabel('Corr. Coef.')
-#
-# axi[2].plot(SNR_before.flatten(), amplitude_change.flatten(), '.')
-# axi[2].set_ylabel('Max amplitude change')
-# axi[2].set_xlabel('SNR before denoising')
-#
-#
+fig, axi = plt.subplots(3, 1, figsize=(6, 10), sharex=True)
+axi[0].plot(SNR_before.flatten(), SNR_after.flatten(), '.')
+axi[0].set_ylabel('SNR after denoising')
+axi[0].set_ylim(-20, 20)
+
+axi[1].plot(SNR_before.flatten(), corr_coef.flatten(), '.')
+axi[1].set_ylabel('Corr. Coef.')
+
+axi[2].plot(SNR_before.flatten(), amplitude_change.flatten(), '.')
+axi[2].set_ylabel('Max amplitude change')
+axi[2].set_xlabel('SNR before denoising')
+
+plt.xlim(-20, 20)
+
 
 

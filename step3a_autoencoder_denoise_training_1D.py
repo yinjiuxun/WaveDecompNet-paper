@@ -15,19 +15,6 @@ from sklearn.model_selection import train_test_split
 import torch
 from utilities import WaveformDataset
 
-model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
-training_data = WaveformDataset(model_datasets)
-
-from torch.utils.data import DataLoader
-
-train_dataloader = DataLoader(training_data, batch_size=32, shuffle=False)
-X_train, Y_train = next(iter(train_dataloader))
-
-for data in train_dataloader:
-    temp = data
-    break
-
-
 # make the output directory
 model_dataset_dir = './Model_and_datasets_1D_STEAD'
 if not os.path.exists(model_dataset_dir):
@@ -47,6 +34,19 @@ rand_seed2 = 20
 X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train, train_size=0.6, random_state=rand_seed1)
 X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test, test_size=0.5, random_state=rand_seed2)
 
+# Convert to the dataset class for Pytorch (here simply load all the data,
+# but for the sake of memory, can also use WaveformDataset_h5)
+training_data = WaveformDataset(X_train, Y_train)
+
+# load mini-batch (testing)
+from torch.utils.data import DataLoader
+
+train_dataloader = DataLoader(training_data, batch_size=32, shuffle=True)
+X_train, Y_train = next(iter(train_dataloader))
+
+for data in train_dataloader:
+    temp = data
+    break
 # %% build the architecture
 # %% Model the Data
 BATCH_SIZE = 256
