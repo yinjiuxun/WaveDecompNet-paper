@@ -5,6 +5,23 @@ from scipy.signal import stft, istft
 from scipy.interpolate import interp1d
 
 
+import torch
+from torch.utils.data import Dataset
+import os
+import h5py
+
+class WaveformDataset(Dataset):
+    def __init__(self, annotations_file):
+        self.hdf5_file = h5py.File(annotations_file, 'r')
+
+    def __len__(self):
+        return len(self.hdf5_file)
+
+    def __getitem__(self, idx):
+        X_waveform = self.hdf5_file['X_train'][idx]
+        Y_waveform = self.hdf5_file['Y_train'][idx]
+        return X_waveform, Y_waveform
+
 def downsample_series(time, series, f_downsampe):
     """Down sample the time series given a lower sampling frequency f_downsample,
     time_new, series_downsample, dt_new = downsample_series(time, series, f_downsampe)

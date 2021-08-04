@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import os
 
 # %% Need to specify model_name first
-model_name = 'AE_ENZ_LeakyReLU_skip_connection'
+model_name = 'AE_LeakyReLU_skip_connection_deep'
 model_dir = './Model_and_datasets_1D_STEAD' + f'/{model_name}'
 data_dir = './training_datasets'
 

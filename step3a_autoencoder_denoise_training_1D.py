@@ -12,6 +12,22 @@ import numpy as np
 import h5py
 from sklearn.model_selection import train_test_split
 
+import torch
+from utilities import WaveformDataset
+
+model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
+training_data = WaveformDataset(model_datasets)
+
+from torch.utils.data import DataLoader
+
+train_dataloader = DataLoader(training_data, batch_size=10, shuffle=True)
+X_train, Y_train = next(iter(train_dataloader))
+
+for data in train_dataloader:
+    temp = data
+    break
+
+
 # make the output directory
 model_dataset_dir = './Model_and_datasets_1D_STEAD'
 if not os.path.exists(model_dataset_dir):
