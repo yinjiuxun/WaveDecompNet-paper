@@ -15,7 +15,7 @@ class WaveformDataset(Dataset):
         self.hdf5_file = h5py.File(annotations_file, 'r')
 
     def __len__(self):
-        return len(self.hdf5_file)
+        return self.hdf5_file['X_train'].shape[0]
 
     def __getitem__(self, idx):
         X_waveform = self.hdf5_file['X_train'][idx]

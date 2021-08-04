@@ -20,7 +20,7 @@ training_data = WaveformDataset(model_datasets)
 
 from torch.utils.data import DataLoader
 
-train_dataloader = DataLoader(training_data, batch_size=10, shuffle=True)
+train_dataloader = DataLoader(training_data, batch_size=32, shuffle=False)
 X_train, Y_train = next(iter(train_dataloader))
 
 for data in train_dataloader:
