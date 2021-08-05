@@ -52,7 +52,7 @@ noise_list = df_noise['trace_name'].to_list()
 training_dataset_dir = './training_datasets'
 if not os.path.exists(training_dataset_dir):
     os.mkdir(training_dataset_dir)
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform_update.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform.hdf5'
 
 # Loop over each pair
 from utilities import downsample_series
@@ -122,7 +122,7 @@ for i, (earthquake, noise) in enumerate(zip(earthquake_list, noise_list)):
 
 # Check the datasets visually
 training_dataset_dir = './training_datasets'
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform_update.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform.hdf5'
 
 with h5py.File(model_datasets, 'r') as f:
     time_new = f['time'][:]

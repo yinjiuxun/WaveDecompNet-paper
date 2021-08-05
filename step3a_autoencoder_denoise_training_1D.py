@@ -12,6 +12,9 @@ import numpy as np
 import h5py
 from sklearn.model_selection import train_test_split
 
+import torch
+from utilities import WaveformDataset
+
 # make the output directory
 model_dataset_dir = './Model_and_datasets_1D_STEAD'
 if not os.path.exists(model_dataset_dir):
@@ -28,9 +31,77 @@ with h5py.File(model_datasets, 'r') as f:
 train_size = 0.6
 rand_seed1 = 13
 rand_seed2 = 20
-X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train, train_size=0.6, random_state=rand_seed1)
-X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test, test_size=0.5, random_state=rand_seed2)
+X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train, train_size=0.1, random_state=rand_seed1)
+X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test, test_size=0.9, random_state=rand_seed2)
 
+# Convert to the dataset class for Pytorch (here simply load all the data,
+# but for the sake of memory, can also use WaveformDataset_h5)
+training_data = WaveformDataset(X_train, Y_train)
+validate_data = WaveformDataset(X_validate, Y_validate)
+
+# load mini-batch (testing)
+from torch.utils.data import DataLoader
+from autoencoder_1D_models_torch import Autoencoder_Conv1D_deep
+
+def training_loop(dataloader, model, loss_fn, optimizer):
+    size = len(dataloader.dataset)
+    for batch, (X, y) in enumerate(dataloader):
+        # Compute prediction and loss
+        pred = model(X)
+        loss = loss_fn(pred, y)
+
+        # Backpropagation
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if batch % 20 == 0:
+            loss, current = loss.item(), batch * len(X)
+            print(f"loss: {loss:>7f} [{current:>5d}/{size:>5d}]")
+
+def test_loop(dataloader, model, loss_fn):
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    test_loss= 0
+
+    with torch.no_grad():
+        for X, y in dataloader:
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+
+    test_loss /= num_batches
+    print(f"Test Avg loss: {test_loss:>8f}\n")
+
+
+batch_size, epochs, lr = 128, 5, 1e-3
+model = Autoencoder_Conv1D_deep()
+loss_fn = torch.nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
+validate_dataloader = DataLoader(validate_data, batch_size=batch_size, shuffle=True)
+
+for t in range(epochs):
+    print(f"Epoch {t + 1}\n ===========================")
+    training_loop(train_dataloader, model, loss_fn, optimizer)
+    test_loop(validate_dataloader, model, loss_fn)
+print("Done!")
+
+
+X_train1 = np.moveaxis(X_train, 1, -1)
+Y_train1 = np.moveaxis(Y_train, 1, -1)
+X_train1 = torch.tensor(X_train1)
+Y_pred = model(X_train1)
+
+
+
+
+X_train, Y_train = next(iter(train_dataloader))
+X_validate, Y_validate = next(iter(validate_dataloader))
+
+for data in train_dataloader:
+    temp = data
+    break
 # %% build the architecture
 # %% Model the Data
 BATCH_SIZE = 256
