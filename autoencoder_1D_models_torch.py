@@ -33,33 +33,50 @@ class Autoencoder_Conv1D_deep(nn.Module):
         self.dec7 = nn.ConvTranspose1d(8, 8, 9, stride=2, padding=4, output_padding=1, dtype=torch.float64)
         self.dec8 = nn.ConvTranspose1d(8, 3, 9, padding=4, dtype=torch.float64)
 
-    def batch_normalize(self, num_features, x):
-        temp = nn.BatchNorm1d(num_features, dtype=torch.float64)
-        return temp(x)
+        self.bn1 = nn.BatchNorm1d(8, dtype=torch.float64)
+        self.bn2 = nn.BatchNorm1d(8, dtype=torch.float64)
+        self.bn13 = nn.BatchNorm1d(8, dtype=torch.float64)
+        self.bn14 = nn.BatchNorm1d(8, dtype=torch.float64)
+
+        self.bn3 = nn.BatchNorm1d(16, dtype=torch.float64)
+        self.bn4 = nn.BatchNorm1d(16, dtype=torch.float64)
+        self.bn11 = nn.BatchNorm1d(16, dtype=torch.float64)
+        self.bn12 = nn.BatchNorm1d(16, dtype=torch.float64)
+
+        self.bn5 = nn.BatchNorm1d(32, dtype=torch.float64)
+        self.bn6 = nn.BatchNorm1d(32, dtype=torch.float64)
+        self.bn9 = nn.BatchNorm1d(32, dtype=torch.float64)
+        self.bn10 = nn.BatchNorm1d(32, dtype=torch.float64)
+
+        self.bn7 = nn.BatchNorm1d(64, dtype=torch.float64)
+        self.bn8 = nn.BatchNorm1d(64, dtype=torch.float64)
+
+        self.bn15 = nn.BatchNorm1d(3, dtype=torch.float64)
+
 
     def forward(self, x):
-        x = F.relu(self.batch_normalize(8, self.enc1(x)))
-        x = F.relu(self.batch_normalize(8, self.enc2(x)))
+        x = F.relu(self.bn1(self.enc1(x)))
+        x = F.relu(self.bn2(self.enc2(x)))
         x1 = self.enc3c(x)
-        x = F.relu(self.batch_normalize(16, x1))
-        x = F.relu(self.batch_normalize(16, self.enc4(x)))
+        x = F.relu(self.bn3(x1))
+        x = F.relu(self.bn4(self.enc4(x)))
         x2 = self.enc5c(x)
-        x = F.relu(self.batch_normalize(32, x2))
-        x = F.relu(self.batch_normalize(32, self.enc6(x)))
+        x = F.relu(self.bn5(x2))
+        x = F.relu(self.bn6(self.enc6(x)))
         x3 = self.enc7c(x)
-        x = F.relu(self.batch_normalize(64, self.enc8(x3)))
+        x = F.relu(self.bn7(self.enc8(x3)))
 
         x = self.dec1c(x)
-        x = F.relu(self.batch_normalize(64, x + x3))
-        x = F.relu(self.batch_normalize(32, self.dec2(x)))
+        x = F.relu(self.bn8(x + x3))
+        x = F.relu(self.bn9(self.dec2(x)))
         x = self.dec3c(x)
-        x = F.relu(self.batch_normalize(32, x + x2))
-        x = F.relu(self.batch_normalize(16, self.dec4(x)))
+        x = F.relu(self.bn10(x + x2))
+        x = F.relu(self.bn11(self.dec4(x)))
         x = self.dec5c(x)
-        x = F.relu(self.batch_normalize(16, x + x1))
-        x = F.relu(self.batch_normalize(8, self.dec6(x)))
-        x = F.relu(self.batch_normalize(8, self.dec7(x)))
-        x = self.batch_normalize(3, self.dec8(x))
+        x = F.relu(self.bn12(x + x1))
+        x = F.relu(self.bn13(self.dec6(x)))
+        x = F.relu(self.bn14(self.dec7(x)))
+        x = self.bn15(self.dec8(x))
 
         return x
 
