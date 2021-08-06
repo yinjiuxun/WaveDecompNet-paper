@@ -13,8 +13,9 @@ from torch import nn
 import torch.nn.functional as F
 
 class Autoencoder_Conv1D_deep(nn.Module):
-    def __init__(self): #TODO: FIGURE OUT THE PADDING AND STRIDE!
+    def __init__(self, model_name): #TODO: FIGURE OUT THE PADDING AND STRIDE!
         super(Autoencoder_Conv1D_deep, self).__init__()
+        self.model_name = model_name
         self.enc1 = nn.Conv1d(3, 8, 9, padding='same', dtype=torch.float64)
         self.enc2 = nn.Conv1d(8, 8, 9, stride=2, padding=4, dtype=torch.float64)
         self.enc3c = nn.Conv1d(8, 16, 7, padding='same', dtype=torch.float64)
