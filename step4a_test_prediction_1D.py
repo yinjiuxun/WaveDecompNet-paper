@@ -18,9 +18,6 @@ with h5py.File(data_dir + '/training_datasets_STEAD_waveform.hdf5', 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
 
-# %% load model
-model = torch.load(model_dir + '/' + f'{model_name}_Model.pth')
-
 # split the model based on the information provided by the model
 # split the model based on the information provided by the model
 with h5py.File(model_dir + '/' + f'/{model_name}_Dataset_split.hdf5', 'r') as f:
@@ -35,6 +32,9 @@ X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test, test_s
 training_data = WaveformDataset(X_train, Y_train)
 validate_data = WaveformDataset(X_validate, Y_validate)
 test_data = WaveformDataset(X_test, Y_test)
+
+# %% load model
+model = torch.load(model_dir + '/' + f'{model_name}_Model.pth')
 
 batch_size = 256
 test_iter = DataLoader(test_data, batch_size=batch_size, shuffle=True)
