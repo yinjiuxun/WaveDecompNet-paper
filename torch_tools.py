@@ -131,6 +131,7 @@ def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimiz
         # initialize the model for training
         model.eval()
         for X, y in validate_dataloader:
+            X, y = X.to(device), y.to(device)
             pred = model(X)
             loss = loss_fn(pred, y)
 
