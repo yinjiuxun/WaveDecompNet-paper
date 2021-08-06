@@ -16,7 +16,7 @@ class WaveformDataset(Dataset):
 
     def __getitem__(self, idx):
         X_waveform = self.X_train[idx]
-        Y_waveform = self.X_train[idx]
+        Y_waveform = self.Y_train[idx]
         return X_waveform, Y_waveform
 
 
