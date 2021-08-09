@@ -34,7 +34,7 @@ validate_data = WaveformDataset(X_validate, Y_validate)
 test_data = WaveformDataset(X_test, Y_test)
 
 # %% load model
-model = torch.load(model_dir + '/' + f'{model_name}_Model.pth')
+model = torch.load(model_dir + '/' + f'{model_name}_Model.pth', map_location=try_gpu())
 
 batch_size = 256
 test_iter = DataLoader(test_data, batch_size=batch_size, shuffle=True)
