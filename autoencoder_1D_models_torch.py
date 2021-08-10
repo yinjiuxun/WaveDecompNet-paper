@@ -25,6 +25,8 @@ class Autoencoder_Conv1D_deep(nn.Module):
         self.enc7c = nn.Conv1d(32, 64, 3, padding='same', dtype=torch.float64)
         self.enc8 = nn.Conv1d(64, 64, 3, stride=3, dtype=torch.float64)
         # Consider the bottleneck here
+        self.bottleneck = nn.LSTM(25, 32, 2, bidirectional=True, dtype=torch.float64)
+
         self.dec1c = nn.ConvTranspose1d(64, 64, 3, stride=3, dtype=torch.float64)
         self.dec2 = nn.ConvTranspose1d(64, 32, 3, padding=1, dtype=torch.float64)
         self.dec3c = nn.ConvTranspose1d(32, 32, 5, stride=2, padding=2, output_padding=1, dtype=torch.float64)
@@ -66,6 +68,8 @@ class Autoencoder_Conv1D_deep(nn.Module):
         x = F.relu(self.bn6(self.enc6(x)))
         x3 = self.enc7c(x)
         x = F.relu(self.bn7(self.enc8(x3)))
+
+        x = self.bottleneck(x)
 
         x = self.dec1c(x)
         x = F.relu(self.bn8(x + x3))
