@@ -46,6 +46,9 @@ validate_data = WaveformDataset(X_validate, Y_validate)
 model_name = "Autoencoder_conv1d_pytorch"
 batch_size, epochs, lr = 128, 3, 1e-3
 model = Autoencoder_Conv1D_deep(model_name).to(device=try_gpu())
+# X = torch.randn(128, 3, 600, dtype=torch.float64).to(device=try_gpu())
+# Y = model(X)
+
 loss_fn = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
