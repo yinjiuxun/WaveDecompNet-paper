@@ -6,17 +6,24 @@ from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import DataLoader
 from torch_tools import WaveformDataset, try_gpu
-
-# %% Need to specify model_name first
-model_name = 'Autoencoder_conv1d_pytorch'
-model_dir = './Model_and_datasets_1D_STEAD' + f'/{model_name}'
-data_dir = './training_datasets'
+from autoencoder_1D_models_torch import *
 
 # %% load dataset
-with h5py.File(data_dir + '/training_datasets_STEAD_waveform.hdf5', 'r') as f:
+data_dir = './training_datasets'
+data_name = 'training_datasets_STEAD_waveform.hdf5'
+
+# %% load dataset
+with h5py.File(data_dir + '/' + data_name, 'r') as f:
     time = f['time'][:]
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
+
+
+# %% Need to specify model_name first
+model_dataset_dir = "Model_and_datasets_1D_STEAD"
+model_name = "Autoencoder_Conv1D_Linear"
+
+model_dir = model_dataset_dir + f'/{model_name}'
 
 # split the model based on the information provided by the model
 # split the model based on the information provided by the model
@@ -26,8 +33,10 @@ with h5py.File(model_dir + '/' + f'/{model_name}_Dataset_split.hdf5', 'r') as f:
     rand_seed1 = f.attrs['rand_seed1']
     rand_seed2 = f.attrs['rand_seed2']
 
-X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train, train_size=train_size, random_state=rand_seed1)
-X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test, test_size=test_size, random_state=rand_seed2)
+X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train,
+                                train_size=train_size, random_state=rand_seed1)
+X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
+                                test_size=test_size, random_state=rand_seed2)
 
 training_data = WaveformDataset(X_train, Y_train)
 validate_data = WaveformDataset(X_validate, Y_validate)
@@ -37,7 +46,7 @@ test_data = WaveformDataset(X_test, Y_test)
 model = torch.load(model_dir + '/' + f'{model_name}_Model.pth', map_location=try_gpu())
 
 batch_size = 256
-test_iter = DataLoader(test_data, batch_size=batch_size, shuffle=True)
+test_iter = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
 # Evaluate the test loss for the model
 loss_fn = torch.nn.MSELoss()
@@ -79,37 +88,53 @@ plt.savefig(figure_dir + f"/{model_name}_Loss_evolution.png")
 # obtain one batch of test images
 data_iter = iter(test_iter)
 noisy_signal, clean_signal = data_iter.next()
+noisy_signal, clean_signal = noisy_signal.to(try_gpu()), clean_signal.to(try_gpu())
 
 # get sample outputs
 denoised_signal = model(noisy_signal)
+
+# Convert tensor to numpy
 denoised_signal = denoised_signal.detach().numpy()
+noisy_signal = noisy_signal.detach().numpy()
+clean_signal = clean_signal.detach().numpy()
+
+from sklearn.metrics import mean_squared_error, explained_variance_score
 
 # %% Check the waveforms
-plt.close("all")
 i_model = np.random.randint(0, denoised_signal.shape[0])
-fig, ax = plt.subplots(denoised_signal.shape[1], 2, sharex=True, sharey=True, num=1, figsize=(12, 8))
+for i_model in range(50):
+    print(i_model)
+    plt.close("all")
 
-vmax = None
-vmin = None
-for i in range(noisy_signal.shape[1]):
-    ax[i, 0].plot(time, noisy_signal[i_model, i, :], '-k', label='X_input', linewidth=1.5)
-    ax[i, 0].plot(time, clean_signal[i_model, i, :], '-r', label='Y_true', linewidth=1)
-    ax[i, 1].plot(time, clean_signal[i_model, i, :], '-r', label='Y_true', linewidth=1)
-    ax[i, 1].plot(time, denoised_signal[i_model, i, :], '-b', label='Y_predict', linewidth=1)
+    fig, ax = plt.subplots(denoised_signal.shape[1], 3, sharex=True, sharey=True, num=1, figsize=(16, 8))
 
+    vmax = None
+    vmin = None
+    for i in range(noisy_signal.shape[1]):
+        ax[i, 0].plot(time, noisy_signal[i_model, i, :], '-k', label='X_input', linewidth=1.5)
+        ax[i, 0].plot(time, clean_signal[i_model, i, :], '-r', label='Y_true', linewidth=1)
+        ax[i, 1].plot(time, clean_signal[i_model, i, :], '-r', label='Y_true', linewidth=1)
+        ax[i, 1].plot(time, denoised_signal[i_model, i, :], '-b', label='Y_predict', linewidth=1)
+        # explained variance score
+        evs = explained_variance_score(clean_signal[i_model, i, :], denoised_signal[i_model, i, :])
+        ax[i, 1].set_title(f'Explained Variance: {evs:.2f}')
 
-titles = ['E', 'N', 'Z']
-for i in range(noisy_signal.shape[1]):
-    ax[i, 0].set_ylabel(titles[i])
+        noise = noisy_signal[i_model, i, :] - denoised_signal[i_model, i, :]
+        ax[i, 2].plot(time, noise, '-', color='gray', label='Y_true', linewidth=1)
+        ax[i, 2].set_title("Separated noise")
 
-ax[0, 0].legend()
-ax[0, 1].legend()
-ax[-1, 0].set_xlabel('Time (s)')
-ax[-1, 1].set_xlabel('Time (s)')
-#plt.show()
+    titles = ['E', 'N', 'Z']
+    for i in range(noisy_signal.shape[1]):
+        ax[i, 0].set_ylabel(titles[i])
 
-plt.figure(1)
-plt.savefig(figure_dir + f'/{model_name}_Prediction_waveform_model_{i_model}.png')
+    ax[0, 0].legend()
+    ax[0, 1].legend()
+    ax[-1, 0].set_xlabel('Time (s)')
+    ax[-1, 1].set_xlabel('Time (s)')
+    # plt.show()
+
+    plt.figure(1)
+    plt.savefig(figure_dir + f'/{model_name}_Prediction_waveform_model_{i_model}.png')
 
 # # TODO: quantify the model performance from waveform correlation
 # norm_Y_test = np.linalg.norm(Y_test, axis=1)
