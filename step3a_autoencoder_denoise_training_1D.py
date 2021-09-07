@@ -25,6 +25,7 @@ model_dataset_dir = './Model_and_datasets_1D_STEAD'
 mkdir(model_dataset_dir)
 
 # %% Read the pre-processed datasets
+print("#" * 12 + " Loading data " + "#" * 12)
 model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
 with h5py.File(model_datasets, 'r') as f:
     X_train = f['X_train'][:]
@@ -62,6 +63,7 @@ bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
 # model_name = "Autoencoder_Conv1D_None"
 # bottleneck = None
 
+print("#" * 12 + " building model " + model_name + " " + "#" * 12)
 model = Autoencoder_Conv1D(model_name, bottleneck).to(device=try_gpu())
 
 # make the output directory to store the model information
@@ -76,6 +78,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 train_iter = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=True)
 
+print("#" * 12 + " training model " + model_name + " " + "#" * 12)
 model, avg_train_losses, avg_valid_losses = training_loop(train_iter, validate_iter,
                                                           model, loss_fn, optimizer,
                                                           epochs=epochs, patience=patience, device=try_gpu())
