@@ -49,13 +49,6 @@ validate_data = WaveformDataset(X_validate, Y_validate)
 # # The encoder-decoder model with self-attention bottleneck
 # model_name = "Autoencoder_Conv1D_attention"
 # bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
-<<<<<<< HEAD
-#
-# The encoder-decoder model with LSTM bottleneck
-model_name = "Autoencoder_Cov1D_LSTM"
-bottleneck = torch.nn.LSTM(64, 32, 2, bidirectional=True,
-                           batch_first=True, dtype=torch.float64)
-=======
 
 # The encoder-decoder model with transformer encoder as bottleneck
 model_name = "Autoencoder_Conv1D_Transformer"
@@ -66,7 +59,6 @@ bottleneck = torch.nn.TransformerEncoder(encoder_layer, num_layers=2)
 # model_name = "Autoencoder_Cov1D_LSTM"
 # bottleneck = torch.nn.LSTM(64, 32, 2, bidirectional=True,
 #                            batch_first=True, dtype=torch.float64)
->>>>>>> ef3c264aa6fb2adc387cc284e365c7c2701a1f65
 
 # # Linear bottleneck
 # model_name = "Autoencoder_Conv1D_Linear"
