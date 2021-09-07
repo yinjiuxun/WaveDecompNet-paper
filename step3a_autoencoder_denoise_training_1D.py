@@ -45,22 +45,22 @@ X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
 training_data = WaveformDataset(X_train, Y_train)
 validate_data = WaveformDataset(X_validate, Y_validate)
 
-# # The encoder-decoder model with self-attention bottleneck
-# model_name = "Autoencoder_Conv1D_attention"
-# bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
+# The encoder-decoder model with self-attention bottleneck
+model_name = "Autoencoder_Conv1D_attention"
+bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
 #
 # # The encoder-decoder model with LSTM bottleneck
 # model_name = "Autoencoder_Cov1D_LSTM"
 # bottleneck = torch.nn.LSTM(64, 32, 2, bidirectional=True,
 #                            batch_first=True, dtype=torch.float64)
 
-# Linear bottleneck
+# # Linear bottleneck
 # model_name = "Autoencoder_Conv1D_Linear"
 # bottleneck = torch.nn.Linear(64, 64, dtype=torch.float64)
 
-# Model without specified bottleneck
-model_name = "Autoencoder_Conv1D_None"
-bottleneck = None
+# # Model without specified bottleneck
+# model_name = "Autoencoder_Conv1D_None"
+# bottleneck = None
 
 model = Autoencoder_Conv1D(model_name, bottleneck).to(device=try_gpu())
 
@@ -68,7 +68,7 @@ model = Autoencoder_Conv1D(model_name, bottleneck).to(device=try_gpu())
 model_dataset_dir = model_dataset_dir + '/' + model_name
 mkdir(model_dataset_dir)
 
-batch_size, epochs, lr = 128, 3, 1e-3
+batch_size, epochs, lr = 128, 300, 1e-3
 patience = 10  # patience of the early stopping
 
 loss_fn = torch.nn.MSELoss()
