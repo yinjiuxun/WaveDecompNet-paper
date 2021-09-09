@@ -35,7 +35,8 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
 # %% Specify the model directory and model name list first
 model_dataset_dir = "Model_and_datasets_1D_STEAD"
 model_names = ["Autoencoder_Conv1D_None", "Autoencoder_Conv1D_Linear",
-               "Autoencoder_Conv1D_LSTM", "Autoencoder_Conv1D_attention"]
+               "Autoencoder_Conv1D_LSTM", "Autoencoder_Conv1D_attention",
+               "Autoencoder_Conv1D_Transformer"]
 
 model_mse_all = []  # list to store the mse for all models
 model_snr_all = []  # list to store the snr for all models
