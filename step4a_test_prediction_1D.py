@@ -21,7 +21,7 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
 
 # %% Need to specify model_name first
 model_dataset_dir = "Model_and_datasets_1D_STEAD"
-model_name = "Autoencoder_Conv1D_Linear"
+model_name = "Autoencoder_Conv1D_LSTM"
 
 model_dir = model_dataset_dir + f'/{model_name}'
 
@@ -134,7 +134,7 @@ for i_model in range(50):
     # plt.show()
 
     plt.figure(1)
-    plt.savefig(figure_dir + f'/{model_name}_Prediction_waveform_model_{i_model}.png')
+    plt.savefig(figure_dir + f'/{model_name}_Prediction_waveform_model_{i_model}.pdf')
 
 # # TODO: quantify the model performance from waveform correlation
 # norm_Y_test = np.linalg.norm(Y_test, axis=1)
