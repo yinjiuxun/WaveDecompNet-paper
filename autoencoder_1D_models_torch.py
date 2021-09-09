@@ -71,7 +71,8 @@ class Autoencoder_Conv1D(nn.Module):
         x = F.relu(self.bn5(x2))
         x = F.relu(self.bn6(self.enc6(x)))
         x3 = self.enc7c(x)
-        x = F.relu(self.bn7(self.enc8(x3)))
+        x = F.relu(self.bn7(x3))
+        # x = F.relu(self.bn7(self.enc8(x3)))
 
         if self.bottleneck is not None:
             # print(x.shape)
@@ -86,8 +87,7 @@ class Autoencoder_Conv1D(nn.Module):
             x = x.permute(0, 2, 1)  # change to (batch_size, num_features, num_steps)
             # print(x.shape)
 
-
-        x = self.dec1c(x)
+        # x = self.dec1c(x)
         x = F.relu(self.bn8(x + x3))
         x = F.relu(self.bn9(self.dec2(x)))
         x = self.dec3c(x)
