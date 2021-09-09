@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 from autoencoder_1D_models_torch import Autoencoder_Conv1D, Attention_bottleneck
 
 # make the output directory
-model_dataset_dir = './Model_and_datasets_1D_STEAD'
+model_dataset_dir = './Model_and_datasets_1D_STEAD2'
 mkdir(model_dataset_dir)
 
 # %% Read the pre-processed datasets
@@ -50,13 +50,13 @@ validate_data = WaveformDataset(X_validate, Y_validate)
 # model_name = "Autoencoder_Conv1D_attention"
 # bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
 
-# The encoder-decoder model with transformer encoder as bottleneck
-model_name = "Autoencoder_Conv1D_Transformer"
-encoder_layer = torch.nn.TransformerEncoderLayer(d_model=64, nhead=8)
-bottleneck = torch.nn.TransformerEncoder(encoder_layer, num_layers=2)
+# # The encoder-decoder model with transformer encoder as bottleneck
+# model_name = "Autoencoder_Conv1D_Transformer"
+# encoder_layer = torch.nn.TransformerEncoderLayer(d_model=64, nhead=4, dtype=torch.float64)
+# bottleneck = torch.nn.TransformerEncoder(encoder_layer, num_layers=1)
 
 # # The encoder-decoder model with LSTM bottleneck
-# model_name = "Autoencoder_Cov1D_LSTM"
+# model_name = "Autoencoder_Conv1D_LSTM"
 # bottleneck = torch.nn.LSTM(64, 32, 2, bidirectional=True,
 #                            batch_first=True, dtype=torch.float64)
 
@@ -64,9 +64,9 @@ bottleneck = torch.nn.TransformerEncoder(encoder_layer, num_layers=2)
 # model_name = "Autoencoder_Conv1D_Linear"
 # bottleneck = torch.nn.Linear(64, 64, dtype=torch.float64)
 
-# # Model without specified bottleneck
-# model_name = "Autoencoder_Conv1D_None"
-# bottleneck = None
+# Model without specified bottleneck
+model_name = "Autoencoder_Conv1D_None"
+bottleneck = None
 
 print("#" * 12 + " building model " + model_name + " " + "#" * 12)
 model = Autoencoder_Conv1D(model_name, bottleneck).to(device=try_gpu())
