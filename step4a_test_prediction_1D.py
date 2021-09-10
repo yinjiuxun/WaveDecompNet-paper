@@ -20,7 +20,7 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
 
 
 # %% Need to specify model_name first
-model_dataset_dir = "Model_and_datasets_1D_STEAD"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 model_name = "Autoencoder_Conv1D_LSTM"
 
 model_dir = model_dataset_dir + f'/{model_name}'

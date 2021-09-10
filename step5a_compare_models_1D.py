@@ -18,10 +18,6 @@ def signal_to_noise_ratio(signal, noise):
     return snr0
 
 
-# make the output directory
-output_dir = "./all_model_comparison"
-mkdir(output_dir)
-
 # %% load dataset
 data_dir = './training_datasets'
 data_name = 'training_datasets_STEAD_waveform.hdf5'
@@ -33,10 +29,14 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Specify the model directory and model name list first
-model_dataset_dir = "Model_and_datasets_1D_STEAD"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 model_names = ["Autoencoder_Conv1D_None", "Autoencoder_Conv1D_Linear",
                "Autoencoder_Conv1D_LSTM", "Autoencoder_Conv1D_attention",
                "Autoencoder_Conv1D_Transformer"]
+
+# make the output directory
+output_dir = model_dataset_dir + "/" + "all_model_comparison"
+mkdir(output_dir)
 
 model_mse_all = []  # list to store the mse for all models
 model_snr_all = []  # list to store the snr for all models
