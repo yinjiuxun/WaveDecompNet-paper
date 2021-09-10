@@ -10,8 +10,8 @@ from autoencoder_1D_models_torch import *
 
 # %% load dataset
 data_dir = './training_datasets'
-#data_name = 'training_datasets_STEAD_waveform.hdf5'
-data_name = 'training_datasets_waveform.hdf5'
+data_name = 'training_datasets_STEAD_waveform.hdf5'
+#data_name = 'training_datasets_waveform.hdf5'
 
 # %% load dataset
 with h5py.File(data_dir + '/' + data_name, 'r') as f:
@@ -20,9 +20,9 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Need to specify model_name first
-bottleneck_name = "Transformer"
-#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_synthetic"
+bottleneck_name = "None"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+#model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Autoencoder_Conv1D_" + bottleneck_name
 
 model_dir = model_dataset_dir + f'/{model_name}'
@@ -104,7 +104,7 @@ from sklearn.metrics import mean_squared_error, explained_variance_score
 
 # %% Check the waveforms
 i_model = np.random.randint(0, denoised_signal.shape[0])
-for i_model in range(50):
+for i_model in range(100):
     print(i_model)
     plt.close("all")
 
@@ -121,15 +121,15 @@ for i_model in range(50):
         ax[i, 1].plot(time, denoised_signal[i_model, i, :]/scaling_factor, '-b', label='Y_predict', linewidth=1)
         # explained variance score
         evs = explained_variance_score(clean_signal[i_model, i, :], denoised_signal[i_model, i, :])
-        ax[i, 1].set_title("Earthquake signal (" + bottleneck_name + ")")
         text_y = np.min(clean_signal[i_model, i, :])
         ax[i, 1].text(50, 0.8, f'EV: {evs:.2f}')
 
         noise = noisy_signal[i_model, i, :] - denoised_signal[i_model, i, :]
         ax[i, 2].plot(time, noise/scaling_factor, '-', color='gray', label='Y_true', linewidth=1)
 
-    ax[0, 2].set_title("Separated noise (" + bottleneck_name + ")")
     ax[0, 0].set_title("Original signal")
+    ax[0, 1].set_title("Earthquake signal (" + bottleneck_name + ")")
+    ax[0, 2].set_title("Separated noise (" + bottleneck_name + ")")
 
     titles = ['E', 'N', 'Z']
     for i in range(noisy_signal.shape[1]):
