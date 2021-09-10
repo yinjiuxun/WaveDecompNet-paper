@@ -10,7 +10,8 @@ from autoencoder_1D_models_torch import *
 
 # %% load dataset
 data_dir = './training_datasets'
-data_name = 'training_datasets_STEAD_waveform.hdf5'
+#data_name = 'training_datasets_STEAD_waveform.hdf5'
+data_name = 'training_datasets_waveform.hdf5'
 
 # %% load dataset
 with h5py.File(data_dir + '/' + data_name, 'r') as f:
@@ -18,10 +19,11 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
 
-
 # %% Need to specify model_name first
-model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_name = "Autoencoder_Conv1D_LSTM"
+bottleneck_name = "Transformer"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+model_dataset_dir = "Model_and_datasets_1D_synthetic"
+model_name = "Autoencoder_Conv1D_" + bottleneck_name
 
 model_dir = model_dataset_dir + f'/{model_name}'
 
@@ -106,35 +108,47 @@ for i_model in range(50):
     print(i_model)
     plt.close("all")
 
-    fig, ax = plt.subplots(denoised_signal.shape[1], 3, sharex=True, sharey=True, num=1, figsize=(16, 8))
+    fig, ax = plt.subplots(denoised_signal.shape[1], 3, sharex=True, sharey=True, num=1, figsize=(16, 3)) #16, 8
 
     vmax = None
     vmin = None
     for i in range(noisy_signal.shape[1]):
-        ax[i, 0].plot(time, noisy_signal[i_model, i, :], '-k', label='X_input', linewidth=1.5)
-        ax[i, 0].plot(time, clean_signal[i_model, i, :], '-r', label='Y_true', linewidth=1)
-        ax[i, 1].plot(time, clean_signal[i_model, i, :], '-r', label='Y_true', linewidth=1)
-        ax[i, 1].plot(time, denoised_signal[i_model, i, :], '-b', label='Y_predict', linewidth=1)
+        scaling_factor = np.max(abs(noisy_signal[i_model, i, :]))
+
+        ax[i, 0].plot(time, noisy_signal[i_model, i, :]/scaling_factor, '-k', label='X_input', linewidth=1.5)
+        ax[i, 0].plot(time, clean_signal[i_model, i, :]/scaling_factor, '-r', label='Y_true', linewidth=1)
+        ax[i, 1].plot(time, clean_signal[i_model, i, :]/scaling_factor, '-r', label='Y_true', linewidth=1)
+        ax[i, 1].plot(time, denoised_signal[i_model, i, :]/scaling_factor, '-b', label='Y_predict', linewidth=1)
         # explained variance score
         evs = explained_variance_score(clean_signal[i_model, i, :], denoised_signal[i_model, i, :])
-        ax[i, 1].set_title(f'Explained Variance: {evs:.2f}')
+        ax[i, 1].set_title("Earthquake signal (" + bottleneck_name + ")")
+        text_y = np.min(clean_signal[i_model, i, :])
+        ax[i, 1].text(50, 0.8, f'EV: {evs:.2f}')
 
         noise = noisy_signal[i_model, i, :] - denoised_signal[i_model, i, :]
-        ax[i, 2].plot(time, noise, '-', color='gray', label='Y_true', linewidth=1)
-        ax[i, 2].set_title("Separated noise")
+        ax[i, 2].plot(time, noise/scaling_factor, '-', color='gray', label='Y_true', linewidth=1)
+
+    ax[0, 2].set_title("Separated noise (" + bottleneck_name + ")")
+    ax[0, 0].set_title("Original signal")
 
     titles = ['E', 'N', 'Z']
     for i in range(noisy_signal.shape[1]):
         ax[i, 0].set_ylabel(titles[i])
 
-    ax[0, 0].legend()
-    ax[0, 1].legend()
+    for i in range(3):
+        for j in range(3):
+            ax[i, j].axis('off')
+
+    #ax[0, 0].legend()
+    #ax[0, 1].legend()
     ax[-1, 0].set_xlabel('Time (s)')
     ax[-1, 1].set_xlabel('Time (s)')
+    ax[-1, 2].set_xlabel('Time (s)')
     # plt.show()
 
     plt.figure(1)
-    plt.savefig(figure_dir + f'/{model_name}_Prediction_waveform_model_{i_model}.pdf')
+    plt.savefig(figure_dir + f'/{model_name}_Prediction_waveform_model_{i_model}.pdf',
+                bbox_inches='tight')
 
 # # TODO: quantify the model performance from waveform correlation
 # norm_Y_test = np.linalg.norm(Y_test, axis=1)
