@@ -20,7 +20,8 @@ def signal_to_noise_ratio(signal, noise):
 
 # %% load dataset
 data_dir = './training_datasets'
-data_name = 'training_datasets_STEAD_waveform.hdf5'
+#data_name = 'training_datasets_STEAD_waveform.hdf5'
+data_name = 'training_datasets_waveform.hdf5'
 
 # %% load dataset
 with h5py.File(data_dir + '/' + data_name, 'r') as f:
@@ -29,7 +30,8 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Specify the model directory and model name list first
-model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_names = ["Autoencoder_Conv1D_None", "Autoencoder_Conv1D_Linear",
                "Autoencoder_Conv1D_LSTM", "Autoencoder_Conv1D_attention",
                "Autoencoder_Conv1D_Transformer"]
@@ -121,7 +123,32 @@ for model_name in model_names:
     model_snr_all.append(model_snr)
 
 
-import seaborn as sns
+# Save the mse and SNR of all models
+# %% Save the pre-processed datasets
+model_comparison = output_dir + '/all_model_comparison.hdf5'
+with h5py.File(model_comparison, 'w') as f:
+    f.create_dataset('model_names', data=model_names)
+    f.create_dataset('model_mse_all', data=model_mse_all)
+    f.create_dataset('model_snr_all', data=model_snr_all)
+
+
+# Load the saved model comparison
+from matplotlib import pyplot as plt
+import numpy as np
+import h5py
+import matplotlib
+
+matplotlib.rcParams.update({'font.size': 12})
+
+# %% Specify the model directory and model name list first
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+#model_dataset_dir = "Model_and_datasets_1D_synthetic"
+output_dir = model_dataset_dir + "/" + "all_model_comparison"
+
+with h5py.File(output_dir + '/all_model_comparison.hdf5', 'r') as f:
+    model_names = f['model_names'][:]
+    model_mse_all = f['model_mse_all'][:]
+    model_snr_all = f['model_snr_all'][:]
 
 plt.close('all')
 plt.figure(3)
@@ -129,16 +156,20 @@ fig, ax = plt.subplots(2, 2, sharex=True, sharey=True, squeeze=True)
 ax = ax.flatten()
 i_waveforms = np.random.choice(len(model_mse_all[0]), 10000)
 
+bottleneck_names = ["None", "Linear", "LSTM", "attention", "Transformer"]
+line_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
 for i, model_name in enumerate(model_names):
     model_mse = model_mse_all[i]
     model_snr = model_snr_all[i]
-    ii2 = np.bitwise_and(model_mse <= 1, model_mse >= 0)
+    bottleneck_name = bottleneck_names[i]
+    ii2 = np.bitwise_and(model_mse <= 1, model_mse >= -1)
 
-    hist, bin_edge = np.histogram(model_mse[ii2], bins=20, range=(0, 1))
+    hist, bin_edge = np.histogram(model_mse[ii2], bins=20, range=(-1, 1))
     hist = hist / len(model_mse[ii2])
     bin_center = bin_edge[0:-1] + (bin_edge[1] - bin_edge[0]) / 2
-    plt.figure(1)
-    plt.plot(bin_center, hist, '-o', label=model_name)
+    plt.figure(1, figsize=(8, 4))
+    plt.plot(bin_center, hist, '-o', color=line_colors[i], label=bottleneck_name)
     #
     # plt.figure(2)
     # ii1 = np.bitwise_and(model_snr <= 20, model_snr >= -40)
@@ -155,7 +186,47 @@ for i, model_name in enumerate(model_names):
 
 plt.figure(1)
 plt.xlabel('Explained variance score')
-plt.ylabel('Proportion')
+plt.ylabel('Probability Density')
 plt.legend()
+plt.grid()
 
-plt.savefig(output_dir + '/histograms.png')
+plt.savefig(output_dir + '/histograms.pdf')
+plt.savefig(output_dir + '/histograms.png', dpi=200, bbox_inches='tight')
+
+# Extract the relation between SNR and EVS
+bin_size = 0.5
+snr_bin_edge = np.arange(-2, 1, bin_size)
+snr_bin_center = snr_bin_edge + bin_size/2
+mse_median_all = []
+mse_std_all = []
+for i in range(5):
+    mse_median = []
+    mse_std = []
+    model_snr = model_snr_all[i]/10
+    model_mse = model_mse_all[i]
+    for bin in snr_bin_edge:
+        ii_bin = np.bitwise_and(model_snr <= (bin + bin_size), model_snr >= bin)
+        mse_median.append(np.median(model_mse[ii_bin]))
+        mse_std.append(np.std(model_mse[ii_bin]))
+
+    mse_median_all.append(np.array(mse_median))
+    mse_std_all.append(np.array(mse_std))
+
+
+
+
+plt.figure(2, figsize=(8, 4))
+for i in range(5):
+    plt.plot(model_snr_all[i]/10, model_mse_all[i], '.', color=line_colors[i], alpha=0.01)
+    plt.errorbar(snr_bin_center + i*0.05 - 0.125, mse_median_all[i], yerr=mse_std_all[i],
+                 marker='s', color=line_colors[i], linewidth=2,
+                 label=bottleneck_names[i], elinewidth=1.5, zorder=3)
+    plt.xlim(-2, 1)
+    plt.ylim(-0.5, 1.1)
+plt.legend(loc=4)
+plt.xlabel('log10(SNR)', fontsize=15)
+plt.ylabel('Median EV', fontsize=15)
+plt.grid()
+
+#plt.savefig(output_dir + '/SNR_vs_EV.pdf')
+plt.savefig(output_dir + '/SNR_vs_EV.png', dpi=200, bbox_inches='tight')
