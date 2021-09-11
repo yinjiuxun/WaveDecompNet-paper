@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import h5py
-from utilities import mkdir
+from utilities import mkdir, waveform_fft
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import DataLoader
@@ -20,7 +20,7 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Need to specify model_name first
-bottleneck_name = "None"
+bottleneck_name = "Transformer"
 model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Autoencoder_Conv1D_" + bottleneck_name
@@ -104,11 +104,11 @@ from sklearn.metrics import mean_squared_error, explained_variance_score
 
 # %% Check the waveforms
 i_model = np.random.randint(0, denoised_signal.shape[0])
-for i_model in range(100):
+for i_model in range(1):
     print(i_model)
     plt.close("all")
 
-    fig, ax = plt.subplots(denoised_signal.shape[1], 3, sharex=True, sharey=True, num=1, figsize=(16, 3)) #16, 8
+    fig, ax = plt.subplots(denoised_signal.shape[1], 3, sharex=True, sharey=True, num=1, figsize=(9, 3)) #16, 8
 
     vmax = None
     vmin = None
@@ -128,8 +128,12 @@ for i_model in range(100):
         ax[i, 2].plot(time, noise/scaling_factor, '-', color='gray', label='Y_true', linewidth=1)
 
     ax[0, 0].set_title("Original signal")
-    ax[0, 1].set_title("Earthquake signal (" + bottleneck_name + ")")
-    ax[0, 2].set_title("Separated noise (" + bottleneck_name + ")")
+    if bottleneck_name == "Transformer":
+        ax[0, 1].set_title("Earthquake signal (Trans.)")
+        ax[0, 2].set_title("Separated noise (Trans.)")
+    else:
+        ax[0, 1].set_title("Earthquake signal (" + bottleneck_name + ")")
+        ax[0, 2].set_title("Separated noise (" + bottleneck_name + ")")
 
     titles = ['E', 'N', 'Z']
     for i in range(noisy_signal.shape[1]):
@@ -149,6 +153,49 @@ for i_model in range(100):
     plt.figure(1)
     plt.savefig(figure_dir + f'/{model_name}_Prediction_waveform_model_{i_model}.pdf',
                 bbox_inches='tight')
+
+# %% Check the waveform spectrum
+for i_model in range(100):
+    print(i_model)
+    plt.close("all")
+
+    fig, ax = plt.subplots(1, denoised_signal.shape[1], sharex=True, sharey=True, num=1, figsize=(12, 2)) #16, 8
+
+    for i in range(noisy_signal.shape[1]):
+        noise = noisy_signal[i_model, i, :] - denoised_signal[i_model, i, :]
+        scaling_factor = np.max(abs(noisy_signal[i_model, i, :]))
+        dt = time[1] - time[0]
+        _, spect_noisy_signal = waveform_fft(noisy_signal[i_model, i, :]/scaling_factor, dt)
+        _, spect_clean_signal = waveform_fft(clean_signal[i_model, i, :]/scaling_factor, dt)
+        _, spect_noise = waveform_fft(noise / scaling_factor, dt)
+        freq, spect_denoised_signal = waveform_fft(denoised_signal[i_model, i, :]/scaling_factor, dt)
+
+        #ax[i].loglog(freq, spect_noisy_signal, '-k', label='X_input', linewidth=1.5)
+        ax[i].loglog(freq, spect_noise, '-', color='gray', label='noise', linewidth=0.5, alpha=1)
+        ax[i].loglog(freq, spect_clean_signal, '-r', label='Y_true', linewidth=0.5, alpha=1)
+        ax[i].loglog(freq, spect_denoised_signal, '-b', label='Y_pred', linewidth=0.5, alpha=1)
+
+        ax[i].grid(alpha=0.2)
+        ax[i].set_xlabel('Freq (Hz)')
+        ax[i].set_ylabel('Spectra')
+
+    ax[i].legend()
+    # ax[0, 0].set_title("Original signal")
+    # if bottleneck_name == "Transformer":
+    #     ax[0, 1].set_title("Earthquake signal (Trans.)")
+    #     ax[0, 2].set_title("Separated noise (Trans.)")
+    # else:
+    #     ax[0, 1].set_title("Earthquake signal (" + bottleneck_name + ")")
+    #     ax[0, 2].set_title("Separated noise (" + bottleneck_name + ")")
+
+    titles = ['E', 'N', 'Z']
+    for i in range(noisy_signal.shape[1]):
+        ax[i].set_title(titles[i])
+
+    plt.figure(1)
+    plt.savefig(figure_dir + f'/{model_name}_spectrum_{i_model}.pdf',
+                bbox_inches='tight')
+
 
 # # TODO: quantify the model performance from waveform correlation
 # norm_Y_test = np.linalg.norm(Y_test, axis=1)
