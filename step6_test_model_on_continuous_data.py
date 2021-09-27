@@ -20,12 +20,12 @@ waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 
 tr = obspy.read(waveform_mseed)
 
-tr.filter('highpass', freq=2)
+tr.filter('highpass', freq=1)
 
-# t1 = obspy.UTCDateTime("2021-08-03T12:00:00")
-# t2 = obspy.UTCDateTime("2021-08-03T12:01:00")
-# t1 = obspy.UTCDateTime("2021-08-01T12:08:00")
-# t2 = obspy.UTCDateTime("2021-08-30T12:09:00")
+t1 = obspy.UTCDateTime("2021-08-03T12:07:00")
+t2 = obspy.UTCDateTime("2021-08-03T12:10:00")
+# t1 = obspy.UTCDateTime("2021-08-03T11:58:00")
+# t2 = obspy.UTCDateTime("2021-08-03T12:03:00")
 # tr.plot(starttime=t1, endtime=t2)
 
 npts0 = tr[0].stats.npts # number of samples
@@ -45,25 +45,25 @@ time, waveform, dt = downsample_series(time0, waveform0, f_downsample)
 del time0, waveform0, tr
 
 
-data_mean = np.mean(waveform, axis=0)
-data_std = np.std(waveform - data_mean, axis=0)
-waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
-waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600, 3))
-
-# # TODO: Reformat the data into the format required by the model (batch, channel, samples)
-# waveform = np.reshape(waveform[:, np.newaxis, :], (-1, 600, 3))
-#
-# # # TODO: Normalize the waveform first!
-# data_mean = np.mean(waveform, axis=1, keepdims=True)
-# data_std = np.std(waveform - data_mean, axis=1, keepdims=True)
+# data_mean = np.mean(waveform, axis=0)
+# data_std = np.std(waveform - data_mean, axis=0)
 # waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
+# waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600, 3))
+
+# TODO: Reformat the data into the format required by the model (batch, channel, samples)
+waveform = np.reshape(waveform[:, np.newaxis, :], (-1, 600, 3))
+
+# # TODO: Normalize the waveform first!
+data_mean = np.mean(waveform, axis=1, keepdims=True)
+data_std = np.std(waveform - data_mean, axis=1, keepdims=True)
+waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
 
 # TODO: Predict the separated waveforms
 waveform_data = WaveformDataset(waveform_normalized, waveform_normalized)
 
 # %% Need to specify model_name first
 bottleneck_name = "LSTM"
-model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2_test"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Autoencoder_Conv1D_" + bottleneck_name
 
@@ -90,7 +90,7 @@ for i, (X, _) in enumerate(test_iter):
 
 
 # Check the waveform
-waveform_recovered = all_output * data_std + data_mean
+waveform_recovered = all_output
 waveform_recovered = np.reshape(waveform_recovered, (-1, 3))
 
 waveform_original = np.reshape(waveform, (-1, 3))
@@ -106,8 +106,12 @@ all_output0 = np.reshape(all_output, (-1, 3))
 plt.plot(all_output0[:, 0])
 
 
-
-
+temp = X
+temp_out = model(X)
+step = 20
+for ii in range(0, 216, step):
+    plt.plot(temp[ii, 0, :] + ii/step * 4, '-r')
+    plt.plot(temp_out[ii, 0, :].detach().numpy() + ii/step * 4, '-b')
 
 import h5py
 # %% load dataset
