@@ -210,11 +210,11 @@ with h5py.File(model_datasets, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
 
-i = np.random.randint(0, 2000)
+i = np.random.randint(0, X_train.shape[0])
 plt.close('all')
 print(i)
-plt.plot(X_train[i, :, 0])
-plt.plot(Y_train[i, :, 0], alpha=0.7)
+plt.plot(time_new, X_train[i, :, 0])
+plt.plot(time_new, Y_train[i, :, 0], alpha=0.7)
 
 
 plt.plot(X_train.reshape(-1, 3)[:, 0])
