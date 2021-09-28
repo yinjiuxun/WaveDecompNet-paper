@@ -86,6 +86,7 @@ class EarlyStopping:
 
 
 # PyTorch
+# Try the new loss function
 class Explained_Variance_Loss(torch.nn.Module):
     def __init__(self, weight=None, size_average=True):
         super(Explained_Variance_Loss, self).__init__()
