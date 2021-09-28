@@ -85,6 +85,16 @@ class EarlyStopping:
         self.val_loss_min = val_loss
 
 
+# PyTorch
+class Explained_Variance_Loss(torch.nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(Explained_Variance_Loss, self).__init__()
+
+    def forward(self, inputs, targets):
+        return torch.var(targets - inputs, dim=2, unbiased=True, keepdim=True) \
+               / torch.var(inputs, dim=2, unbiased=True, keepdim=True)
+
+
 def try_gpu(i=0):  # @save
     """Return gpu(i) if exists, otherwise return cpu()."""
     if torch.cuda.device_count() >= i + 1:
