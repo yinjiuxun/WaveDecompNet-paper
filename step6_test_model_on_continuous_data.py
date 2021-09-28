@@ -20,7 +20,7 @@ waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 
 tr = obspy.read(waveform_mseed)
 
-tr.filter('highpass', freq=1)
+#tr.filter('highpass', freq=1)
 
 t1 = obspy.UTCDateTime("2021-08-03T12:07:00")
 t2 = obspy.UTCDateTime("2021-08-03T12:10:00")
@@ -63,7 +63,7 @@ waveform_data = WaveformDataset(waveform_normalized, waveform_normalized)
 
 # %% Need to specify model_name first
 bottleneck_name = "LSTM"
-model_dataset_dir = "Model_and_datasets_1D_STEAD2_test"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Autoencoder_Conv1D_" + bottleneck_name
 
@@ -124,3 +124,56 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     time = f['time'][:]
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
+
+
+import scipy
+def randomization_noise(noise, rng=np.random.default_rng(None)):
+    """function to produce randomized noise by shiftint the phase
+    randomization_noise(noise, rng=np.random.default_rng(None))
+    return randomized noise
+    """
+
+    s = scipy.fft.fft(noise)
+    phase_angle_shift = (rng.random(len(s)) - 0.5) * 2 * np.pi
+    # make sure the inverse transform is real
+    phase_angle_shift[0] = 0
+    phase_angle_shift[int(len(s) / 2 + 1):(len(s) + 1)] = -1 * \
+                                                          np.flip(phase_angle_shift[1:int(len(s) / 2 + 1)])
+
+    phase_shift = np.exp(np.ones(s.shape) * phase_angle_shift * 1j)
+
+    # Here apply the phase shift in the entire domain
+    # s_shifted = np.abs(s) * phase_shift
+
+    # Instead, try only shift frequency below 10Hz
+    freq = scipy.fft.fftfreq(len(s), dt)
+    ii_freq = abs(freq) <= 10
+    s_shifted = s.copy()
+    s_shifted[ii_freq] = np.abs(s[ii_freq]) * phase_shift[ii_freq]
+
+    noise_random = np.real(scipy.fft.ifft(s_shifted))
+    return noise_random
+
+
+waveform_temp = waveform[4000:10001, 0]
+noise_random = randomization_noise(waveform_temp)
+plt.plot(waveform_temp)
+plt.plot(noise_random)
+
+
+def produce_randomized_noise(noise, num_of_random,
+                             rng=np.random.default_rng(None)):
+    """function to produce num_of_random randomized noise
+    produce_randomized_noise(noise, num_of_random,
+                             rng=np.random.default_rng(None))
+    return np array with shape of num_of_random x npt_noise
+    """
+
+    noise_array = []
+    # randomly produce num_of_random pieces of random noise
+    for i in range(num_of_random):
+        noise_random = randomization_noise(noise, rng=rng)
+        noise_array.append(noise_random)
+
+    noise_array = np.array(noise_array)
+    return noise_array
