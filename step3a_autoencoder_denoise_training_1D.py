@@ -22,7 +22,7 @@ from autoencoder_1D_models_torch import Autoencoder_Conv1D, Attention_bottleneck
 
 # make the output directory
 #model_dataset_dir = './Model_and_datasets_1D_STEAD2'
-#model_dataset_dir = './Model_and_datasets_1D_STEAD2_test'
+#model_dataset_dir = './Model_and_datasets_1D_STEAD2_relu'
 #model_dataset_dir = './Model_and_datasets_1D_synthetic'
 model_dataset_dir = './Model_and_datasets_1D_STEAD_plus_POHA'
 mkdir(model_dataset_dir)
@@ -60,18 +60,18 @@ validate_data = WaveformDataset(X_validate, Y_validate)
 # encoder_layer = torch.nn.TransformerEncoderLayer(d_model=64, nhead=4, dtype=torch.float64)
 # bottleneck = torch.nn.TransformerEncoder(encoder_layer, num_layers=1)
 
-# The encoder-decoder model with LSTM bottleneck
-model_name = "Autoencoder_Conv1D_LSTM"
-bottleneck = torch.nn.LSTM(64, 32, 2, bidirectional=True,
-                           batch_first=True, dtype=torch.float64)
+# # The encoder-decoder model with LSTM bottleneck
+# model_name = "Autoencoder_Conv1D_LSTM"
+# bottleneck = torch.nn.LSTM(64, 32, 2, bidirectional=True,
+#                            batch_first=True, dtype=torch.float64)
 
 # # Linear bottleneck
 # model_name = "Autoencoder_Conv1D_Linear"
 # bottleneck = torch.nn.Linear(64, 64, dtype=torch.float64)
 
-# # Model without specified bottleneck
-# model_name = "Autoencoder_Conv1D_None"
-# bottleneck = None
+# Model without specified bottleneck
+model_name = "Autoencoder_Conv1D_None"
+bottleneck = None
 
 print("#" * 12 + " building model " + model_name + " " + "#" * 12)
 model = Autoencoder_Conv1D(model_name, bottleneck).to(device=try_gpu())
@@ -84,8 +84,6 @@ batch_size, epochs, lr = 128, 300, 1e-3
 patience = 10  # patience of the early stopping
 
 loss_fn = torch.nn.MSELoss()
-# from torch_tools import Explained_Variance_Loss
-# loss_fn = Explained_Variance_Loss() # doesn't work yet
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 train_iter = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=True)
