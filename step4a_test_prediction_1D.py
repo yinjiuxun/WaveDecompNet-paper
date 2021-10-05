@@ -20,7 +20,7 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Need to specify model_name first
-bottleneck_name = "Transformer"
+bottleneck_name = "LSTM"
 model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Autoencoder_Conv1D_" + bottleneck_name
@@ -104,7 +104,7 @@ from sklearn.metrics import mean_squared_error, explained_variance_score
 
 # %% Check the waveforms
 i_model = np.random.randint(0, denoised_signal.shape[0])
-for i_model in range(1):
+for i_model in range(50):
     print(i_model)
     plt.close("all")
 
@@ -155,7 +155,7 @@ for i_model in range(1):
                 bbox_inches='tight')
 
 # %% Check the waveform spectrum
-for i_model in range(100):
+for i_model in range(1):
     print(i_model)
     plt.close("all")
 
