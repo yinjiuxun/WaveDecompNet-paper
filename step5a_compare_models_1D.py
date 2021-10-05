@@ -21,7 +21,8 @@ def signal_to_noise_ratio(signal, noise):
 # %% load dataset
 data_dir = './training_datasets'
 #data_name = 'training_datasets_STEAD_waveform.hdf5'
-data_name = 'training_datasets_waveform.hdf5'
+#data_name = 'training_datasets_waveform.hdf5'
+data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
 
 # %% load dataset
 with h5py.File(data_dir + '/' + data_name, 'r') as f:
@@ -31,7 +32,8 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
 
 # %% Specify the model directory and model name list first
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_synthetic"
+#model_dataset_dir = "Model_and_datasets_1D_synthetic"
+model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 model_names = ["Autoencoder_Conv1D_None", "Autoencoder_Conv1D_Linear",
                "Autoencoder_Conv1D_LSTM", "Autoencoder_Conv1D_attention",
                "Autoencoder_Conv1D_Transformer"]
@@ -141,8 +143,9 @@ import matplotlib
 matplotlib.rcParams.update({'font.size': 12})
 
 # %% Specify the model directory and model name list first
-model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
+model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 output_dir = model_dataset_dir + "/" + "all_model_comparison"
 
 with h5py.File(output_dir + '/all_model_comparison.hdf5', 'r') as f:
@@ -198,18 +201,22 @@ bin_size = 0.5
 snr_bin_edge = np.arange(-2, 1, bin_size)
 snr_bin_center = snr_bin_edge + bin_size/2
 mse_median_all = []
+mse_mean_all = []
 mse_std_all = []
 for i in range(5):
     mse_median = []
+    mse_mean = []
     mse_std = []
     model_snr = model_snr_all[i]/10
     model_mse = model_mse_all[i]
     for bin in snr_bin_edge:
         ii_bin = np.bitwise_and(model_snr <= (bin + bin_size), model_snr >= bin)
         mse_median.append(np.median(model_mse[ii_bin]))
+        mse_mean.append(np.mean(model_mse[ii_bin]))
         mse_std.append(np.std(model_mse[ii_bin]))
 
     mse_median_all.append(np.array(mse_median))
+    mse_mean_all.append(np.array(mse_median))
     mse_std_all.append(np.array(mse_std))
 
 
@@ -218,14 +225,14 @@ for i in range(5):
 plt.figure(2, figsize=(8, 4))
 for i in range(5):
     plt.plot(model_snr_all[i]/10, model_mse_all[i], '.', color=line_colors[i], alpha=0.01)
-    plt.errorbar(snr_bin_center + i*0.05 - 0.125, mse_median_all[i], yerr=mse_std_all[i],
+    plt.errorbar(snr_bin_center + i*0.05 - 0.125, mse_mean_all[i], yerr=mse_std_all[i],
                  marker='s', color=line_colors[i], linewidth=2,
                  label=bottleneck_names[i], elinewidth=1.5, zorder=3)
     plt.xlim(-2, 1)
-    plt.ylim(-0.5, 1.1)
+    plt.ylim(0.48, 1.12)
 plt.legend(loc=4)
 plt.xlabel('log10(SNR)', fontsize=15)
-plt.ylabel('Median EV', fontsize=15)
+plt.ylabel('Explained Variance', fontsize=15)
 plt.grid()
 
 #plt.savefig(output_dir + '/SNR_vs_EV.pdf')
