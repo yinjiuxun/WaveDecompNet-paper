@@ -72,14 +72,12 @@ sta_lat = inventory[0][0].latitude
 sta_lon = inventory[0][0].longitude
 
 # %% Search for the events within a given range
-t1 = obspy.UTCDateTime("2021-08-01")
-t2 = obspy.UTCDateTime("2021-09-01")
+t1 = obspy.UTCDateTime("2021-07-01")
+t2 = obspy.UTCDateTime("2021-08-01")
 
 catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=2.5,
                             latitude=sta_lat, longitude=sta_lon, minradius=5, maxradius=90,
                             maxdepth=100)
-
-catalog.write(waveform_dir + "/events_by_distance.xml", format="QUAKEML")
 
 # % % determine the time window of the waveform based on the P arrival, will download 1 hour before and 2 hours
 # after P
@@ -91,4 +89,7 @@ try:
     tr = download_waveforms(network, station, 'BH*', location, starttime, endtime, waveform_dir, fname)
 except:
     print("Issue downloading data")
+
+catalog_name = 'catalog.' + starttime.strftime("%Y%m%d") + "-" + endtime.strftime("%Y%m%d") + '.xml'
+catalog.write(waveform_dir + "/" + catalog_name, format="QUAKEML")
 
