@@ -6,6 +6,8 @@ from matplotlib import pyplot as plt
 
 # import the Obspy modules that we will use in this exercise
 import obspy
+from obspy.taup import TauPyModel
+from obspy.geodetics import locations2degrees
 
 from utilities import downsample_series
 from torch_tools import WaveformDataset, try_gpu
@@ -15,21 +17,68 @@ from torch.utils.data import DataLoader
 # %%
 working_dir = os.getcwd()
 
+# waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
+#waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
 waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+#waveform_mseed = waveform_dir + '/' + 'IU.POHA.10.20210731-20210901.mseed'
 
 tr = obspy.read(waveform_mseed)
-
+tr.merge(fill_value=0) # in case that there are segmented traces
 #tr.filter('highpass', freq=1)
 
-t1 = obspy.UTCDateTime("2021-08-03T12:07:00")
-t2 = obspy.UTCDateTime("2021-08-03T12:10:00")
+t1 = obspy.UTCDateTime("2021-07-19T12:07:00")
+t2 = obspy.UTCDateTime("2021-07-19T12:10:00")
 # t1 = obspy.UTCDateTime("2021-08-03T11:58:00")
 # t2 = obspy.UTCDateTime("2021-08-03T12:03:00")
 # tr.plot(starttime=t1, endtime=t2)
 
 npts0 = tr[0].stats.npts # number of samples
 dt0 = tr[0].stats.delta # dt
+
+# event catalog
+event_catalog = waveform_dir + '/' + 'catalog.20210731-20210901.xml'
+
+# station information
+station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
+sta_lat = station[0][0].latitude
+sta_lon = station[0][0].longitude
+
+# read the catalog
+events = obspy.read_events(event_catalog)
+# estimate the arrival time of each earthquake to the station
+t0 = tr[0].stats.starttime
+event_arrival_P = np.zeros(len(events))
+event_arrival_S = np.zeros(len(events))
+epi_distance = np.zeros(len(events))
+event_magnitude = np.array([event.magnitudes[0].mag for event in events])
+for i_event in range(len(events)):
+    event = events[i_event]
+    # print(event)
+    # print(event.origins[0])
+    # % % extract the event information
+    event_time = event.origins[0].time
+    event_lon = event.origins[0].longitude
+    event_lat = event.origins[0].latitude
+    event_dep = event.origins[0].depth / 1e3
+
+    # % % estimate the distance and the P arrival time from the event to the station
+    try:
+        distance_to_source = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
+        epi_distance[i_event] = distance_to_source
+        model = TauPyModel(model='iasp91')
+
+        arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['P'])
+        P_arrival = arrivals[0].time
+        arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['S'])
+        S_arrival = arrivals[0].time
+        # the relative arrival time on the waveform when the event signal arrives
+        event_arrival_P[i_event] = event_time - t0 + P_arrival
+        event_arrival_S[i_event] = event_time - t0 + S_arrival
+    except:
+        event_arrival_P[i_event] = np.nan
+        event_arrival_S[i_event] = np.nan
+
 
 # Reformat the waveform data into array
 waveform0 = np.zeros((npts0, 3))
@@ -45,24 +94,25 @@ time, waveform, dt = downsample_series(time0, waveform0, f_downsample)
 del time0, waveform0, tr
 
 
-# data_mean = np.mean(waveform, axis=0)
-# data_std = np.std(waveform - data_mean, axis=0)
-# waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
-# waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600, 3))
-
-# TODO: Reformat the data into the format required by the model (batch, channel, samples)
-waveform = np.reshape(waveform[:, np.newaxis, :], (-1, 600, 3))
-
-# # TODO: Normalize the waveform first!
-data_mean = np.mean(waveform, axis=1, keepdims=True)
-data_std = np.std(waveform - data_mean, axis=1, keepdims=True)
+data_mean = np.mean(waveform, axis=0)
+data_std = np.std(waveform, axis=0)
 waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
+waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600, 3))
+
+# # TODO: Reformat the data into the format required by the model (batch, channel, samples)
+# waveform = np.reshape(waveform[:, np.newaxis, :], (-1, 600, 3))
+#
+# # # TODO: Normalize the waveform first!
+# data_mean = np.mean(waveform, axis=1, keepdims=True)
+# data_std = np.std(waveform, axis=1, keepdims=True)
+# waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
 
 # TODO: Predict the separated waveforms
 waveform_data = WaveformDataset(waveform_normalized, waveform_normalized)
 
 # %% Need to specify model_name first
 bottleneck_name = "LSTM"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Autoencoder_Conv1D_" + bottleneck_name
@@ -90,14 +140,45 @@ for i, (X, _) in enumerate(test_iter):
 
 
 # Check the waveform
-waveform_recovered = all_output
+waveform_recovered = all_output * data_std + data_mean
 waveform_recovered = np.reshape(waveform_recovered, (-1, 3))
 
 waveform_original = np.reshape(waveform, (-1, 3))
+waveform_time = np.arange(waveform_original.shape[0]) / f_downsample
 
+# scaled event magnitude (this is just a test)
+scaled_magnitude = 10**event_magnitude/epi_distance/10
 
+plt.close(1)
+plt.figure(1, figsize=(18, 6))
+for ii in range(3):
+    plt.plot(waveform_time, waveform_original[:, ii]/np.max(abs(waveform_original[:, ii]))*5 + ii/2,
+             color='gray', alpha=0.8, zorder=-2)
+for ii in range(3):
+    waveform_recovered_scaled = waveform_recovered[:, ii]/np.max(abs(waveform_original[:, ii]))*5
+    plt.plot(waveform_time, waveform_recovered_scaled + ii/2, color='black', zorder=-1)
+    waveform_recovered_scaled[abs(waveform_recovered_scaled - np.mean(waveform_recovered_scaled)) <5e-4] = np.nan
+    plt.plot(waveform_time, waveform_recovered_scaled + ii/2, '-r', linewidth=1.5, zorder=0)
+    plt.scatter(event_arrival_P, np.ones(len(event_arrival_P)) * ii/2, 50,
+                'b', marker='+', linewidth=1.5, zorder=5)
+    plt.scatter(event_arrival_S, np.ones(len(event_arrival_S)) * ii / 2, 50,
+                'b', marker='x', linewidth=2, zorder=5)
+    # plt.scatter(event_arrival_P, np.ones(len(event_arrival_P)) * ii / 2, scaled_magnitude/10,
+    #            'b', marker='+', linewidth=2, zorder=5)
+    # plt.scatter(event_arrival_S, np.ones(len(event_arrival_S)) * ii / 2, scaled_magnitude/10,
+    #            'b', marker='x', linewidth=2, zorder=5)
+
+plt.ylim(-1, 2)
+plt.xlim(1018000, 1028000)
+plt.xlabel('Time (s)')
+plt.yticks([-1, 1], labels='')
+plt.savefig(waveform_dir + '/continueous_separation_IU.POHA_' + bottleneck_name + '_STEAD_plus_POHA_t4.pdf')
+
+plt.figure(2)
 plt.plot(waveform_original[:, 0])
-plt.plot(waveform_recovered[:, 0])
+plt.plot(waveform_original[:, 0] - waveform_recovered[:, 0], alpha=1)
+
+
 
 plt.plot(waveform_original[:, 0] / np.max(abs(waveform_original[:, 0])))
 plt.plot(waveform_recovered[:, 0] / np.max(abs(waveform_recovered[:, 0])))
@@ -124,56 +205,3 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     time = f['time'][:]
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
-
-
-import scipy
-def randomization_noise(noise, rng=np.random.default_rng(None)):
-    """function to produce randomized noise by shiftint the phase
-    randomization_noise(noise, rng=np.random.default_rng(None))
-    return randomized noise
-    """
-
-    s = scipy.fft.fft(noise)
-    phase_angle_shift = (rng.random(len(s)) - 0.5) * 2 * np.pi
-    # make sure the inverse transform is real
-    phase_angle_shift[0] = 0
-    phase_angle_shift[int(len(s) / 2 + 1):(len(s) + 1)] = -1 * \
-                                                          np.flip(phase_angle_shift[1:int(len(s) / 2 + 1)])
-
-    phase_shift = np.exp(np.ones(s.shape) * phase_angle_shift * 1j)
-
-    # Here apply the phase shift in the entire domain
-    # s_shifted = np.abs(s) * phase_shift
-
-    # Instead, try only shift frequency below 10Hz
-    freq = scipy.fft.fftfreq(len(s), dt)
-    ii_freq = abs(freq) <= 10
-    s_shifted = s.copy()
-    s_shifted[ii_freq] = np.abs(s[ii_freq]) * phase_shift[ii_freq]
-
-    noise_random = np.real(scipy.fft.ifft(s_shifted))
-    return noise_random
-
-
-waveform_temp = waveform[4000:10001, 0]
-noise_random = randomization_noise(waveform_temp)
-plt.plot(waveform_temp)
-plt.plot(noise_random)
-
-
-def produce_randomized_noise(noise, num_of_random,
-                             rng=np.random.default_rng(None)):
-    """function to produce num_of_random randomized noise
-    produce_randomized_noise(noise, num_of_random,
-                             rng=np.random.default_rng(None))
-    return np array with shape of num_of_random x npt_noise
-    """
-
-    noise_array = []
-    # randomly produce num_of_random pieces of random noise
-    for i in range(num_of_random):
-        noise_random = randomization_noise(noise, rng=rng)
-        noise_array.append(noise_random)
-
-    noise_array = np.array(noise_array)
-    return noise_array

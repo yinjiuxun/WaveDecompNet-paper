@@ -10,7 +10,8 @@ from autoencoder_1D_models_torch import *
 
 # %% load dataset
 data_dir = './training_datasets'
-data_name = 'training_datasets_STEAD_waveform.hdf5'
+#data_name = 'training_datasets_STEAD_waveform.hdf5'
+data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
 #data_name = 'training_datasets_waveform.hdf5'
 
 # %% load dataset
@@ -20,8 +21,8 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Need to specify model_name first
-bottleneck_name = "LSTM"
-model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+bottleneck_name = "Transformer"
+model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Autoencoder_Conv1D_" + bottleneck_name
 
@@ -104,7 +105,7 @@ from sklearn.metrics import mean_squared_error, explained_variance_score
 
 # %% Check the waveforms
 i_model = np.random.randint(0, denoised_signal.shape[0])
-for i_model in range(50):
+for i_model in range(100):
     print(i_model)
     plt.close("all")
 
