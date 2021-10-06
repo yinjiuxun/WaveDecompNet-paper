@@ -219,3 +219,20 @@ class Attention_bottleneck(nn.Module):
         X = self.pe(X)  # postional encoding
         X = self.attention(X, X, X)  # self attention
         return X
+
+
+class Attention_bottleneck_LSTM(nn.Module):
+    def __init__(self, num_hiddens, num_heads, dropout, bias=False, **kwargs):
+        super(Attention_bottleneck_LSTM, self).__init__(**kwargs)
+        # self.pe = PositionalEncoding(num_hiddens, dropout)
+        self.lstm = torch.nn.LSTM(num_hiddens, int(num_hiddens / 2), 1, bidirectional=True,
+                                  batch_first=True, dtype=torch.float64)
+        self.attention = MultiHeadAttention(num_hiddens, num_hiddens,
+                                            num_hiddens, num_hiddens,
+                                            num_heads, dropout)
+
+    def forward(self, X):
+        # shape of X: (batch_size, num_steps, num_features)
+        X, _ = self.lstm(X)  # postional encoding
+        X = self.attention(X, X, X)  # self attention
+        return X
