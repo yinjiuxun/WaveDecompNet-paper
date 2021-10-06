@@ -79,16 +79,20 @@ if not os.path.exists(training_data_dir):
     os.mkdir(training_data_dir)
 
 # %% Import the data
-with h5py.File('./synthetic_noisy_waveforms/synthetic_waveforms_pyrocko_ENZ.hdf5', 'r') as f:
+with h5py.File('./training_datasets/training_datasets_STEAD_waveform.hdf5', 'r') as f:
     time = f['time'][:]
     X_train_original = f['X_train'][:]
     Y_train_original = f['Y_train'][:]
 
+# For STEAD data only, the dimension need to be adjusted.
+X_train_original = np.moveaxis(X_train_original, 1, -1)
+Y_train_original = np.moveaxis(Y_train_original, 1, -1)
+
 # %% Preprocessing the data to get Min-Max-Scaled spectrograms
 from utilities import waveform_stft, waveform_inverse_stft
 
-twin = 30
-toverlap = 11  # chose 11 here to make a better shape of the spectrogram
+twin = 3
+toverlap = 1.1  # chose 11 here to make a better shape of the spectrogram
 win_type = 'hann'
 
 spectrogram_X, spectrogram_Y = [], []
