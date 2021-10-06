@@ -18,7 +18,7 @@ from utilities import mkdir
 import torch
 from torch_tools import WaveformDataset, EarlyStopping, try_gpu, training_loop
 from torch.utils.data import DataLoader
-from autoencoder_1D_models_torch import Autoencoder_Conv1D, Attention_bottleneck
+from autoencoder_1D_models_torch import Autoencoder_Conv1D, Attention_bottleneck, Attention_bottleneck_LSTM
 
 # make the output directory
 #model_dataset_dir = './Model_and_datasets_1D_STEAD2'
@@ -55,6 +55,10 @@ validate_data = WaveformDataset(X_validate, Y_validate)
 # model_name = "Autoencoder_Conv1D_attention"
 # bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
 
+# Attention bottleneck with LSTM as positional embedding
+model_name = "Autoencoder_Conv1D_attention_LSTM"
+bottleneck = Attention_bottleneck_LSTM(64, 4, 0.2) # Add the attention bottleneck
+
 # # The encoder-decoder model with transformer encoder as bottleneck
 # model_name = "Autoencoder_Conv1D_Transformer"
 # encoder_layer = torch.nn.TransformerEncoderLayer(d_model=64, nhead=4, dtype=torch.float64)
@@ -69,9 +73,9 @@ validate_data = WaveformDataset(X_validate, Y_validate)
 # model_name = "Autoencoder_Conv1D_Linear"
 # bottleneck = torch.nn.Linear(64, 64, dtype=torch.float64)
 
-# Model without specified bottleneck
-model_name = "Autoencoder_Conv1D_None"
-bottleneck = None
+# # Model without specified bottleneck
+# model_name = "Autoencoder_Conv1D_None"
+# bottleneck = None
 
 print("#" * 12 + " building model " + model_name + " " + "#" * 12)
 model = Autoencoder_Conv1D(model_name, bottleneck).to(device=try_gpu())
