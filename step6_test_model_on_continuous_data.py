@@ -9,7 +9,7 @@ import obspy
 from obspy.taup import TauPyModel
 from obspy.geodetics import locations2degrees
 
-from utilities import downsample_series
+from utilities import downsample_series, mkdir
 from torch_tools import WaveformDataset, try_gpu
 import torch
 from torch.utils.data import DataLoader
@@ -148,6 +148,14 @@ waveform_time = np.arange(waveform_original.shape[0]) / f_downsample
 
 # scaled event magnitude (this is just a test)
 scaled_magnitude = 10**event_magnitude/epi_distance/10
+
+import h5py
+waveform_output_dir = waveform_dir + '/' + model_dataset_dir
+mkdir(waveform_output_dir)
+with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'w') as f:
+    f.create_dataset("waveform_time", data=waveform_time)
+    f.create_dataset("waveform_original", data=waveform_original)
+    f.create_dataset("waveform_recovered", data=waveform_recovered)
 
 plt.close(1)
 plt.figure(1, figsize=(18, 6))
