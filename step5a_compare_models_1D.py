@@ -20,9 +20,9 @@ def signal_to_noise_ratio(signal, noise):
 
 # %% load dataset
 data_dir = './training_datasets'
-#data_name = 'training_datasets_STEAD_waveform.hdf5'
+data_name = 'training_datasets_STEAD_waveform.hdf5'
 #data_name = 'training_datasets_waveform.hdf5'
-data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
+#data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
 
 # %% load dataset
 with h5py.File(data_dir + '/' + data_name, 'r') as f:
@@ -31,12 +31,12 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Specify the model directory and model name list first
-#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
-model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 model_names = ["Autoencoder_Conv1D_None", "Autoencoder_Conv1D_Linear",
                "Autoencoder_Conv1D_LSTM", "Autoencoder_Conv1D_attention",
-               "Autoencoder_Conv1D_Transformer"]
+               "Autoencoder_Conv1D_attention_LSTM", "Autoencoder_Conv1D_Transformer"]
 
 # make the output directory
 output_dir = model_dataset_dir + "/" + "all_model_comparison"
@@ -143,9 +143,9 @@ import matplotlib
 matplotlib.rcParams.update({'font.size': 12})
 
 # %% Specify the model directory and model name list first
-#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
-model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 output_dir = model_dataset_dir + "/" + "all_model_comparison"
 
 with h5py.File(output_dir + '/all_model_comparison.hdf5', 'r') as f:
@@ -159,7 +159,7 @@ fig, ax = plt.subplots(2, 2, sharex=True, sharey=True, squeeze=True)
 ax = ax.flatten()
 i_waveforms = np.random.choice(len(model_mse_all[0]), 10000)
 
-bottleneck_names = ["None", "Linear", "LSTM", "attention", "Transformer"]
+bottleneck_names = ["None", "Linear", "LSTM", "attention", "attention LSTM", "Transformer"]
 line_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
 for i, model_name in enumerate(model_names):
@@ -203,7 +203,7 @@ snr_bin_center = snr_bin_edge + bin_size/2
 mse_median_all = []
 mse_mean_all = []
 mse_std_all = []
-for i in range(5):
+for i in range(6):
     mse_median = []
     mse_mean = []
     mse_std = []
@@ -223,13 +223,13 @@ for i in range(5):
 
 
 plt.figure(2, figsize=(8, 4))
-for i in range(5):
+for i in range(6):
     plt.plot(model_snr_all[i]/10, model_mse_all[i], '.', color=line_colors[i], alpha=0.01)
     plt.errorbar(snr_bin_center + i*0.05 - 0.125, mse_mean_all[i], yerr=mse_std_all[i],
                  marker='s', color=line_colors[i], linewidth=2,
                  label=bottleneck_names[i], elinewidth=1.5, zorder=3)
     plt.xlim(-2, 1)
-    plt.ylim(0.48, 1.12)
+    plt.ylim(-0.3, 1.12)
 plt.legend(loc=4)
 plt.xlabel('log10(SNR)', fontsize=15)
 plt.ylabel('Explained Variance', fontsize=15)
