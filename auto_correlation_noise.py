@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from scipy.fft import fft, fftfreq, ifft
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, fftconvolve
 import h5py
 
 from utilities import mkdir
@@ -13,8 +13,8 @@ from utilities import mkdir
 working_dir = os.getcwd()
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 bottleneck_name = "LSTM"
 
 waveform_output_dir = waveform_dir + '/' + model_dataset_dir
@@ -43,14 +43,19 @@ data_test1 = np.concatenate((data_test1, np.zeros((batch_size, pad_size - data_t
 data_test2 = np.concatenate((data_test2, np.zeros((batch_size, pad_size - data_test2.shape[1], data_test2.shape[2])))
                             , axis=1)
 
+def running_mean_spectrum(X, N):
+    """Apply the running mean to smooth the spectrum X, running mean is N-point along axis"""
+    return fftconvolve(abs(X), np.ones((X.shape[0], N)) / N, mode='same', axes=1)
 
 def calculate_xcorf(waveform1, waveform2):
     """Calculate cross-correlation functions for single station,
     waveform1 and waveform2 are (nun_windows, num_time_points, )"""
     spectra_data_1 = fft(waveform1, axis=1)
-    spectra_data_1 = spectra_data_1 / abs(spectra_data_1)
+    #spectra_data_1 = spectra_data_1 / abs(spectra_data_1)
+    spectra_data_1 = spectra_data_1 / running_mean_spectrum(spectra_data_1, 32)
     spectra_data_2 = fft(waveform2, axis=1)
-    spectra_data_2 = spectra_data_2 / abs(spectra_data_2)
+    #spectra_data_2 = spectra_data_2 / abs(spectra_data_2)
+    spectra_data_2 = spectra_data_2 / running_mean_spectrum(spectra_data_2, 32)
     xcorf = ifft(spectra_data_1 * np.conjugate(spectra_data_2), axis=1)
     return xcorf
 
@@ -122,7 +127,7 @@ for i in range(3):
                                          vmin=-abs(average_acf1[:, :, k]).max() / 2)
         ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
                         extent=[0, time_pts_xcorf * dt, 0, 31])
-        ax[i, j].set_title(str(channel_xcor_list[k])[2:7])
+        ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
             ax[i, j].set_ylabel('Days')
@@ -140,7 +145,7 @@ for i in range(3):
                                          vmin=-abs(average_acf2[:, :, k]).max() / 2)
         ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
                         extent=[0, time_pts_xcorf * dt, 0, 31])
-        ax[i, j].set_title(str(channel_xcor_list[k])[2:7])
+        ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
             ax[i, j].set_ylabel('Days')
@@ -167,7 +172,7 @@ for i in range(3):
                                          vmin=-abs(average_acf1[:, :, k]).max() / 2)
         ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
                         extent=[0, time_pts_xcorf * dt, 0, 31])
-        ax[i, j].set_title(str(channel_xcor_list[k])[2:7])
+        ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
             ax[i, j].set_ylabel('Days')
@@ -185,7 +190,7 @@ for i in range(3):
                                          vmin=-abs(average_acf2[:, :, k]).max() / 2)
         ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
                         extent=[0, time_pts_xcorf * dt, 0, 31])
-        ax[i, j].set_title(str(channel_xcor_list[k])[2:7])
+        ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
             ax[i, j].set_ylabel('Days')
