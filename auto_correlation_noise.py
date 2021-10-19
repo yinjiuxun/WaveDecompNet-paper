@@ -13,8 +13,8 @@ from utilities import mkdir
 working_dir = os.getcwd()
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-#model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 bottleneck_name = "LSTM"
 
 waveform_output_dir = waveform_dir + '/' + model_dataset_dir
@@ -110,7 +110,7 @@ dt = waveform_time[1] - waveform_time[0]
 num_windows = xcorf_function1.shape[0]
 average_hours = 6  # time in hours to average the xcorr functions
 average_windows = 60 * average_hours  # time in minutes
-time_pts_xcorf = 100  # time range in 0.1 s for the xcor functions
+time_pts_xcorf = 200  # time range in 0.1 s for the xcor functions
 
 # Results without bandpassing filtering
 bandpass_filter = None
@@ -118,13 +118,14 @@ _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, tim
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
+scale_factor = 1.5
 fig, ax = plt.subplots(3, 3, figsize=(10, 10))
 k = -1
 for i in range(3):
     for j in range(3):
         k += 1
-        norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / 2,
-                                         vmin=-abs(average_acf1[:, :, k]).max() / 2)
+        norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / scale_factor,
+                                         vmin=-abs(average_acf1[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
                         extent=[0, time_pts_xcorf * dt, 0, 31])
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
@@ -141,8 +142,8 @@ k = -1
 for i in range(3):
     for j in range(3):
         k += 1
-        norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / 2,
-                                         vmin=-abs(average_acf2[:, :, k]).max() / 2)
+        norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / scale_factor,
+                                         vmin=-abs(average_acf2[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
                         extent=[0, time_pts_xcorf * dt, 0, 31])
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
@@ -154,22 +155,23 @@ for i in range(3):
 
 plt.savefig(waveform_output_dir + '/separated_noise_xcor.png')
 
-# Results without bandpassing filtering
-bandpass_filter = np.array([2, 4])
+# Results with bandpassing filtering
+bandpass_filter = np.array([2, 4.5]) #  [0.1, 1] [1, 2]
 file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
+scale_factor = 8
 plt.close('all')
 fig, ax = plt.subplots(3, 3, figsize=(10, 10))
 k = -1
 for i in range(3):
     for j in range(3):
         k += 1
-        norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / 2,
-                                         vmin=-abs(average_acf1[:, :, k]).max() / 2)
+        norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / scale_factor,
+                                         vmin=-abs(average_acf1[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
                         extent=[0, time_pts_xcorf * dt, 0, 31])
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
@@ -186,8 +188,8 @@ k = -1
 for i in range(3):
     for j in range(3):
         k += 1
-        norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / 2,
-                                         vmin=-abs(average_acf2[:, :, k]).max() / 2)
+        norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / scale_factor,
+                                         vmin=-abs(average_acf2[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
                         extent=[0, time_pts_xcorf * dt, 0, 31])
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
@@ -212,3 +214,40 @@ norm2 = np.linalg.norm(global_average1[:, index_channel])
 corr_coef = temp / norm1 / norm2
 plt.plot(xcorf_time, corr_coef)
 print(np.mean(corr_coef))
+
+
+average_acf1 = average_acf1 - np.mean(average_acf1, axis=0)
+average_acf2 = average_acf2 - np.mean(average_acf2, axis=0)
+plt.close('all')
+fig, ax = plt.subplots(3, 3, figsize=(10, 10))
+k = -1
+for i in range(3):
+    for j in range(3):
+        k += 1
+        norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / 1,
+                                         vmin=-abs(average_acf1[:, :, k]).max() / 1)
+        ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
+                        extent=[0, time_pts_xcorf * dt, 0, 31])
+        ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
+
+        if j == 0:
+            ax[i, j].set_ylabel('Days')
+        if i == 2:
+            ax[i, j].set_xlabel('Time (s)')
+
+
+fig, ax = plt.subplots(3, 3, figsize=(10, 10))
+k = -1
+for i in range(3):
+    for j in range(3):
+        k += 1
+        norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / 1,
+                                         vmin=-abs(average_acf2[:, :, k]).max() / 1)
+        ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
+                        extent=[0, time_pts_xcorf * dt, 0, 31])
+        ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
+
+        if j == 0:
+            ax[i, j].set_ylabel('Days')
+        if i == 2:
+            ax[i, j].set_xlabel('Time (s)')
