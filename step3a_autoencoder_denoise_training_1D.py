@@ -18,20 +18,21 @@ from utilities import mkdir
 import torch
 from torch_tools import WaveformDataset, EarlyStopping, try_gpu, training_loop
 from torch.utils.data import DataLoader
-from autoencoder_1D_models_torch import Autoencoder_Conv1D, Attention_bottleneck, Attention_bottleneck_LSTM
+from autoencoder_1D_models_torch import Autoencoder_Conv1D, Autoencoder_Conv2D, Attention_bottleneck, \
+    Attention_bottleneck_LSTM
 
 # make the output directory
-#model_dataset_dir = './Model_and_datasets_1D_STEAD2'
-#model_dataset_dir = './Model_and_datasets_1D_STEAD2_relu'
-#model_dataset_dir = './Model_and_datasets_1D_synthetic'
-model_dataset_dir = './Model_and_datasets_1D_STEAD_plus_POHA'
+model_dataset_dir = './Model_and_datasets_1D_STEAD2'
+# model_dataset_dir = './Model_and_datasets_1D_STEAD2_relu'
+# model_dataset_dir = './Model_and_datasets_1D_synthetic'
+# model_dataset_dir = './Model_and_datasets_1D_STEAD_plus_POHA'
 mkdir(model_dataset_dir)
 
 # %% Read the pre-processed datasets
 print("#" * 12 + " Loading data " + "#" * 12)
-model_datasets = './training_datasets/training_datasets_STEAD_plus_POHA.hdf5'
-#model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
-#model_datasets = './training_datasets/training_datasets_waveform.hdf5'
+# model_datasets = './training_datasets/training_datasets_STEAD_plus_POHA.hdf5'
+model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
+# model_datasets = './training_datasets/training_datasets_waveform.hdf5'
 with h5py.File(model_datasets, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
@@ -51,13 +52,62 @@ X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
 training_data = WaveformDataset(X_train, Y_train)
 validate_data = WaveformDataset(X_validate, Y_validate)
 
-# # The encoder-decoder model with self-attention bottleneck
+# Choose different model structure: for now Conv1D and Conv2D
+model_structure = "Autoencoder_Conv2D" # "Autoencoder_Conv1D"
+
+# Choose a bottleneck type
+bottleneck_name = "attention"  # "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
+
+if bottleneck_name == "None":
+    # Model without specified bottleneck
+    bottleneck = None
+
+elif bottleneck_name == "Linear":
+    # Linear bottleneck
+    torch.nn.Linear(64, 64, dtype=torch.float64)
+
+elif bottleneck_name == "LSTM":
+    # The encoder-decoder model with LSTM bottleneck
+    bottleneck = torch.nn.LSTM(64, 32, 2, bidirectional=True,
+                               batch_first=True, dtype=torch.float64)
+
+elif bottleneck_name == "attention":
+    # Self-attention bottleneck
+    bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
+
+elif bottleneck_name == "Transformer":
+    # The encoder-decoder model with transformer encoder as bottleneck
+    encoder_layer = torch.nn.TransformerEncoderLayer(d_model=64, nhead=4, dtype=torch.float64)
+    bottleneck = torch.nn.TransformerEncoder(encoder_layer, num_layers=1)
+
+elif bottleneck_name == "attention_LSTM":
+    # Attention bottleneck with LSTM as positional embedding
+    bottleneck = Attention_bottleneck_LSTM(64, 4, 0.2)  # Add the attention bottleneck
+
+else:
+    raise NameError('bottleneck type has not been defined!')
+
+# Give a name to the network
+model_name = model_structure + "_" + bottleneck_name
+print("#" * 12 + " building model " + model_name + " " + "#" * 12)
+
+# Set up model network
+if model_structure == "Autoencoder_Conv1D":
+    model = Autoencoder_Conv1D(model_name, bottleneck).to(device=try_gpu())
+
+elif model_structure == "Autoencoder_Conv2D":
+    model = Autoencoder_Conv2D(model_name, bottleneck).to(device=try_gpu())
+
+else:
+    raise NameError('Network structure has not been defined!')
+
+
 # model_name = "Autoencoder_Conv1D_attention"
 # bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
 
-# Attention bottleneck with LSTM as positional embedding
-model_name = "Autoencoder_Conv1D_attention_LSTM"
-bottleneck = Attention_bottleneck_LSTM(64, 4, 0.2) # Add the attention bottleneck
+# # Attention bottleneck with LSTM as positional embedding
+# model_name = "Autoencoder_Conv1D_attention_LSTM"
+# bottleneck = Attention_bottleneck_LSTM(64, 4, 0.2) # Add the attention bottleneck
 
 # # The encoder-decoder model with transformer encoder as bottleneck
 # model_name = "Autoencoder_Conv1D_Transformer"
@@ -77,8 +127,14 @@ bottleneck = Attention_bottleneck_LSTM(64, 4, 0.2) # Add the attention bottlenec
 # model_name = "Autoencoder_Conv1D_None"
 # bottleneck = None
 
-print("#" * 12 + " building model " + model_name + " " + "#" * 12)
-model = Autoencoder_Conv1D(model_name, bottleneck).to(device=try_gpu())
+# Attention bottleneck with LSTM as positional embedding
+# model_name = "Autoencoder_Conv2D_LSTM"
+# bottleneck = torch.nn.LSTM(64, 32, 2, bidirectional=True,
+#                            batch_first=True, dtype=torch.float64)
+
+# print("#" * 12 + " building model " + model_name + " " + "#" * 12)
+# model = Autoencoder_Conv1D(model_name, bottleneck).to(device=try_gpu())
+# model = Autoencoder_Conv2D(model_name, bottleneck).to(device=try_gpu())
 
 # make the output directory to store the model information
 model_dataset_dir = model_dataset_dir + '/' + model_name
