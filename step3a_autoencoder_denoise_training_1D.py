@@ -53,10 +53,10 @@ training_data = WaveformDataset(X_train, Y_train)
 validate_data = WaveformDataset(X_validate, Y_validate)
 
 # Choose different model structure: for now Conv1D and Conv2D
-model_structure = "Autoencoder_Conv2D" # "Autoencoder_Conv1D"
+model_structure = "Autoencoder_Conv2D"  # "Autoencoder_Conv1D"
 
 # Choose a bottleneck type
-bottleneck_name = "attention"  # "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
+bottleneck_name = "Linear"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
 
 if bottleneck_name == "None":
     # Model without specified bottleneck
@@ -64,7 +64,7 @@ if bottleneck_name == "None":
 
 elif bottleneck_name == "Linear":
     # Linear bottleneck
-    torch.nn.Linear(64, 64, dtype=torch.float64)
+    bottleneck = torch.nn.Linear(64, 64, dtype=torch.float64)
 
 elif bottleneck_name == "LSTM":
     # The encoder-decoder model with LSTM bottleneck
