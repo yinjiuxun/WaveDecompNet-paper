@@ -10,8 +10,8 @@ from autoencoder_1D_models_torch import *
 
 # %% load dataset
 data_dir = './training_datasets'
-#data_name = 'training_datasets_STEAD_waveform.hdf5'
-data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
+data_name = 'training_datasets_STEAD_waveform.hdf5'
+#data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
 #data_name = 'training_datasets_waveform.hdf5'
 
 # %% load dataset
@@ -22,9 +22,10 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
 
 # %% Need to specify model_name first
 bottleneck_name = "Transformer"
-model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 #model_dataset_dir = "Model_and_datasets_1D_synthetic"
-model_name = "Autoencoder_Conv1D_" + bottleneck_name
+model_name = "Autoencoder_Conv2D_" + bottleneck_name
 
 model_dir = model_dataset_dir + f'/{model_name}'
 
@@ -82,7 +83,7 @@ plt.plot(loss, 'o', label='Training loss')
 plt.plot(val_loss, '-', label='Validation loss')
 plt.plot([1, len(loss)], [test_loss, test_loss], '-', label='Test loss', linewidth=4)
 plt.legend()
-plt.title(model_name)
+plt.title(model_name + f' test loss {test_loss:.4f}')
 #plt.show()
 plt.savefig(figure_dir + f"/{model_name}_Loss_evolution.png")
 
@@ -100,6 +101,7 @@ denoised_signal = model(noisy_signal)
 denoised_signal = denoised_signal.detach().numpy()
 noisy_signal = noisy_signal.detach().numpy()
 clean_signal = clean_signal.detach().numpy()
+separated_noise = noisy_signal - denoised_signal
 
 from sklearn.metrics import mean_squared_error, explained_variance_score
 
@@ -125,7 +127,7 @@ for i_model in range(100):
         text_y = np.min(clean_signal[i_model, i, :])
         ax[i, 1].text(50, 0.8, f'EV: {evs:.2f}')
 
-        noise = noisy_signal[i_model, i, :] - denoised_signal[i_model, i, :]
+        noise = separated_noise[i_model, i, :]
         ax[i, 2].plot(time, noise/scaling_factor, '-', color='gray', label='Y_true', linewidth=1)
 
     ax[0, 0].set_title("Original signal")
@@ -156,23 +158,26 @@ for i_model in range(100):
                 bbox_inches='tight')
 
 # %% Check the waveform spectrum
-for i_model in range(1):
+for i_model in range(100):
     print(i_model)
     plt.close("all")
 
     fig, ax = plt.subplots(1, denoised_signal.shape[1], sharex=True, sharey=True, num=1, figsize=(12, 2)) #16, 8
 
     for i in range(noisy_signal.shape[1]):
-        noise = noisy_signal[i_model, i, :] - denoised_signal[i_model, i, :]
+        noise = separated_noise[i_model, i, :]  # separated noise from ML
+        original_noise = noisy_signal[i_model, i, :] - clean_signal[i_model, i, :] # original noise signal
         scaling_factor = np.max(abs(noisy_signal[i_model, i, :]))
         dt = time[1] - time[0]
         _, spect_noisy_signal = waveform_fft(noisy_signal[i_model, i, :]/scaling_factor, dt)
         _, spect_clean_signal = waveform_fft(clean_signal[i_model, i, :]/scaling_factor, dt)
         _, spect_noise = waveform_fft(noise / scaling_factor, dt)
+        _, spect_original_noise = waveform_fft(original_noise / scaling_factor, dt)
         freq, spect_denoised_signal = waveform_fft(denoised_signal[i_model, i, :]/scaling_factor, dt)
 
         #ax[i].loglog(freq, spect_noisy_signal, '-k', label='X_input', linewidth=1.5)
         ax[i].loglog(freq, spect_noise, '-', color='gray', label='noise', linewidth=0.5, alpha=1)
+        ax[i].loglog(freq, spect_original_noise, '-k', label='orginal noise', linewidth=0.5, alpha=0.8)
         ax[i].loglog(freq, spect_clean_signal, '-r', label='Y_true', linewidth=0.5, alpha=1)
         ax[i].loglog(freq, spect_denoised_signal, '-b', label='Y_pred', linewidth=0.5, alpha=1)
 

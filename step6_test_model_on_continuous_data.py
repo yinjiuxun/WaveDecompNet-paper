@@ -23,19 +23,21 @@ working_dir = os.getcwd()
 
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
+network_station = "HV.HSSD" # "HV.HSSD" "IU.POHA"
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
-waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+# waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.10.20210731-20210901.mseed'
+waveform_mseed = waveform_dir + '/' + network_station + '.00.20210731-20210901.mseed'
 
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
-# tr.filter('highpass', freq=1)
-# f1=plt.figure(1, figsize=(8, 12))
-# tr[0].plot(type='dayplot', interval=24*60, fig=f1, show_y_UTC_label=False, color=['k', 'r', 'b', 'g'])
-# plt.savefig(waveform_dir + '/one_month_data.png')
+tr.filter('highpass', freq=1/200)
+f1=plt.figure(1, figsize=(8, 12))
+tr[0].plot(type='dayplot', interval=24*60, fig=f1, show_y_UTC_label=False, color=['k', 'r', 'b', 'g'])
+plt.savefig(waveform_dir + '/one_month_data_' + network_station + '.png')
 
-t1 = obspy.UTCDateTime("2021-07-19T12:07:00")
-t2 = obspy.UTCDateTime("2021-07-19T12:10:00")
+# t1 = obspy.UTCDateTime("2021-07-19T12:07:00")
+# t2 = obspy.UTCDateTime("2021-07-19T12:10:00")
 # t1 = obspy.UTCDateTime("2021-08-03T11:58:00")
 # t2 = obspy.UTCDateTime("2021-08-03T12:03:00")
 # tr.plot(starttime=t1, endtime=t2)
@@ -48,6 +50,7 @@ event_catalog = waveform_dir + '/' + 'catalog.20210731-20210901.xml'
 
 # station information
 station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
+#station = obspy.read_inventory(waveform_dir + '/stations/HV.HSSD.*.HHE.xml')
 sta_lat = station[0][0].latitude
 sta_lon = station[0][0].longitude
 
@@ -154,6 +157,8 @@ scaled_magnitude = 10 ** event_magnitude / epi_distance / 10
 
 waveform_output_dir = waveform_dir + '/' + model_dataset_dir
 mkdir(waveform_output_dir)
+waveform_output_dir = waveform_output_dir + '/' + network_station
+mkdir(waveform_output_dir)
 with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'w') as f:
     f.create_dataset("waveform_time", data=waveform_time)
     f.create_dataset("waveform_original", data=waveform_original)
@@ -164,11 +169,14 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
 ############################ Make figures ###############################################
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
+network_station = "IU.POHA" # "HV.HSSD" "IU.POHA"
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
-waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+# waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.10.20210731-20210901.mseed'
+waveform_mseed = waveform_dir + '/' + network_station + '.00.20210731-20210901.mseed'
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
+tr.filter('highpass', freq=1/600)
 tr.decimate(4)
 
 # Model names and path
@@ -179,7 +187,7 @@ model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 model_name = "Autoencoder_Conv1D_" + bottleneck_name
 
 # Load the recovered waveforms and then make plots
-waveform_output_dir = waveform_dir + '/' + model_dataset_dir
+waveform_output_dir = waveform_dir + '/' + model_dataset_dir + '/' + network_station
 with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
     waveform_time = f["waveform_time"][:]
     waveform_original = f["waveform_original"][:]
@@ -199,7 +207,7 @@ for i in range(3):
 
 # Visualize the data in one-month
 i_channel = 0
-vertical_scaling = 50000
+vertical_scaling = 40000
 # The original data
 f1 = plt.figure(1, figsize=(8, 12))
 tr[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
@@ -254,7 +262,7 @@ time_zoom_in = [(930000, 936000), (830000, 836000), (418000, 428000), (1018000, 
 for i, xlimit in enumerate(time_zoom_in):
     plt.xlim(xlimit)
     #plt.savefig(waveform_output_dir + '/continueous_separation_IU.POHA_' + bottleneck_name + '_t' + str(i) + '.pdf')
-    plt.savefig(waveform_output_dir + '/continueous_separation_IU.POHA_' + bottleneck_name + '_t' + str(i) + '.png')
+    plt.savefig(waveform_output_dir + '/continueous_separation_' + network_station + '_' + bottleneck_name + '_t' + str(i) + '.png')
 
 ######## End ########
 plt.figure(2)
