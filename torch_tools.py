@@ -180,3 +180,89 @@ def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimiz
     model.load_state_dict(torch.load('checkpoint.pt'))
 
     return model, avg_train_losses, avg_valid_losses
+
+
+
+def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn, optimizer, epochs, patience, device):
+    # to track the training loss as the model trains
+    train_losses = []
+    # to track the validation loss as the model trains
+    valid_losses = []
+    # to track the average training loss per epoch as the model trains
+    avg_train_losses = []
+    # to track the average validation loss per epoch as the model trains
+    avg_valid_losses = []
+
+    # initialize the early_stopping object
+    early_stopping = EarlyStopping(patience=patience, verbose=True)
+
+    for epoch in range(1, epochs + 1):
+        # estimate time for each epoch
+        starttime = time.time()
+
+        # ======================= training =======================
+        # initialize the model for training
+        model.train()
+        size = len(train_dataloader.dataset)
+        for batch, (X, y) in enumerate(train_dataloader):
+            # Compute prediction and loss
+            X, y = X.to(device), y.to(device)
+            pred1, pred2 = model(X)
+            loss1 = loss_fn(pred1, y)
+            loss2 = loss_fn(pred2, X - y)
+
+            loss = loss1 + loss2
+
+            # Backpropagation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # record training loss
+            train_losses.append(loss.item())
+
+        # ======================= validating =======================
+        # initialize the model for training
+        model.eval()
+        for X, y in validate_dataloader:
+            X, y = X.to(device), y.to(device)
+            pred1, pred2 = model(X)
+            loss1 = loss_fn(pred1, y)
+            loss2 = loss_fn(pred2, X - y)
+
+            loss = loss1 + loss2
+
+            # record validation loss
+            valid_losses.append(loss.item())
+
+        # calculate average loss over an epoch
+        train_loss = np.average(train_losses)
+        valid_loss = np.average(valid_losses)
+        avg_train_losses.append(train_loss)
+        avg_valid_losses.append(valid_loss)
+
+        # print training/validation statistics
+        epoch_len = len(str(epochs))
+        print_msg = (f'[{epoch:>{epoch_len}}/{epochs:>{epoch_len}}] ' +
+                     f'train_loss: {train_loss:.5f} ' +
+                     f'valid_loss: {valid_loss:.5f}\n' +
+                     f'time per epoch: {(time.time() - starttime):.3f} s')
+
+        print(print_msg)
+
+        # clear lists to track next epoch
+        train_losses = []
+        valid_losses = []
+
+        # early_stopping needs the validation loss to check if it has decresed,
+        # and if it has, it will make a checkpoint of the current model
+        early_stopping(valid_loss, model)
+
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+
+        # load the last checkpoint with the best model
+    model.load_state_dict(torch.load('checkpoint.pt'))
+
+    return model, avg_train_losses, avg_valid_losses
