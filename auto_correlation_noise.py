@@ -12,12 +12,13 @@ from utilities import mkdir
 # %%
 working_dir = os.getcwd()
 # waveforms
+network_station = 'IU.POHA'
 waveform_dir = working_dir + '/continuous_waveforms'
-#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
+model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+# model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 bottleneck_name = "LSTM"
 
-waveform_output_dir = waveform_dir + '/' + model_dataset_dir
+waveform_output_dir = waveform_dir + '/' + model_dataset_dir + '/' + network_station
 
 with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
     waveform_time = f['waveform_time'][:]
@@ -43,19 +44,23 @@ data_test1 = np.concatenate((data_test1, np.zeros((batch_size, pad_size - data_t
 data_test2 = np.concatenate((data_test2, np.zeros((batch_size, pad_size - data_test2.shape[1], data_test2.shape[2])))
                             , axis=1)
 
+
 def running_mean_spectrum(X, N):
     """Apply the running mean to smooth the spectrum X, running mean is N-point along axis"""
     return fftconvolve(abs(X), np.ones((X.shape[0], N)) / N, mode='same', axes=1)
+
 
 def calculate_xcorf(waveform1, waveform2):
     """Calculate cross-correlation functions for single station,
     waveform1 and waveform2 are (nun_windows, num_time_points, )"""
     spectra_data_1 = fft(waveform1, axis=1)
-    #spectra_data_1 = spectra_data_1 / abs(spectra_data_1)
-    spectra_data_1 = spectra_data_1 / running_mean_spectrum(spectra_data_1, 32)
+    spectra_data_1[0] = 0
+    # spectra_data_1 = spectra_data_1 / abs(spectra_data_1)
+    spectra_data_1 = spectra_data_1 / (running_mean_spectrum(spectra_data_1, 32) + 1e-8)
     spectra_data_2 = fft(waveform2, axis=1)
-    #spectra_data_2 = spectra_data_2 / abs(spectra_data_2)
-    spectra_data_2 = spectra_data_2 / running_mean_spectrum(spectra_data_2, 32)
+    spectra_data_2[0] = 0
+    # spectra_data_2 = spectra_data_2 / abs(spectra_data_2)
+    spectra_data_2 = spectra_data_2 / (running_mean_spectrum(spectra_data_2, 32) + 1e-8)
     xcorf = ifft(spectra_data_1 * np.conjugate(spectra_data_2), axis=1)
     return xcorf
 
@@ -92,7 +97,7 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_xcorr_functions.h
 
 def average_xcorr_functions(xcorf_funciton, average_hours, time_pts_xcorf, dt, bandpass_filter=None):
     """Function to average the xcorr function"""
-    num_windows = xcorf_funciton.shape[0] # 1 min for each window
+    num_windows = xcorf_funciton.shape[0]  # 1 min for each window
     average_acf = np.zeros((int(num_windows / average_windows) + 1, time_pts_xcorf, 9))
     xcorf_day_time = np.arange(int(num_windows / average_windows) + 1) * average_hours / 24
     xcorf_time_lag = np.arange(time_pts_xcorf) * dt
@@ -104,6 +109,31 @@ def average_xcorr_functions(xcorf_funciton, average_hours, time_pts_xcorf, dt, b
     for i, j in enumerate(np.arange(0, num_windows, average_windows)):
         average_acf[i, :, :] = np.mean(xcorf_funciton[j:(j + average_windows), :time_pts_xcorf, :], axis=0)
     return xcorf_time_lag, xcorf_day_time, average_acf
+
+
+# Calculate the correlation coef with the global average
+def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name):
+    line_label = ['original waveform', 'separated noise']
+    fig, ax = plt.subplots(9, 1, sharex=True, sharey=True, figsize=(6, 14))
+    for index_channel in range(9):
+
+        for j, xcorf_function in enumerate([average_acf1, average_acf2]):
+            global_average1 = np.mean(xcorf_function[:, :time_pts_xcorf, :], axis=0)
+
+            temp = np.sum(xcorf_function[:, :, index_channel] * global_average1[:, index_channel], axis=1)
+
+            norm1 = np.linalg.norm(xcorf_function[:, :, index_channel], axis=1)
+            norm2 = np.linalg.norm(global_average1[:, index_channel])
+
+            corr_coef = temp / norm1 / norm2
+
+            ax[index_channel].plot(xcorf_day_time, corr_coef, label=line_label[j])
+            ax[index_channel].set_ylabel(channel_xcor_list[index_channel] + ' coef')
+            ax[index_channel].set_ylim(-1.3, 1.3)
+            if index_channel == 8:
+                ax[index_channel].set_xlabel('Time (day)')
+                ax[index_channel].legend()
+    plt.savefig(figure_name, bbox_inches='tight')
 
 
 dt = waveform_time[1] - waveform_time[0]
@@ -118,7 +148,7 @@ _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, tim
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
-scale_factor = 1.5
+scale_factor = 8
 fig, ax = plt.subplots(3, 3, figsize=(10, 10))
 k = -1
 for i in range(3):
@@ -127,7 +157,7 @@ for i in range(3):
         norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / scale_factor,
                                          vmin=-abs(average_acf1[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
-                        extent=[0, time_pts_xcorf * dt, 0, 31])
+                        extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
@@ -145,7 +175,7 @@ for i in range(3):
         norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / scale_factor,
                                          vmin=-abs(average_acf2[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
-                        extent=[0, time_pts_xcorf * dt, 0, 31])
+                        extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
@@ -155,8 +185,13 @@ for i in range(3):
 
 plt.savefig(waveform_output_dir + '/separated_noise_xcor.png')
 
+# plot the comparison of correlation coefficients with global average function
+plt.close('all')
+figure_name = waveform_output_dir + '/unfilter_corr_coef_comparision.png'
+plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
+
 # Results with bandpassing filtering
-bandpass_filter = np.array([2, 4.5]) #  [0.1, 1] [1, 2]
+bandpass_filter = np.array([2, 4.5])  # [0.1, 1] [1, 2] [2, 4.5]
 file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
@@ -173,7 +208,7 @@ for i in range(3):
         norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / scale_factor,
                                          vmin=-abs(average_acf1[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
-                        extent=[0, time_pts_xcorf * dt, 0, 31])
+                        extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
@@ -181,7 +216,7 @@ for i in range(3):
         if i == 2:
             ax[i, j].set_xlabel('Time (s)')
 
-plt.savefig(waveform_output_dir + '/original_waveform_xcor' + file_name_str +'.png')
+plt.savefig(waveform_output_dir + '/original_waveform_xcor' + file_name_str + '.png')
 
 fig, ax = plt.subplots(3, 3, figsize=(10, 10))
 k = -1
@@ -191,7 +226,7 @@ for i in range(3):
         norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / scale_factor,
                                          vmin=-abs(average_acf2[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
-                        extent=[0, time_pts_xcorf * dt, 0, 31])
+                        extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
@@ -199,23 +234,14 @@ for i in range(3):
         if i == 2:
             ax[i, j].set_xlabel('Time (s)')
 
-plt.savefig(waveform_output_dir + '/separated_noise_xcor' + file_name_str +'.png')
+plt.savefig(waveform_output_dir + '/separated_noise_xcor' + file_name_str + '.png')
 
-# Calculate the correlation coef with the global average
-index_channel = 6
-xcorf_function = average_acf1
-global_average1 = np.mean(xcorf_function[:, :time_pts_xcorf, :], axis=0)
+# plot the comparison of correlation coefficients with global average function
+plt.close('all')
+figure_name = waveform_output_dir + '/filter_corr_coef_comparision' + file_name_str + '.png'
+plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
-temp = np.sum(xcorf_function[:, :, index_channel] * global_average1[:, index_channel], axis=1)
-
-norm1 = np.linalg.norm(xcorf_function[:, :, index_channel], axis=1)
-norm2 = np.linalg.norm(global_average1[:, index_channel])
-
-corr_coef = temp / norm1 / norm2
-plt.plot(xcorf_time, corr_coef)
-print(np.mean(corr_coef))
-
-
+##################################################################
 average_acf1 = average_acf1 - np.mean(average_acf1, axis=0)
 average_acf2 = average_acf2 - np.mean(average_acf2, axis=0)
 plt.close('all')
@@ -234,7 +260,6 @@ for i in range(3):
             ax[i, j].set_ylabel('Days')
         if i == 2:
             ax[i, j].set_xlabel('Time (s)')
-
 
 fig, ax = plt.subplots(3, 3, figsize=(10, 10))
 k = -1
