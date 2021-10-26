@@ -51,10 +51,15 @@ client = Client('IRIS', debug=True)
 working_dir = os.getcwd()
 
 # %% Specify the network and stations we want.
-networks = np.array(['IU'])  # A specific seismic network to which the stations belong
-stations = np.array(['POHA'])  # Names of the stations
-channels = np.array(['BH1', 'BH2', 'BHZ'])  # Channels
-location = '00' #'10'
+# networks = np.array(['IU'])  # A specific seismic network to which the stations belong
+# stations = np.array(['POHA'])  # Names of the stations
+# channels = np.array(['BH1', 'BH2', 'BHZ'])  # Channels
+# location = '00' #'10'
+
+networks = np.array(['HV'])  # A specific seismic network to which the stations belong
+stations = np.array(['HSSD'])  # Names of the stations
+channels = np.array(['HHE', 'HHN', 'HHZ', 'HNE', 'HNN', 'HNZ'])  # Channels
+location = '*' #'10'
 
 waveform_dir = working_dir + '/continuous_waveforms'
 mkdir(waveform_dir)
@@ -72,8 +77,8 @@ sta_lat = inventory[0][0].latitude
 sta_lon = inventory[0][0].longitude
 
 # %% Search for the events within a given range
-t1 = obspy.UTCDateTime("2021-07-01")
-t2 = obspy.UTCDateTime("2021-08-01")
+t1 = obspy.UTCDateTime("2021-08-01")
+t2 = obspy.UTCDateTime("2021-09-01")
 
 catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=2.5,
                             latitude=sta_lat, longitude=sta_lon, minradius=5, maxradius=90,
@@ -86,7 +91,7 @@ endtime = t2 + 1 * 3600
 
 fname = network + "." + station + "." + location + "." + starttime.strftime("%Y%m%d") + "-" + endtime.strftime("%Y%m%d")
 try:
-    tr = download_waveforms(network, station, 'BH*', location, starttime, endtime, waveform_dir, fname)
+    tr = download_waveforms(network, station, 'HH*', location, starttime, endtime, waveform_dir, fname)
 except:
     print("Issue downloading data")
 
