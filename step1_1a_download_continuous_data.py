@@ -56,9 +56,14 @@ working_dir = os.getcwd()
 # channels = np.array(['BH1', 'BH2', 'BHZ'])  # Channels
 # location = '00' #'10'
 
+# networks = np.array(['HV'])  # A specific seismic network to which the stations belong
+# stations = np.array(['HSSD'])  # Names of the stations
+# channels = np.array(['HHE', 'HHN', 'HHZ', 'HNE', 'HNN', 'HNZ'])  # Channels
+# location = '*' #'10'
+
 networks = np.array(['HV'])  # A specific seismic network to which the stations belong
-stations = np.array(['HSSD'])  # Names of the stations
-channels = np.array(['HHE', 'HHN', 'HHZ', 'HNE', 'HNN', 'HNZ'])  # Channels
+stations = np.array(['HAT'])  # Names of the stations 'HAT', 'BYL'
+channels = np.array(['HHE', 'HHN', 'HHZ'])  # Channels
 location = '*' #'10'
 
 waveform_dir = working_dir + '/continuous_waveforms'
