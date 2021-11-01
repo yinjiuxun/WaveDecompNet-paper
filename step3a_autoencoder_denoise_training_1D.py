@@ -30,8 +30,8 @@ mkdir(model_dataset_dir)
 
 # %% Read the pre-processed datasets
 print("#" * 12 + " Loading data " + "#" * 12)
-# model_datasets = './training_datasets/training_datasets_STEAD_plus_POHA.hdf5'
-model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
+model_datasets = './training_datasets/training_datasets_STEAD_plus_POHA.hdf5'
+#model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
 # model_datasets = './training_datasets/training_datasets_waveform.hdf5'
 with h5py.File(model_datasets, 'r') as f:
     X_train = f['X_train'][:]
