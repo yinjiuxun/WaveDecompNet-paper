@@ -12,9 +12,10 @@ from utilities import mkdir
 # %%
 working_dir = os.getcwd()
 # waveforms
-network_station = 'IU.POHA'
+network_station = "HV.HAT" # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
 waveform_dir = working_dir + '/continuous_waveforms'
-model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+model_dataset_dir = "Model_and_datasets_1D_all"
+# model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 bottleneck_name = "LSTM"
 
@@ -24,9 +25,10 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
     waveform_time = f['waveform_time'][:]
     waveform_original = f['waveform_original'][:]
     waveform_recovered = f['waveform_recovered'][:]
+    noise_recovered = f['noise_recovered'][:]
 
 dt = waveform_time[1] - waveform_time[0]
-noise = waveform_original - waveform_recovered
+noise = noise_recovered
 
 # reshape the original waveform and the recovered noise
 waveform_original = np.reshape(waveform_original[:, np.newaxis, :], (-1, 600, 3))
@@ -148,7 +150,8 @@ _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, tim
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
-scale_factor = 8
+plt.close('all')
+scale_factor = 6
 fig, ax = plt.subplots(3, 3, figsize=(10, 10))
 k = -1
 for i in range(3):
@@ -167,6 +170,7 @@ for i in range(3):
 
 plt.savefig(waveform_output_dir + '/original_waveform_xcor.png')
 
+scale_factor = 6
 fig, ax = plt.subplots(3, 3, figsize=(10, 10))
 k = -1
 for i in range(3):
@@ -186,19 +190,19 @@ for i in range(3):
 plt.savefig(waveform_output_dir + '/separated_noise_xcor.png')
 
 # plot the comparison of correlation coefficients with global average function
-plt.close('all')
+plt.figure(3)
 figure_name = waveform_output_dir + '/unfilter_corr_coef_comparision.png'
 plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
 # Results with bandpassing filtering
-bandpass_filter = np.array([2, 4.5])  # [0.1, 1] [1, 2] [2, 4.5]
+bandpass_filter = np.array([0.1, 1] )  # [0.1, 1] [1, 2][2, 4.5]
 file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
-scale_factor = 8
+scale_factor = 4
 plt.close('all')
 fig, ax = plt.subplots(3, 3, figsize=(10, 10))
 k = -1
@@ -218,6 +222,7 @@ for i in range(3):
 
 plt.savefig(waveform_output_dir + '/original_waveform_xcor' + file_name_str + '.png')
 
+scale_factor = 8
 fig, ax = plt.subplots(3, 3, figsize=(10, 10))
 k = -1
 for i in range(3):
@@ -237,7 +242,7 @@ for i in range(3):
 plt.savefig(waveform_output_dir + '/separated_noise_xcor' + file_name_str + '.png')
 
 # plot the comparison of correlation coefficients with global average function
-plt.close('all')
+plt.figure(3)
 figure_name = waveform_output_dir + '/filter_corr_coef_comparision' + file_name_str + '.png'
 plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
