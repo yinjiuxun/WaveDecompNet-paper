@@ -62,7 +62,7 @@ working_dir = os.getcwd()
 # location = '*' #'10'
 
 networks = np.array(['HV'])  # A specific seismic network to which the stations belong
-stations = np.array(['HAT'])  # Names of the stations 'HAT', 'BYL'
+stations = np.array(['*'])  # Names of the stations 'HAT', 'BYL', 'MOKD'
 channels = np.array(['HHE', 'HHN', 'HHZ'])  # Channels
 location = '*' #'10'
 
@@ -88,18 +88,28 @@ t2 = obspy.UTCDateTime("2021-09-01")
 catalog = client.get_events(starttime=t1, endtime=t2, minmagnitude=2.5,
                             latitude=sta_lat, longitude=sta_lon, minradius=5, maxradius=90,
                             maxdepth=100)
-
 # % % determine the time window of the waveform based on the P arrival, will download 1 hour before and 2 hours
 # after P
 starttime = t1 - 1 * 3600
 endtime = t2 + 1 * 3600
 
-fname = network + "." + station + "." + location + "." + starttime.strftime("%Y%m%d") + "-" + endtime.strftime("%Y%m%d")
-try:
-    tr = download_waveforms(network, station, 'HH*', location, starttime, endtime, waveform_dir, fname)
-except:
-    print("Issue downloading data")
-
 catalog_name = 'catalog.' + starttime.strftime("%Y%m%d") + "-" + endtime.strftime("%Y%m%d") + '.xml'
 catalog.write(waveform_dir + "/" + catalog_name, format="QUAKEML")
+
+
+# Download data for individual stations
+network = inventory.networks[0]
+stations = network.stations
+for station in stations:
+    network_code = network.code
+    station_code = station.code
+    print('=' * 12 + network_code + '.' + station_code + '=' * 12)
+
+    fname = network_code + "." + station_code + "." + location + "." + starttime.strftime("%Y%m%d") + "-" + endtime.strftime("%Y%m%d")
+    try:
+        tr = download_waveforms(network_code, station_code, 'HH*', location, starttime, endtime, waveform_dir, fname)
+    except:
+        print("Issue downloading data from " + network_code + '.' + station_code)
+
+
 
