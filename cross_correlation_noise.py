@@ -26,43 +26,54 @@ waveform_output_dir2 = waveform_dir + '/' + model_dataset_dir + '/' + network_st
 with h5py.File(waveform_output_dir1 + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
     waveform_time1 = f['waveform_time'][:]
     waveform_original1 = f['waveform_original'][:]
+    waveform_recovered1 = f['waveform_recovered'][:]
     noise_recovered1 = f['noise_recovered'][:]
 
 with h5py.File(waveform_output_dir2 + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
     waveform_time2 = f['waveform_time'][:]
     waveform_original2 = f['waveform_original'][:]
+    waveform_recovered2 = f['waveform_recovered'][:]
     noise_recovered2 = f['noise_recovered'][:]
 
 dt = waveform_time1[1] - waveform_time1[0]
+# # A test
+# noise_recovered1 = waveform_original1 - waveform_recovered1
+# noise_recovered2 = waveform_original2 - waveform_recovered2
 
 # reshape the original waveform and the recovered noise
 waveform_original1 = np.reshape(waveform_original1[:, np.newaxis, :], (-1, 600, 3))
 noise_recovered1 = np.reshape(noise_recovered1[:, np.newaxis, :], (-1, 600, 3))
+waveform_recovered1 = np.reshape(waveform_recovered1[:, np.newaxis, :], (-1, 600, 3))
+#noise_recovered1 = waveform_original1 - waveform_recovered1 - noise_recovered1
 
 waveform_original2 = np.reshape(waveform_original2[:, np.newaxis, :], (-1, 600, 3))
 noise_recovered2 = np.reshape(noise_recovered2[:, np.newaxis, :], (-1, 600, 3))
+waveform_recovered2 = np.reshape(waveform_recovered2[:, np.newaxis, :], (-1, 600, 3))
+#noise_recovered2 = waveform_original2 - waveform_recovered2 - noise_recovered2
 
 # test the autocorrelation methodology
-batch_size = 44760
+batch_size = waveform_original2.shape[0]
 data_test1 = waveform_original1[:batch_size, :, :]
 data_test2 = waveform_original2[:batch_size, :, :]
 
 noise_test1 = noise_recovered1[:batch_size, :, :]
 noise_test2 = noise_recovered2[:batch_size, :, :]
 
+earthquake_test1 = waveform_recovered1[:batch_size, :, :]
+earthquake_test2 = waveform_recovered2[:batch_size, :, :]
+
 # zero-pad to 2048 points
-pad_size = 2048
-data_test1 = np.concatenate((data_test1, np.zeros((batch_size, pad_size - data_test1.shape[1], data_test1.shape[2])))
+pad_size = 600
+data_test1 = np.concatenate((np.zeros((batch_size, pad_size - data_test1.shape[1], data_test1.shape[2])), data_test1)
                             , axis=1)
-data_test2 = np.concatenate((data_test2, np.zeros((batch_size, pad_size - data_test2.shape[1], data_test2.shape[2])))
+data_test2 = np.concatenate((np.zeros((batch_size, pad_size - data_test2.shape[1], data_test2.shape[2])), data_test2)
                             , axis=1)
 noise_test1 = np.concatenate(
-    (noise_test1, np.zeros((batch_size, pad_size - noise_test1.shape[1], noise_test1.shape[2])))
+    (np.zeros((batch_size, pad_size - noise_test1.shape[1], noise_test1.shape[2])), noise_test1)
     , axis=1)
 noise_test2 = np.concatenate(
-    (noise_test2, np.zeros((batch_size, pad_size - noise_test2.shape[1], noise_test2.shape[2])))
+    (np.zeros((batch_size, pad_size - noise_test2.shape[1], noise_test2.shape[2])), noise_test2)
     , axis=1)
-
 
 def running_mean_spectrum(X, N):
     """Apply the running mean to smooth the spectrum X, running mean is N-point along axis"""
@@ -157,11 +168,14 @@ def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figu
     plt.savefig(figure_name, bbox_inches='tight')
 
 
+xcorf_output_dir = waveform_dir + "/cross_correlation_" + network_station1 + '_vs_' + network_station2
+mkdir(xcorf_output_dir)
+
 dt = waveform_time1[1] - waveform_time1[0]
 num_windows = xcorf_function1.shape[0]
 average_hours = 24  # time in hours to average the xcorr functions
 average_windows = 60 * average_hours  # time in minutes
-time_pts_xcorf = 2048  # time range in 0.1 s for the xcor functions
+time_pts_xcorf = 600  # time range in 0.1 s for the xcor functions
 
 # Results without bandpassing filtering
 bandpass_filter = None
@@ -170,16 +184,21 @@ xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
 plt.close('all')
-scale_factor = 50
-fig, ax = plt.subplots(3, 3, figsize=(10, 10))
+scale_factor = 10
+fig, ax = plt.subplots(9, 1, figsize=(4, 12),squeeze=False)
 k = -1
-for i in range(3):
-    for j in range(3):
+for i in range(9):
+    for j in range(1):
         k += 1
         norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / scale_factor,
                                          vmin=-abs(average_acf1[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
                         extent=[-time_pts_xcorf * dt/2, time_pts_xcorf * dt/2, 0, 31], origin='lower')
+        mean_xcorf = np.mean(average_acf1[:, :, k], axis=0)
+        GF = np.diff(mean_xcorf, append=0)
+        # ax[i, j].plot(xcorf_time_lag, mean_xcorf/abs(np.amax(mean_xcorf)) * 15 + 15, '-k')
+        ax[i, j].plot(xcorf_time_lag, GF / abs(np.amax(GF)) * 10 + 15, '-k')
+        ax[i, j].set_ylim(0, 31)
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
@@ -187,18 +206,23 @@ for i in range(3):
         if i == 2:
             ax[i, j].set_xlabel('Time (s)')
 
-plt.savefig(waveform_output_dir + '/original_waveform_xcor.png')
+plt.savefig(xcorf_output_dir + '/original_waveform_xcor.png')
 
-scale_factor = 5
-fig, ax = plt.subplots(3, 3, figsize=(10, 10))
+scale_factor = 1
+fig, ax = plt.subplots(9, 1, figsize=(4, 12), squeeze=False)
 k = -1
-for i in range(3):
-    for j in range(3):
+for i in range(9):
+    for j in range(1):
         k += 1
         norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / scale_factor,
                                          vmin=-abs(average_acf2[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
-                        extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
+                        extent=[-time_pts_xcorf * dt/2, time_pts_xcorf * dt/2, 0, 31], origin='lower')
+        mean_xcorf = np.mean(average_acf2[:, :, k], axis=0)
+        GF = np.diff(mean_xcorf, append=0)
+        # ax[i, j].plot(xcorf_time_lag, mean_xcorf/abs(np.amax(mean_xcorf)) * 15 + 15, '-k')
+        ax[i, j].plot(xcorf_time_lag, GF / abs(np.amax(GF)) * 10 + 15, '-k')
+        ax[i, j].set_ylim(0, 31)
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
@@ -206,69 +230,71 @@ for i in range(3):
         if i == 2:
             ax[i, j].set_xlabel('Time (s)')
 
-plt.savefig(waveform_output_dir + '/separated_noise_xcor.png')
+plt.savefig(xcorf_output_dir + '/separated_noise_xcor.png')
 
-# plot the comparison of correlation coefficients with global average function
-plt.figure(3)
-figure_name = waveform_output_dir + '/unfilter_corr_coef_comparision.png'
-plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
 # Results with bandpassing filtering
-bandpass_filter = np.array([1, 2])  # [0.1, 1] [1, 2][2, 4.5]
+bandpass_filter = np.array([0.5, 3])  # [0.1, 1] [1, 2][2, 4.5]
 file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
-scale_factor = 50
+scale_factor = 15
 plt.close('all')
-fig, ax = plt.subplots(3, 3, figsize=(10, 10))
+fig, ax = plt.subplots(9, 1, figsize=(4, 12), squeeze=False, sharex=True, sharey=True)
 k = -1
-for i in range(3):
-    for j in range(3):
+for i in range(9):
+    for j in range(1):
         k += 1
         norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / scale_factor,
                                          vmin=-abs(average_acf1[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
-                        extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
+                        extent=[-time_pts_xcorf * dt/2, time_pts_xcorf * dt/2, 0, 31], origin='lower')
+        mean_xcorf = np.mean(average_acf1[:, :, k], axis=0)
+        GF = np.diff(mean_xcorf, append=0)
+        #ax[i, j].plot(xcorf_time_lag, mean_xcorf/abs(np.amax(mean_xcorf)) * 40 + 15, '-k')
+        ax[i, j].plot(xcorf_time_lag, GF / abs(np.amax(GF)) * 10 + 15, '-k')
+        ax[i, j].set_ylim(0, 31)
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
             ax[i, j].set_ylabel('Days')
-        if i == 2:
+        if i == 8:
             ax[i, j].set_xlabel('Time (s)')
 
-plt.savefig(waveform_output_dir + '/original_waveform_xcor' + file_name_str + '.png')
+plt.savefig(xcorf_output_dir + '/original_waveform_xcor' + file_name_str + '.png')
 
-scale_factor = 50
-fig, ax = plt.subplots(3, 3, figsize=(10, 10))
+scale_factor = 15
+fig, ax = plt.subplots(9, 1, figsize=(4, 12), squeeze=False, sharex=True, sharey=True)
 k = -1
-for i in range(3):
-    for j in range(3):
+for i in range(9):
+    for j in range(1):
         k += 1
         norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / scale_factor,
                                          vmin=-abs(average_acf2[:, :, k]).max() / scale_factor)
         ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
-                        extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
+                        extent=[-time_pts_xcorf * dt/2, time_pts_xcorf * dt/2, 0, 31], origin='lower')
+        mean_xcorf = np.mean(average_acf2[:, :, k], axis=0)
+        GF = np.diff(mean_xcorf, append=0)
+        #ax[i, j].plot(xcorf_time_lag, mean_xcorf/abs(np.amax(mean_xcorf)) * 40 + 15, '-k')
+        ax[i, j].plot(xcorf_time_lag, GF / abs(np.amax(GF)) * 12 + 15, '-k')
+        ax[i, j].set_ylim(0, 31)
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
             ax[i, j].set_ylabel('Days')
-        if i == 2:
+        if i == 8:
             ax[i, j].set_xlabel('Time (s)')
 
-plt.plot(np.sum(average_acf1[:, :, 0], axis=0))
-ii=8
-plt.plot(np.sum(average_acf2[:, :, ii], axis=0))
-plt.plot(np.sum(average_acf1[:, :, ii], axis=0))
+# plt.plot(np.sum(average_acf1[:, :, 0], axis=0))
+# ii=8
+# plt.plot(np.sum(average_acf2[:, :, ii], axis=0))
+# plt.plot(np.sum(average_acf1[:, :, ii], axis=0))
 
-plt.savefig(waveform_output_dir + '/separated_noise_xcor' + file_name_str + '.png')
+plt.savefig(xcorf_output_dir + '/separated_noise_xcor' + file_name_str + '.png')
 
-# plot the comparison of correlation coefficients with global average function
-plt.figure(3)
-figure_name = waveform_output_dir + '/filter_corr_coef_comparision' + file_name_str + '.png'
-plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
 ##################################################################
 average_acf1 = average_acf1 - np.mean(average_acf1, axis=0)
