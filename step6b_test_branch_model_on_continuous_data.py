@@ -23,15 +23,15 @@ working_dir = os.getcwd()
 
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-network_station = "HV.HAT" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT"
+network_station = "HV.DEVL" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.10.20210731-20210901.mseed'
-waveform_mseed = waveform_dir + '/' + network_station + '.00.20210731-20210901.mseed'
+waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
 
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
-tr.filter('highpass', freq=1/600)
+tr.filter('highpass', freq=0.1)
 f1=plt.figure(1, figsize=(8, 12))
 tr[0].plot(type='dayplot', interval=24*60, fig=f1, show_y_UTC_label=False, color=['k', 'r', 'b', 'g'])
 plt.savefig(waveform_dir + '/one_month_data_' + network_station + '.png')
@@ -170,7 +170,7 @@ waveform_output_dir = waveform_dir + '/' + model_dataset_dir
 mkdir(waveform_output_dir)
 waveform_output_dir = waveform_output_dir + '/' + network_station
 mkdir(waveform_output_dir)
-with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'w') as f:
+with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms_prefilt_0.1Hz.hdf5', 'w') as f:
     f.create_dataset("waveform_time", data=waveform_time)
     f.create_dataset("waveform_original", data=waveform_original)
     f.create_dataset("waveform_recovered", data=waveform_recovered)
@@ -181,14 +181,14 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
 ############################ Make figures ###############################################
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-network_station = "HV.HSSD" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT"
+network_station = "HV.DEVL" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.10.20210731-20210901.mseed'
-waveform_mseed = waveform_dir + '/' + network_station + '.00.20210731-20210901.mseed'
+waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
-tr.filter('highpass', freq=1/600)
+tr.filter('highpass', freq=0.1)
 tr.decimate(10)
 
 # Model names and path
@@ -201,7 +201,7 @@ model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
 # Load the recovered waveforms and then make plots
 waveform_output_dir = waveform_dir + '/' + model_dataset_dir + '/' + network_station
-with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
+with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms_prefilt_0.1Hz.hdf5', 'r') as f:
     waveform_time = f["waveform_time"][:]
     waveform_original = f["waveform_original"][:]
     waveform_recovered = f["waveform_recovered"][:]
@@ -211,9 +211,12 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
 
 dt = waveform_time[1] - waveform_time[0]
 
+waveform_output_dir = waveform_output_dir + '/prefiltered'
+mkdir(waveform_output_dir)
 # Write the processed waveforms to the new trace objects (to use Obspy plot functions)
 tr_recovered = tr.copy()
 tr_noise = tr.copy()
+tr_residual = tr.copy()
 
 for i in range(3):
     tr_recovered[i].stats.sampling_rate = 1 / dt
@@ -221,6 +224,7 @@ for i in range(3):
 
     tr_recovered[i].data = waveform_recovered[:, i]
     tr_noise[i].data = noise_recovered[:, i]
+    tr_residual[i].data = waveform_original[:, i] - waveform_recovered[:, i] - noise_recovered[:, i]
 
 # Visualize the data in one-month
 i_channel = 0
@@ -252,6 +256,16 @@ plt.ylabel("Days")
 plt.xlabel('Time in hours', fontsize=12)
 plt.savefig(waveform_output_dir + '/one_month_data_noise_BH' + str(i_channel) + '.png')
 
+# The residual
+# The separated noise data
+f4 = plt.figure(4, figsize=(8, 12))
+tr_residual[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
+                         fig=f4, show_y_UTC_label=False, color=['gray'])
+plt.yticks([-1, 1], labels='')
+plt.ylabel("Days")
+plt.xlabel('Time in hours', fontsize=12)
+plt.savefig(waveform_output_dir + '/one_month_data_residual_BH' + str(i_channel) + '.png')
+
 # Plot zoom-in waveforms
 plt.close('all')
 plt.figure(1, figsize=(18, 6))
@@ -280,6 +294,8 @@ for i, xlimit in enumerate(time_zoom_in):
     plt.xlim(xlimit)
     #plt.savefig(waveform_output_dir + '/continueous_separation_IU.POHA_' + bottleneck_name + '_t' + str(i) + '.pdf')
     plt.savefig(waveform_output_dir + '/continueous_separation_' + network_station + '_' + bottleneck_name + '_t' + str(i) + '.png')
+
+
 
 ######## End ########
 plt.figure(2)
