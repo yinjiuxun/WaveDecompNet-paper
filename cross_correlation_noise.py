@@ -12,7 +12,7 @@ from utilities import mkdir
 # %%
 working_dir = os.getcwd()
 # waveforms
-network_station1 = "HV.HAT"  # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
+network_station1 = "IU.POHA"  # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
 network_station2 = "HV.WRM"  # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
 waveform_dir = working_dir + '/continuous_waveforms'
 model_dataset_dir = "Model_and_datasets_1D_all"
@@ -41,14 +41,14 @@ dt = waveform_time1[1] - waveform_time1[0]
 # noise_recovered2 = waveform_original2 - waveform_recovered2
 
 # reshape the original waveform and the recovered noise
-waveform_original1 = np.reshape(waveform_original1[:, np.newaxis, :], (-1, 600, 3))
-noise_recovered1 = np.reshape(noise_recovered1[:, np.newaxis, :], (-1, 600, 3))
-waveform_recovered1 = np.reshape(waveform_recovered1[:, np.newaxis, :], (-1, 600, 3))
+waveform_original1 = np.reshape(waveform_original1[:, np.newaxis, :], (-1, 6000, 3))
+noise_recovered1 = np.reshape(noise_recovered1[:, np.newaxis, :], (-1, 6000, 3))
+waveform_recovered1 = np.reshape(waveform_recovered1[:, np.newaxis, :], (-1, 6000, 3))
 #noise_recovered1 = waveform_original1 - waveform_recovered1 - noise_recovered1
 
-waveform_original2 = np.reshape(waveform_original2[:, np.newaxis, :], (-1, 600, 3))
-noise_recovered2 = np.reshape(noise_recovered2[:, np.newaxis, :], (-1, 600, 3))
-waveform_recovered2 = np.reshape(waveform_recovered2[:, np.newaxis, :], (-1, 600, 3))
+waveform_original2 = np.reshape(waveform_original2[:, np.newaxis, :], (-1, 6000, 3))
+noise_recovered2 = np.reshape(noise_recovered2[:, np.newaxis, :], (-1, 6000, 3))
+waveform_recovered2 = np.reshape(waveform_recovered2[:, np.newaxis, :], (-1, 6000, 3))
 #noise_recovered2 = waveform_original2 - waveform_recovered2 - noise_recovered2
 
 # test the autocorrelation methodology
@@ -63,7 +63,7 @@ earthquake_test1 = waveform_recovered1[:batch_size, :, :]
 earthquake_test2 = waveform_recovered2[:batch_size, :, :]
 
 # zero-pad to 2048 points
-pad_size = 600
+pad_size = 6000
 data_test1 = np.concatenate((np.zeros((batch_size, pad_size - data_test1.shape[1], data_test1.shape[2])), data_test1)
                             , axis=1)
 data_test2 = np.concatenate((np.zeros((batch_size, pad_size - data_test2.shape[1], data_test2.shape[2])), data_test2)
@@ -173,9 +173,9 @@ mkdir(xcorf_output_dir)
 
 dt = waveform_time1[1] - waveform_time1[0]
 num_windows = xcorf_function1.shape[0]
-average_hours = 24  # time in hours to average the xcorr functions
+average_hours = 12  # time in hours to average the xcorr functions
 average_windows = 60 * average_hours  # time in minutes
-time_pts_xcorf = 600  # time range in 0.1 s for the xcor functions
+time_pts_xcorf = 6000  # time range in 0.1 s for the xcor functions
 
 # Results without bandpassing filtering
 bandpass_filter = None
@@ -208,7 +208,7 @@ for i in range(9):
 
 plt.savefig(xcorf_output_dir + '/original_waveform_xcor.png')
 
-scale_factor = 1
+scale_factor = 10
 fig, ax = plt.subplots(9, 1, figsize=(4, 12), squeeze=False)
 k = -1
 for i in range(9):
@@ -234,14 +234,14 @@ plt.savefig(xcorf_output_dir + '/separated_noise_xcor.png')
 
 
 # Results with bandpassing filtering
-bandpass_filter = np.array([0.5, 3])  # [0.1, 1] [1, 2][2, 4.5]
+bandpass_filter = np.array([0.1, 1])  # [0.1, 1] [1, 2][2, 4.5]
 file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
-scale_factor = 15
+scale_factor = 10
 plt.close('all')
 fig, ax = plt.subplots(9, 1, figsize=(4, 12), squeeze=False, sharex=True, sharey=True)
 k = -1
@@ -255,8 +255,9 @@ for i in range(9):
         mean_xcorf = np.mean(average_acf1[:, :, k], axis=0)
         GF = np.diff(mean_xcorf, append=0)
         #ax[i, j].plot(xcorf_time_lag, mean_xcorf/abs(np.amax(mean_xcorf)) * 40 + 15, '-k')
-        ax[i, j].plot(xcorf_time_lag, GF / abs(np.amax(GF)) * 10 + 15, '-k')
+        ax[i, j].plot(xcorf_time_lag, GF / abs(np.amax(GF)) * 20 + 15, '-k')
         ax[i, j].set_ylim(0, 31)
+        #ax[i, j].set_xlim(-50, 50)
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
@@ -266,7 +267,7 @@ for i in range(9):
 
 plt.savefig(xcorf_output_dir + '/original_waveform_xcor' + file_name_str + '.png')
 
-scale_factor = 15
+scale_factor = 50
 fig, ax = plt.subplots(9, 1, figsize=(4, 12), squeeze=False, sharex=True, sharey=True)
 k = -1
 for i in range(9):
@@ -279,8 +280,9 @@ for i in range(9):
         mean_xcorf = np.mean(average_acf2[:, :, k], axis=0)
         GF = np.diff(mean_xcorf, append=0)
         #ax[i, j].plot(xcorf_time_lag, mean_xcorf/abs(np.amax(mean_xcorf)) * 40 + 15, '-k')
-        ax[i, j].plot(xcorf_time_lag, GF / abs(np.amax(GF)) * 12 + 15, '-k')
+        ax[i, j].plot(xcorf_time_lag, GF / abs(np.amax(GF)) * 20 + 15, '-k')
         ax[i, j].set_ylim(0, 31)
+        #ax[i, j].set_xlim(-50, 50)
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
 
         if j == 0:
