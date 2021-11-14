@@ -12,7 +12,7 @@ from utilities import mkdir
 # %%
 working_dir = os.getcwd()
 # waveforms
-network_station = "HV.HAT" # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
+network_station = "IU.POHA" # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
 waveform_dir = working_dir + '/continuous_waveforms'
 model_dataset_dir = "Model_and_datasets_1D_all"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD2"
@@ -83,18 +83,18 @@ for i in range(3):
         xcorf_function1[:, :, k] = np.real(calculate_xcorf(data_test1[:, :, i], data_test1[:, :, j]))
         xcorf_function2[:, :, k] = np.real(calculate_xcorf(data_test2[:, :, i], data_test2[:, :, j]))
 
-with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_xcorr_functions.hdf5', 'w') as f:
-    f.create_dataset("original_xcor", data=xcorf_function1, compression="gzip")
-    f.create_dataset("noise_xcor", data=xcorf_function2, compression="gzip")
-    f.create_dataset("waveform_time", data=waveform_time)
-    f.create_dataset("channel_xcor_list", data=channel_xcor_list)
-
-# Read results and make plots
-with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_xcorr_functions.hdf5', 'r') as f:
-    xcorf_function1 = f["original_xcor"][:]  # xcor from original waveforms
-    xcorf_function2 = f["noise_xcor"][:]  # xcor from separated noise
-    waveform_time = f["waveform_time"][:]
-    channel_xcor_list = f["channel_xcor_list"][:]
+# with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_xcorr_functions.hdf5', 'w') as f:
+#     f.create_dataset("original_xcor", data=xcorf_function1, compression="gzip")
+#     f.create_dataset("noise_xcor", data=xcorf_function2, compression="gzip")
+#     f.create_dataset("waveform_time", data=waveform_time)
+#     f.create_dataset("channel_xcor_list", data=channel_xcor_list)
+#
+# # Read results and make plots
+# with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_xcorr_functions.hdf5', 'r') as f:
+#     xcorf_function1 = f["original_xcor"][:]  # xcor from original waveforms
+#     xcorf_function2 = f["noise_xcor"][:]  # xcor from separated noise
+#     waveform_time = f["waveform_time"][:]
+#     channel_xcor_list = f["channel_xcor_list"][:]
 
 
 def average_xcorr_functions(xcorf_funciton, average_hours, time_pts_xcorf, dt, bandpass_filter=None):
@@ -195,7 +195,7 @@ figure_name = waveform_output_dir + '/unfilter_corr_coef_comparision.png'
 plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
 # Results with bandpassing filtering
-bandpass_filter = np.array([0.1, 1] )  # [0.1, 1] [1, 2][2, 4.5]
+bandpass_filter = np.array([2, 4.5] )  # [0.1, 1] [1, 2][2, 4.5]
 file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
