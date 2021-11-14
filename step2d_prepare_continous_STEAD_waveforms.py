@@ -106,10 +106,10 @@ print(f'total number of earthquakes: {len(df_earthquakes)}')
 
 # Set the number of waveforms that will be used during the training
 N_events = noise.shape[0]
-earthquake_seed = 101
-noise_seed = 102
-shift_seed = 103
-snr_seed = 104
+earthquake_seed = 111
+noise_seed = 112
+shift_seed = 113
+snr_seed = 114
 
 # Prepare the random list to get the events and noise series
 from numpy.random import default_rng
@@ -120,7 +120,7 @@ rng_shift = default_rng(shift_seed)
 shift = rng_shift.uniform(-30, 60, N_events)
 
 rng_snr = default_rng(snr_seed)
-snr = 10 ** rng_snr.uniform(-1, 1, N_events)
+snr = 10 ** rng_snr.uniform(-1, 2, N_events)
 
 # Choose the earthquakes and noise from STEAD
 df_earthquakes = df_earthquakes.iloc[chosen_earthquake_index]
