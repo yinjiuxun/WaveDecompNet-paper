@@ -23,15 +23,14 @@ working_dir = os.getcwd()
 
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-network_station = "HV.DEVL" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
+network_station = "HV.WRM" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
-# waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
-# waveform_mseed = waveform_dir + '/' + 'IU.POHA.10.20210731-20210901.mseed'
+#waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
 
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
-tr.filter('highpass', freq=0.1)
+#tr.filter('highpass', freq=0.1)
 f1=plt.figure(1, figsize=(8, 12))
 tr[0].plot(type='dayplot', interval=24*60, fig=f1, show_y_UTC_label=False, color=['k', 'r', 'b', 'g'])
 plt.savefig(waveform_dir + '/one_month_data_' + network_station + '.png')
@@ -49,7 +48,7 @@ dt0 = tr[0].stats.delta  # dt
 event_catalog = waveform_dir + '/' + 'catalog.20210731-20210901.xml'
 
 # station information
-# station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
+#station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
 station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
 sta_lat = station[0][0].latitude
 sta_lon = station[0][0].longitude
@@ -96,26 +95,28 @@ for i in range(3):
 
 time0 = np.arange(0, npts0) * dt0
 
-# TODO: Downsample the waveform data
+# Downsample the waveform data
 f_downsample = 10
 time, waveform, dt = downsample_series(time0, waveform0, f_downsample)
 
-del time0, waveform0, tr
+#del time0, waveform0, tr
 
+# Reformat the data into the format required by the model (batch, channel, samples)
 data_mean = np.mean(waveform, axis=0)
 data_std = np.std(waveform, axis=0)
 waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
 waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600, 3))
 
-# # TODO: Reformat the data into the format required by the model (batch, channel, samples)
+# # Reformat the data into the format required by the model (batch, channel, samples)
+# # For individual batch
 # waveform = np.reshape(waveform[:, np.newaxis, :], (-1, 600, 3))
 #
-# # # TODO: Normalize the waveform first!
+# #Normalize the waveform first!
 # data_mean = np.mean(waveform, axis=1, keepdims=True)
 # data_std = np.std(waveform, axis=1, keepdims=True)
 # waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
 
-# TODO: Predict the separated waveforms
+# Predict the separated waveforms
 waveform_data = WaveformDataset(waveform_normalized, waveform_normalized)
 
 # %% Need to specify model_name first
@@ -170,7 +171,7 @@ waveform_output_dir = waveform_dir + '/' + model_dataset_dir
 mkdir(waveform_output_dir)
 waveform_output_dir = waveform_output_dir + '/' + network_station
 mkdir(waveform_output_dir)
-with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms_prefilt_0.1Hz.hdf5', 'w') as f:
+with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'w') as f:
     f.create_dataset("waveform_time", data=waveform_time)
     f.create_dataset("waveform_original", data=waveform_original)
     f.create_dataset("waveform_recovered", data=waveform_recovered)
@@ -178,17 +179,40 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
     f.create_dataset("event_arrival_P", data=event_arrival_P)
     f.create_dataset("event_arrival_S", data=event_arrival_S)
 
+# Also output the mseed format of separated waveform for further testing
+tr_raw = tr.copy()
+tr_earthquake = tr.copy()
+tr_noise = tr.copy()
+tr_residual = tr.copy()
+
+for i_chan in range(3):
+    tr_raw[i_chan].data = waveform_original[:, i_chan]
+    tr_raw[i_chan].stats.sampling_rate = f_downsample
+
+    tr_earthquake[i_chan].data = waveform_recovered[:, i_chan]
+    tr_earthquake[i_chan].stats.sampling_rate = f_downsample
+
+    tr_noise[i_chan].data = noise_recovered[:, i_chan]
+    tr_noise[i_chan].stats.sampling_rate = f_downsample
+
+    tr_residual[i_chan].data = waveform_original[:, i_chan] - waveform_recovered[:, i_chan] - noise_recovered[:, i_chan]
+    tr_residual[i_chan].stats.sampling_rate = f_downsample
+
+tr_earthquake.write(waveform_dir + '/' + network_station + '.00.20210731-20210901_separated_earthquake.mseed')
+tr_raw.write(waveform_dir + '/' + network_station + '.00.20210731-20210901_original_earthquake.mseed')
+
+
 ############################ Make figures ###############################################
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-network_station = "HV.DEVL" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
+network_station = "HV.HSSD" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
-# waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+#waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.10.20210731-20210901.mseed'
 waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
-tr.filter('highpass', freq=0.1)
+#tr.filter('highpass', freq=0.1)
 tr.decimate(10)
 
 # Model names and path
@@ -201,7 +225,7 @@ model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
 # Load the recovered waveforms and then make plots
 waveform_output_dir = waveform_dir + '/' + model_dataset_dir + '/' + network_station
-with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms_prefilt_0.1Hz.hdf5', 'r') as f:
+with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
     waveform_time = f["waveform_time"][:]
     waveform_original = f["waveform_original"][:]
     waveform_recovered = f["waveform_recovered"][:]
@@ -211,7 +235,7 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
 
 dt = waveform_time[1] - waveform_time[0]
 
-waveform_output_dir = waveform_output_dir + '/prefiltered'
+waveform_output_dir = waveform_output_dir #+ '/prefiltered'
 mkdir(waveform_output_dir)
 # Write the processed waveforms to the new trace objects (to use Obspy plot functions)
 tr_recovered = tr.copy()
