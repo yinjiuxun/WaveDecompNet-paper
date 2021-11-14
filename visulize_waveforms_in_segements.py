@@ -12,7 +12,7 @@ from utilities import mkdir
 # %%
 working_dir = os.getcwd()
 # waveforms
-network_station1 = "HV.DEVL"  # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
+network_station1 = "IU.POHA"  # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
 waveform_dir = working_dir + '/continuous_waveforms'
 model_dataset_dir = "Model_and_datasets_1D_all"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD2"
@@ -22,7 +22,7 @@ bottleneck_name = "LSTM"
 waveform_output_dir1 = waveform_dir + '/' + model_dataset_dir + '/' + network_station1
 
 
-with h5py.File(waveform_output_dir1 + '/' + bottleneck_name + '_processed_waveforms_prefilt_0.1Hz.hdf5', 'r') as f:
+with h5py.File(waveform_output_dir1 + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
     waveform_time1 = f['waveform_time'][:]
     waveform_original1 = f['waveform_original'][:]
     waveform_recovered1 = f['waveform_recovered'][:]
@@ -50,7 +50,7 @@ earthquake_filtered1 = waveform_original1 - noise_filtered1 # different way
 from scipy.fft import fft, fftfreq
 from scipy.signal import fftconvolve
 
-output_figures = waveform_output_dir1 + '/waveforms_compare_prefilter0.1'
+output_figures = waveform_output_dir1 + '/waveforms_compare'
 mkdir(output_figures)
 def get_mean_spectrum(dt, data):
     freq = fftfreq(data.shape[1], dt)
