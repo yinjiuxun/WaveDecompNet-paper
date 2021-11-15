@@ -120,11 +120,6 @@ def plot_long_waveform_for_visualization():
 plt.close('all')
 plot_long_waveform_for_visualization()
 
-# plot the histogram for detected earthquakes
-plt.figure()
-plt.hist(detect_time2 / second_per_day, bins=31)
-plt.hist(detect_time1 / second_per_day, bins=31)
-
 # Loop version to plot better Zoom-in figure
 def plot_zoom_in_waveform(time_range):
     waveform_time_in_day = waveform_time / second_per_day
@@ -210,7 +205,16 @@ for time_range in time_range_list:
     file_name = network_station + '_t_' + str(time_range[0]) + '.pdf'
     plt.savefig(output_dir + '/' + network_station + '/' + file_name)
 
+# plot the histogram for detected earthquakes
+plt.figure(figsize=(8,4))
+plt.hist(detect_time2 / second_per_day, bins=31, label='separated waveform')
+plt.hist(detect_time1 / second_per_day, bins=31, label='raw waveform')
+plt.legend()
+plt.ylim(0, 200)
+plt.xlabel('Time (day)')
+plt.ylabel('Number of STA/LTA triggers')
+plt.title('Trigger events: Raw Data: ' + str(len(trig1)) + ' vs Separated Data: ' + str(len(trig2)))
 
-
+plt.savefig(output_dir + '/' + network_station + '/' + 'stalta_triggers.pdf')
 
 
