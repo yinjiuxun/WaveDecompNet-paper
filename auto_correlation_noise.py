@@ -187,9 +187,8 @@ def average_xcorr_functions(xcorf_funciton, average_hours, time_pts_xcorf, dt, b
 # Calculate the correlation coef with the global average
 def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name, title=None):
     line_label = ['original waveform', 'separated noise']
-    fig, ax = plt.subplots(9, 1, sharex=True, sharey=True, figsize=(6, 14))
-    if title is not None:
-        fig.suptitle(title)
+    fig, ax = plt.subplots(9, 1, sharex=True, sharey=True, figsize=(4, 14))
+
     for index_channel in range(9):
 
         for j, xcorf_function in enumerate([average_acf1, average_acf2]):
@@ -209,6 +208,9 @@ def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figu
             ax[index_channel].set_ylabel(channel_xcor_list[index_channel] + ' coef', fontsize=14)
             ax[index_channel].set_ylim(-1.3, 1.4)
             ax[index_channel].set_yticks([-1, 1])
+            if index_channel == 0:
+                if title is not None:
+                    ax[index_channel].set_title(title)
 
             if index_channel == 8:
                 ax[index_channel].set_xlabel('Time (day)', fontsize=14)
@@ -291,7 +293,7 @@ figure_name = waveform_output_dir + '/unfilter_corr_coef_comparision.png'
 plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
 # Results with bandpassing filtering
-bandpass_filter = np.array([0.1, 1] )  # [0.1, 1] [1, 2][2, 4.5]
+bandpass_filter = np.array([0.1, 1])  # [0.1, 1] [1, 2][2, 4.5]
 file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
@@ -301,7 +303,7 @@ xcorf_time_lag, xcorf_day_time, average_acf2 = \
 scale_factor = 4
 plt.close('all')
 fig, ax = plt.subplots(3, 3, figsize=(6, 10))
-fig.suptitle('(a) Raw waveform, ACFs filtered to [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz ]')
+fig.suptitle('(a) Raw waveform [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz')
 k = -1
 for i in range(3):
     for j in range(3):
@@ -329,7 +331,7 @@ plt.savefig(waveform_output_dir + '/original_waveform_xcor' + file_name_str + '.
 
 scale_factor = 8
 fig, ax = plt.subplots(3, 3, figsize=(6, 10))
-fig.suptitle('(b) Separated noise, ACFs filtered to [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz ]')
+fig.suptitle('(b) Separated noise [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz')
 k = -1
 for i in range(3):
     for j in range(3):
