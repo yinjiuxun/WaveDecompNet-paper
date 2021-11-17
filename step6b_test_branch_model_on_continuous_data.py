@@ -23,10 +23,10 @@ working_dir = os.getcwd()
 
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-network_station = "HV.WRM" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
+network_station = "IU.POHA" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
-#waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
-waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
+waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+#waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
 
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
@@ -48,8 +48,8 @@ dt0 = tr[0].stats.delta  # dt
 event_catalog = waveform_dir + '/' + 'catalog.20210731-20210901.xml'
 
 # station information
-#station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
-station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
+station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
+#station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
 sta_lat = station[0][0].latitude
 sta_lon = station[0][0].longitude
 
@@ -183,7 +183,8 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
     f.create_dataset("noise_recovered", data=noise_recovered)
     f.create_dataset("event_arrival_P", data=event_arrival_P)
     f.create_dataset("event_arrival_S", data=event_arrival_S)
-    f.create_dataset("event_time_P", data=event_time_P)
+
+np.save(waveform_output_dir + '/M5.5_earthquakes.npy', event_time_P)
 
 # Also output the mseed format of separated waveform for further testing
 tr_raw = tr.copy()
@@ -238,6 +239,9 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
     noise_recovered = f["noise_recovered"][:]
     event_arrival_P = f["event_arrival_P"][:]
     event_arrival_S = f["event_arrival_S"][:]
+
+event_time_P = np.load(waveform_output_dir + '/M5.5_earthquakes.npy', allow_pickle=True)
+event_time_P = event_time_P.tolist()
 
 dt = waveform_time[1] - waveform_time[0]
 
