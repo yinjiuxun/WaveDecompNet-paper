@@ -159,7 +159,7 @@ with h5py.File(output_dir + '/all_model_comparison.hdf5', 'r') as f:
     model_mse_all = f['model_mse_all'][:]
     model_snr_all = f['model_snr_all'][:]
 
-model_mse_all[model_mse_all < -2] = -2 # Force very low mse value
+#model_mse_all[model_mse_all < -2] = -2 # Force very low mse value
 
 plt.close('all')
 plt.figure(3)
@@ -243,8 +243,8 @@ for i in range(len(model_names)):
         # mse_error_negative.append(mse_mean_current - np.mean(mse_current[mse_current < mse_mean_current]))
 
         # Use the mean values above and below the MEDIAN to inllustrate uncertainty
-        mse_error_positive.append(np.mean(mse_current[mse_current > mse_median_current]) - mse_median_current)
-        mse_error_negative.append(mse_median_current - np.mean(mse_current[mse_current < mse_median_current]))
+        mse_error_positive.append(np.median(mse_current[mse_current > mse_median_current]) - mse_median_current)
+        mse_error_negative.append(mse_median_current - np.median(mse_current[mse_current < mse_median_current]))
 
 
     mse_median_all.append(np.array(mse_median))
