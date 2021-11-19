@@ -53,8 +53,9 @@ cft2_N = recursive_sta_lta(st2[1].data, int(short_term * f_sample), int(long_ter
 cft2_Z = recursive_sta_lta(st2[2].data, int(short_term * f_sample), int(long_term * f_sample))
 
 # trig = coincidence_trigger("classicstalta", trigger_on, trigger_off, st, 3, sta=short_term, lta=long_term)
-trig1 = coincidence_trigger("recstalta", trigger_on, trigger_off, st1, 3, sta=short_term, lta=long_term)
-trig2 = coincidence_trigger("recstalta", trigger_on, trigger_off, st2, 3, sta=short_term, lta=long_term)
+threshold_coincidence = 3
+trig1 = coincidence_trigger("recstalta", trigger_on, trigger_off, st1, threshold_coincidence, sta=short_term, lta=long_term)
+trig2 = coincidence_trigger("recstalta", trigger_on, trigger_off, st2, threshold_coincidence, sta=short_term, lta=long_term)
 
 print('Trigger events: Raw Data: ' + str(len(trig1)) + ' vs Separated Data: ' + str(len(trig2)))
 
@@ -120,15 +121,10 @@ def plot_long_waveform_for_visualization():
 plt.close('all')
 plot_long_waveform_for_visualization()
 
-# plot the histogram for detected earthquakes
-plt.figure()
-plt.hist(detect_time2 / second_per_day, bins=31)
-plt.hist(detect_time1 / second_per_day, bins=31)
-
 # Loop version to plot better Zoom-in figure
 def plot_zoom_in_waveform(time_range):
     waveform_time_in_day = waveform_time / second_per_day
-    detect_time_in_day1 = detect_time1 / second_per_day 
+    detect_time_in_day1 = detect_time1 / second_per_day
     detect_time_in_day2 = detect_time2 / second_per_day
 
     index_range = (waveform_time_in_day >= time_range[0]) & (waveform_time_in_day <= time_range[1])
@@ -207,10 +203,20 @@ time_range = [21.0675, 21.07]
 time_range_list = [[8.3615, 8.3645], [11.825, 11.84], [21.0675, 21.07]]
 for time_range in time_range_list:
     plot_zoom_in_waveform(time_range)
-    file_name = network_station + '_t_' + str(time_range[0]) + '.pdf'
-    plt.savefig(output_dir + '/' + network_station + '/' + file_name)
+    file_name = network_station + '_t_' + str(time_range[0]) + '_coincidence_' + str(threshold_coincidence) + '.pdf'
+    plt.savefig(output_dir + '/' + network_station + '/' + file_name, bbox_inches='tight')
 
+# plot the histogram for detected earthquakes
+plt.figure(figsize=(8,4))
+plt.hist(detect_time2 / second_per_day, bins=31, label='separated waveform')
+plt.hist(detect_time1 / second_per_day, bins=31, label='raw waveform')
+plt.legend()
+#plt.ylim(0, 200)
+plt.xlabel('Time (day)')
+plt.ylabel('Number of STA/LTA triggers')
+plt.title('Trigger events: Raw Data: ' + str(len(trig1)) + ' vs Separated Data: ' + str(len(trig2)))
 
-
+plt.savefig(output_dir + '/' + network_station + '/' + 'stalta_triggers_coincidence_' + str(threshold_coincidence) + '.pdf',
+            bbox_inches='tight')
 
 

@@ -16,17 +16,17 @@ import torch
 from torch.utils.data import DataLoader
 
 import matplotlib
-matplotlib.rcParams.update({'font.size': 12})
+matplotlib.rcParams.update({'font.size': 18})
 
 # %%
 working_dir = os.getcwd()
 
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-network_station = "IU.POHA" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
+network_station = "HV.AIND" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
-waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
-# waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
+#waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
 
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
@@ -48,17 +48,20 @@ dt0 = tr[0].stats.delta  # dt
 event_catalog = waveform_dir + '/' + 'catalog.20210731-20210901.xml'
 
 # station information
-station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
-#station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
+#station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
+station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
 sta_lat = station[0][0].latitude
 sta_lon = station[0][0].longitude
 
 # read the catalog
-events = obspy.read_events(event_catalog)
+events0 = obspy.read_events(event_catalog)
+# this is to show the large earthquake occur
+events = events0.filter("time > 2021-08-10", "time < 2021-08-20", "magnitude >= 5.5")
 # estimate the arrival time of each earthquake to the station
 t0 = tr[0].stats.starttime
 event_arrival_P = np.zeros(len(events))
 event_arrival_S = np.zeros(len(events))
+event_time_P = []
 epi_distance = np.zeros(len(events))
 event_magnitude = np.array([event.magnitudes[0].mag for event in events])
 for i_event in range(len(events)):
@@ -82,6 +85,8 @@ for i_event in range(len(events)):
         arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['S'])
         S_arrival = arrivals[0].time
         # the relative arrival time on the waveform when the event signal arrives
+        event_info = {"time": event_time + P_arrival, "text": []} #str(event.magnitudes[0].mag)
+        event_time_P.append(event_info)
         event_arrival_P[i_event] = event_time - t0 + P_arrival
         event_arrival_S[i_event] = event_time - t0 + S_arrival
     except:
@@ -111,7 +116,7 @@ waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600
 # # For individual batch
 # waveform = np.reshape(waveform[:, np.newaxis, :], (-1, 600, 3))
 #
-# # TODO: Normalize the waveform first!
+# #Normalize the waveform first!
 # data_mean = np.mean(waveform, axis=1, keepdims=True)
 # data_std = np.std(waveform, axis=1, keepdims=True)
 # waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
@@ -179,6 +184,8 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
     f.create_dataset("event_arrival_P", data=event_arrival_P)
     f.create_dataset("event_arrival_S", data=event_arrival_S)
 
+np.save(waveform_output_dir + '/M5.5_earthquakes.npy', event_time_P)
+
 # Also output the mseed format of separated waveform for further testing
 tr_raw = tr.copy()
 tr_earthquake = tr.copy()
@@ -198,18 +205,18 @@ for i_chan in range(3):
     tr_residual[i_chan].data = waveform_original[:, i_chan] - waveform_recovered[:, i_chan] - noise_recovered[:, i_chan]
     tr_residual[i_chan].stats.sampling_rate = f_downsample
 
-tr_earthquake.write(waveform_dir + '/' + 'IU.POHA.00.20210731-20210901_separated_earthquake.mseed')
-tr_raw.write(waveform_dir + '/' + 'IU.POHA.00.20210731-20210901_original_earthquake.mseed')
+tr_earthquake.write(waveform_dir + '/' + network_station + '.00.20210731-20210901_separated_earthquake.mseed')
+tr_raw.write(waveform_dir + '/' + network_station + '.00.20210731-20210901_original_earthquake.mseed')
 
 
 ############################ Make figures ###############################################
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-network_station = "IU.POHA" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
+network_station = "HV.AIND" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
-waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+#waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.10.20210731-20210901.mseed'
-# waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
+waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
 #tr.filter('highpass', freq=0.1)
@@ -233,6 +240,9 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
     event_arrival_P = f["event_arrival_P"][:]
     event_arrival_S = f["event_arrival_S"][:]
 
+event_time_P = np.load(waveform_output_dir + '/M5.5_earthquakes.npy', allow_pickle=True)
+event_time_P = event_time_P.tolist()
+
 dt = waveform_time[1] - waveform_time[0]
 
 waveform_output_dir = waveform_output_dir #+ '/prefiltered'
@@ -244,7 +254,8 @@ tr_residual = tr.copy()
 
 for i in range(3):
     tr_recovered[i].stats.sampling_rate = 1 / dt
-    tr_recovered[i].stats.sampling_rate = 1 / dt
+    tr_noise[i].stats.sampling_rate = 1 / dt
+    tr_residual[i].stats.sampling_rate = 1 / dt
 
     tr_recovered[i].data = waveform_recovered[:, i]
     tr_noise[i].data = noise_recovered[:, i]
@@ -254,40 +265,44 @@ for i in range(3):
 i_channel = 0
 vertical_scaling = 40000
 # The original data
-f1 = plt.figure(1, figsize=(8, 12))
+f1 = plt.figure(1, figsize=(8, 10))
 tr[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
-                   fig=f1, show_y_UTC_label=False, color=['k'])
+                   fig=f1, show_y_UTC_label=False, color=['k'], title='', x_labels_size=18, events=event_time_P)
 plt.yticks([-1, 1], labels='')
 plt.ylabel("Days")
-plt.xlabel('Time in hours', fontsize=12)
+plt.xlabel('Time in hours', fontsize=18)
+plt.title('(a) Raw waveform (' + network_station + ')')
 plt.savefig(waveform_output_dir + '/one_month_data_original_BH' + str(i_channel) + '.png')
 
 # The separated earthquake data
-f2 = plt.figure(2, figsize=(8, 12))
+f2 = plt.figure(2, figsize=(8, 10))
 tr_recovered[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
-                             fig=f2, show_y_UTC_label=False, color=['b'])
+                             fig=f2, show_y_UTC_label=False, color=['r'], title='', x_labels_size=18, events=event_time_P)
 plt.yticks([-1, 1], labels='')
 plt.ylabel("Days")
-plt.xlabel('Time in hours', fontsize=12)
+plt.xlabel('Time in hours', fontsize=18)
+plt.title('(b) Earthquake waveform (' + network_station + ')')
 plt.savefig(waveform_output_dir + '/one_month_data_earthquake_BH' + str(i_channel) + '.png')
 
 # The separated noise data
-f3 = plt.figure(3, figsize=(8, 12))
+f3 = plt.figure(3, figsize=(8, 10))
 tr_noise[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
-                         fig=f3, show_y_UTC_label=False, color=['gray'])
+                         fig=f3, show_y_UTC_label=False, color=['b'], title='', x_labels_size=18, events=event_time_P)
 plt.yticks([-1, 1], labels='')
 plt.ylabel("Days")
-plt.xlabel('Time in hours', fontsize=12)
+plt.xlabel('Time in hours', fontsize=18)
+plt.title('(c) Noise waveform (' + network_station + ')')
 plt.savefig(waveform_output_dir + '/one_month_data_noise_BH' + str(i_channel) + '.png')
 
 # The residual
 # The separated noise data
-f4 = plt.figure(4, figsize=(8, 12))
+f4 = plt.figure(4, figsize=(8, 10))
 tr_residual[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
-                         fig=f4, show_y_UTC_label=False, color=['gray'])
+                         fig=f4, show_y_UTC_label=False, color=['gray'], title='', x_labels_size=18, events=event_time_P)
 plt.yticks([-1, 1], labels='')
 plt.ylabel("Days")
-plt.xlabel('Time in hours', fontsize=12)
+plt.xlabel('Time in hours', fontsize=18)
+plt.title('(d) Residual waveform (' + network_station + ')')
 plt.savefig(waveform_output_dir + '/one_month_data_residual_BH' + str(i_channel) + '.png')
 
 # Plot zoom-in waveforms

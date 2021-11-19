@@ -32,7 +32,7 @@ class WaveformDataset_h5(Dataset):
         Y_waveform = self.hdf5_file['Y_train'][idx]
         return X_waveform, Y_waveform
 
-
+# from https://github.com/Bjarten/early-stopping-pytorch
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
 
