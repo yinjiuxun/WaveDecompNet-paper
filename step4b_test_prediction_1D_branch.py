@@ -5,7 +5,7 @@ from utilities import mkdir, waveform_fft
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import DataLoader
-from torch_tools import WaveformDataset, try_gpu
+from torch_tools import WaveformDataset, try_gpu, parameter_number
 from autoencoder_1D_models_torch import *
 
 # %% load dataset
@@ -71,6 +71,9 @@ for X, y in test_iter:
 test_loss = test_loss/len(test_iter.dataset)
 print('Test Loss: {:.6f}\n'.format(test_loss))
 
+parameter_number = parameter_number(model)
+print(f'Total number of parameters: {parameter_number}\n')
+
 
 # Output some figures
 figure_dir = model_dir + '/Figures'
@@ -85,9 +88,11 @@ plt.plot(loss, 'o', label='Training loss')
 plt.plot(val_loss, '-', label='Validation loss')
 plt.plot([1, len(loss)], [test_loss, test_loss], '-', label='Test loss', linewidth=4)
 plt.legend()
+plt.ylabel('MSE')
+plt.xlabel('Epochs')
 plt.title(model_name + f' test loss {test_loss:.4f}')
 #plt.show()
-plt.savefig(figure_dir + f"/{model_name}_Loss_evolution.png")
+plt.savefig(figure_dir + f"/{model_name}_Loss_evolution.png", bbox_inches='tight')
 
 
 # %% predict the waveforms
