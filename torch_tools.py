@@ -102,6 +102,14 @@ def try_gpu(i=0):  # @save
         return torch.device(f'cuda:{i}')
     return torch.device('cpu')
 
+# count total number of parameters of a model
+def parameter_number(model):
+    num_param = 0
+    for parameter in model.parameters():
+        #print(parameter)
+        num_param += np.prod(parameter.shape)
+    return num_param
+
 
 def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimizer, epochs, patience, device):
     # to track the training loss as the model trains
