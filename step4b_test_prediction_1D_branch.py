@@ -8,6 +8,9 @@ from torch.utils.data import DataLoader
 from torch_tools import WaveformDataset, try_gpu, parameter_number
 from autoencoder_1D_models_torch import *
 
+import matplotlib
+matplotlib.rcParams.update({'font.size': 10})
+
 # %% load dataset
 data_dir = './training_datasets'
 #data_name = 'training_datasets_STEAD_waveform.hdf5'
@@ -22,7 +25,7 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Need to specify model_name first
-bottleneck_name = "LSTM"
+bottleneck_name = "Transformer"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 model_dataset_dir = "Model_and_datasets_1D_all"
@@ -85,14 +88,14 @@ with h5py.File(model_dir + '/' + f'{model_name}_Training_history.hdf5', 'r') as 
     val_loss = f['val_loss'][:]
 plt.figure()
 plt.plot(loss, 'o', label='Training loss')
-plt.plot(val_loss, '-', label='Validation loss')
-plt.plot([1, len(loss)], [test_loss, test_loss], '-', label='Test loss', linewidth=4)
+plt.plot(val_loss, '-', label='Validation loss', linewidth=2)
+plt.plot([1, len(loss)], [test_loss, test_loss], '--', label='Test loss', linewidth=2)
 plt.legend()
-plt.ylabel('MSE')
-plt.xlabel('Epochs')
-plt.title(model_name + f' test loss {test_loss:.4f}')
+plt.ylabel('MSE', fontsize=14)
+plt.xlabel('Epochs', fontsize=14)
+plt.title(bottleneck_name + f' ({parameter_number} params.),' + f' test loss {test_loss:.4f}', fontsize=14)
 #plt.show()
-plt.savefig(figure_dir + f"/{model_name}_Loss_evolution.png", bbox_inches='tight')
+plt.savefig(figure_dir + f"/{model_name}_Loss_evolution.pdf", bbox_inches='tight')
 
 
 # %% predict the waveforms
@@ -153,7 +156,15 @@ for i_model in range(100):
 
     for i in range(3):
         for j in range(3):
-            ax[i, j].axis('off')
+            #ax[i, j].axis('off')
+            ax[i, j].xaxis.set_visible(False)
+            ax[i, j].yaxis.set_ticks([])
+            # remove box
+            ax[i, j].spines['right'].set_visible(False)
+            ax[i, j].spines['left'].set_visible(False)
+            ax[i, j].spines['top'].set_visible(False)
+            ax[i, j].spines['bottom'].set_visible(False)
+
 
     #ax[0, 0].legend()
     #ax[0, 1].legend()
