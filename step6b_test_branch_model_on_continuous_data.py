@@ -23,10 +23,9 @@ working_dir = os.getcwd()
 
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-network_station = "HV.AIND" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
-# waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
-#waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
-waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
+network_station = "IU.POHA" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
+waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+#waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
 
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
@@ -48,8 +47,8 @@ dt0 = tr[0].stats.delta  # dt
 event_catalog = waveform_dir + '/' + 'catalog.20210731-20210901.xml'
 
 # station information
-#station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
-station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
+station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
+#station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
 sta_lat = station[0][0].latitude
 sta_lon = station[0][0].longitude
 
@@ -57,6 +56,7 @@ sta_lon = station[0][0].longitude
 events0 = obspy.read_events(event_catalog)
 # this is to show the large earthquake occur
 events = events0.filter("time > 2021-08-10", "time < 2021-08-20", "magnitude >= 5.5")
+events.plot(projection='local',water_fill_color='#A7D7EF',continent_fill_color='#F4F2DD')
 # estimate the arrival time of each earthquake to the station
 t0 = tr[0].stats.starttime
 event_arrival_P = np.zeros(len(events))
@@ -212,11 +212,11 @@ tr_raw.write(waveform_dir + '/' + network_station + '.00.20210731-20210901_origi
 ############################ Make figures ###############################################
 # waveforms
 waveform_dir = working_dir + '/continuous_waveforms'
-network_station = "HV.AIND" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
-# waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
-#waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+network_station = "IU.POHA" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
+
+waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.10.20210731-20210901.mseed'
-waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
+#waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
 #tr.filter('highpass', freq=0.1)
