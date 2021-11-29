@@ -32,6 +32,7 @@ class WaveformDataset_h5(Dataset):
         Y_waveform = self.hdf5_file['Y_train'][idx]
         return X_waveform, Y_waveform
 
+
 # from https://github.com/Bjarten/early-stopping-pytorch
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
@@ -102,11 +103,12 @@ def try_gpu(i=0):  # @save
         return torch.device(f'cuda:{i}')
     return torch.device('cpu')
 
+
 # count total number of parameters of a model
 def parameter_number(model):
     num_param = 0
     for parameter in model.parameters():
-        #print(parameter)
+        # print(parameter)
         num_param += np.prod(parameter.shape)
     return num_param
 
@@ -190,8 +192,8 @@ def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimiz
     return model, avg_train_losses, avg_valid_losses
 
 
-
-def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn, optimizer, epochs, patience, device):
+def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn, optimizer, epochs
+                           , patience, device, minimum_epochs=None):
     # to track the training loss as the model trains
     train_losses = []
     # to track the validation loss as the model trains
@@ -262,9 +264,10 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
         train_losses = []
         valid_losses = []
 
-        # early_stopping needs the validation loss to check if it has decresed,
-        # and if it has, it will make a checkpoint of the current model
-        early_stopping(valid_loss, model)
+        if (minimum_epochs is None) or ((minimum_epochs is not None) and (epoch > minimum_epochs)):
+            # early_stopping needs the validation loss to check if it has decresed,
+            # and if it has, it will make a checkpoint of the current model
+            early_stopping(valid_loss, model)
 
         if early_stopping.early_stop:
             print("Early stopping")

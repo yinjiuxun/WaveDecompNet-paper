@@ -151,6 +151,7 @@ model_dataset_dir = model_dataset_dir + '/' + model_name
 mkdir(model_dataset_dir)
 
 batch_size, epochs, lr = 128, 300, 1e-3
+minimum_epochs = 30 # the minimum epochs that the training has to do
 patience = 10  # patience of the early stopping
 
 loss_fn = torch.nn.MSELoss()
@@ -164,7 +165,7 @@ if model_structure == "Branch_Encoder_Decoder":
     model, avg_train_losses, avg_valid_losses = training_loop_branches(train_iter, validate_iter,
                                                                        model, loss_fn, optimizer,
                                                                        epochs=epochs, patience=patience,
-                                                                       device=try_gpu())
+                                                                       device=try_gpu(), minimum_epochs=minimum_epochs)
 else:
     model, avg_train_losses, avg_valid_losses = training_loop(train_iter, validate_iter,
                                                               model, loss_fn, optimizer,
