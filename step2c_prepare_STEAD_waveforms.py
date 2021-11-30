@@ -12,8 +12,22 @@ csv_file = "/Users/Yin9xun/Work/STEAD/merged.csv"
 df = pd.read_csv(csv_file)
 print(f'total events in csv file: {len(df)}')
 
+# Some work on the snr_db list
+snr_db0 = df.snr_db.to_list()
+mean_snr_db = np.zeros((len(snr_db0), 1))
+for i in range(len(snr_db0)):
+    try:
+        if np.isnan(snr_db0[i]):
+            mean_snr_db[i] = snr_db0[i]
+    except TypeError:
+        temp = snr_db0[i].replace('[', '')
+        temp = temp.replace(']', '')
+        temp = temp.split()
+        mean_snr_db[i] = np.mean([float(temp[j]) for j in range(len(temp))])
+mean_snr_db = mean_snr_db.squeeze()
+
 # filterering the dataframe
-df_earthquakes = df[(df.trace_category == 'earthquake_local')]
+df_earthquakes = df[(df.trace_category == 'earthquake_local') & (mean_snr_db >= 40)]
 print(f'total number of earthquakes: {len(df_earthquakes)}')
 # choose noise
 df_noise = df[(df.trace_category == 'noise')]
@@ -52,7 +66,7 @@ noise_list = df_noise['trace_name'].to_list()
 training_dataset_dir = './training_datasets'
 if not os.path.exists(training_dataset_dir):
     os.mkdir(training_dataset_dir)
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform_snr_40.hdf5'
 
 # Loop over each pair
 from utilities import downsample_series
@@ -122,7 +136,7 @@ for i, (earthquake, noise) in enumerate(zip(earthquake_list, noise_list)):
 
 # Check the datasets visually
 training_dataset_dir = './training_datasets'
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_waveform_snr_40.hdf5'
 
 with h5py.File(model_datasets, 'r') as f:
     time_new = f['time'][:]

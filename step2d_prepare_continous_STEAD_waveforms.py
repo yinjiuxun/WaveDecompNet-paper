@@ -99,8 +99,22 @@ csv_file = "/Users/Yin9xun/Work/STEAD/merged.csv"
 df = pd.read_csv(csv_file)
 print(f'total events in csv file: {len(df)}')
 
+# Some work on the snr_db list
+snr_db0 = df.snr_db.to_list()
+mean_snr_db = np.zeros((len(snr_db0), 1))
+for i in range(len(snr_db0)):
+    try:
+        if np.isnan(snr_db0[i]):
+            mean_snr_db[i] = snr_db0[i]
+    except TypeError:
+        temp = snr_db0[i].replace('[', '')
+        temp = temp.replace(']', '')
+        temp = temp.split()
+        mean_snr_db[i] = np.mean([float(temp[j]) for j in range(len(temp))])
+mean_snr_db = mean_snr_db.squeeze()
+
 # filterering the dataframe
-df_earthquakes = df[(df.trace_category == 'earthquake_local')]
+df_earthquakes = df[(df.trace_category == 'earthquake_local') & (mean_snr_db >= 40)]
 print(f'total number of earthquakes: {len(df_earthquakes)}')
 
 
@@ -129,7 +143,7 @@ earthquake_list = df_earthquakes['trace_name'].to_list()
 # make the output directory
 training_dataset_dir = './training_datasets'
 mkdir(training_dataset_dir)
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_plus_POHA.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_plus_POHA_snr_40.hdf5'
 
 # Loop over each pair
 f_downsample = 10
