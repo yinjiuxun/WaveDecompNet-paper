@@ -217,7 +217,7 @@ for i, earthquake in enumerate(earthquake_list):
 
 # Check the datasets visually
 training_dataset_dir = './training_datasets'
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_plus_POHA.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_plus_POHA_snr_40.hdf5'
 
 with h5py.File(model_datasets, 'r') as f:
     time_new = f['time'][:]
