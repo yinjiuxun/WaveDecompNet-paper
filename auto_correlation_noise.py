@@ -167,12 +167,12 @@ for i in range(3):
 def average_xcorr_functions(xcorf_funciton, average_hours, time_pts_xcorf, dt, bandpass_filter=None):
     """Function to average the xcorr function"""
     num_windows = xcorf_funciton.shape[0]  # 1 min for each window
-    average_acf = np.zeros((int(num_windows / average_windows) + 1, time_pts_xcorf, 9))
+    average_acf = np.zeros((int(num_windows / average_windows) + 1, xcorf_funciton.shape[1], 9))
     xcorf_day_time = np.arange(int(num_windows / average_windows) + 1) * average_hours / 24
     xcorf_time_lag = np.arange(time_pts_xcorf) * dt
 
     for i, j in enumerate(np.arange(0, num_windows, average_windows)):
-        average_acf[i, :, :] = np.mean(xcorf_funciton[j:(j + average_windows), :time_pts_xcorf, :], axis=0)
+        average_acf[i, :, :] = np.mean(xcorf_funciton[j:(j + average_windows), :, :], axis=0)
 
     # if bandpass_filter is not None:
     #     aa, bb = butter(4, bandpass_filter * 2 * dt, 'bandpass')
@@ -181,7 +181,7 @@ def average_xcorr_functions(xcorf_funciton, average_hours, time_pts_xcorf, dt, b
         aa, bb = butter(4, bandpass_filter * 2 * dt, 'bandpass')
         average_acf = filtfilt(aa, bb, average_acf, axis=1)
 
-    return xcorf_time_lag, xcorf_day_time, average_acf
+    return xcorf_time_lag, xcorf_day_time, average_acf[:, :time_pts_xcorf, :]
 
 
 # Calculate the correlation coef with the global average
@@ -247,6 +247,7 @@ for i in range(3):
                       event_arrival_S/24/3600, 'x', color='k', linewidth=4)
 
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
+        ax[i, j].set_xticks([0, 10, 20])
         ax[i, j].axes.xaxis.set_visible(False)
         ax[i, j].axes.yaxis.set_visible(False)
 
@@ -275,6 +276,7 @@ for i in range(3):
                       event_arrival_S / 24 / 3600, 'x', color='k', linewidth=4)
 
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
+        ax[i, j].set_xticks([0, 10, 20])
         ax[i, j].axes.xaxis.set_visible(False)
         ax[i, j].axes.yaxis.set_visible(False)
 
@@ -293,16 +295,16 @@ figure_name = waveform_output_dir + '/unfilter_corr_coef_comparision.png'
 plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
 # Results with bandpassing filtering
-bandpass_filter = np.array([0.1, 1])  # [0.1, 1] [1, 2][2, 4.5]
+bandpass_filter = np.array([2, 4.5])  # [0.1, 1] [1, 2][2, 4.5]
 file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
-scale_factor = 4
+scale_factor = 25
 plt.close('all')
-fig, ax = plt.subplots(3, 3, figsize=(6, 10))
+fig, ax = plt.subplots(3, 3, figsize=(6, 10), sharex=True)
 fig.suptitle('(a) Raw waveform [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz')
 k = -1
 for i in range(3):
@@ -317,6 +319,7 @@ for i in range(3):
                       event_arrival_S / 24 / 3600, 'x', color='k', linewidth=4)
 
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
+        ax[i, j].set_xticks([0, 10, 20])
         ax[i, j].axes.xaxis.set_visible(False)
         ax[i, j].axes.yaxis.set_visible(False)
 
@@ -327,10 +330,11 @@ for i in range(3):
             ax[i, j].set_xlabel('Time (s)')
             ax[i, j].axes.xaxis.set_visible(True)
 
+
 plt.savefig(waveform_output_dir + '/original_waveform_xcor' + file_name_str + '.png')
 
-scale_factor = 8
-fig, ax = plt.subplots(3, 3, figsize=(6, 10))
+scale_factor = 10
+fig, ax = plt.subplots(3, 3, figsize=(6, 10), sharex=True)
 fig.suptitle('(b) Separated noise [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz')
 k = -1
 for i in range(3):
@@ -345,6 +349,7 @@ for i in range(3):
                       event_arrival_S / 24 / 3600, 'x', color='k', linewidth=4)
 
         ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
+        ax[i, j].set_xticks([0, 10, 20])
         ax[i, j].axes.xaxis.set_visible(False)
         ax[i, j].axes.yaxis.set_visible(False)
 
@@ -355,10 +360,10 @@ for i in range(3):
             ax[i, j].set_xlabel('Time (s)')
             ax[i, j].axes.xaxis.set_visible(True)
 
+
 plt.savefig(waveform_output_dir + '/separated_noise_xcor' + file_name_str + '.png')
 
 # plot the comparison of correlation coefficients with global average function
-plt.figure(3)
 figure_name = waveform_output_dir + '/filter_corr_coef_comparision' + file_name_str + '.png'
 plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time,
                             figure_name, title='(a) ' + str(bandpass_filter[0]) + '-' + str(bandpass_filter[1]) + ' Hz')
