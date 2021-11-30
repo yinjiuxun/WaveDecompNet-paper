@@ -37,9 +37,9 @@ from obspy.signal.trigger import classic_sta_lta, recursive_sta_lta, carl_sta_tr
 ENZ_color = ['r', 'b', 'g']
 
 # Parameters of the STA/LTA
-short_term = 3
+short_term = 2
 long_term = 60
-trigger_on = 3.5
+trigger_on = 6
 trigger_off = 2
 
 # cft = classic_sta_lta(st[0].data, int(short_term * f_sample), int(long_term * f_sample))
