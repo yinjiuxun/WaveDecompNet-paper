@@ -11,9 +11,9 @@ from autoencoder_1D_models_torch import *
 from sklearn.metrics import mean_squared_error, explained_variance_score
 
 
-def signal_to_noise_ratio(signal, noise):
+def signal_to_noise_ratio(signal, noise, axis=0):
     """Return the SNR in dB"""
-    snr0 = np.sum(signal ** 2, axis=0) / (np.sum(noise ** 2, axis=0) + 1e-6)
+    snr0 = np.sum(signal ** 2, axis=axis) / (np.sum(noise ** 2, axis=axis) + 1e-6)
     snr0 = 10 * np.log10(snr0 + 1e-6)
     return snr0
 
@@ -45,7 +45,7 @@ model_names = ["Branch_Encoder_Decoder_None", "Branch_Encoder_Decoder_Linear",
 output_dir = model_dataset_dir + "/" + "all_model_comparison"
 mkdir(output_dir)
 
-model_mse_all = []  # list to store the mse for all models
+model_mse_earthquake_all = []  # list to store the mse for all models
 model_snr_all = []  # list to store the snr for all models
 
 for model_name in model_names:
@@ -59,10 +59,23 @@ for model_name in model_names:
         rand_seed1 = f.attrs['rand_seed1']
         rand_seed2 = f.attrs['rand_seed2']
 
-    _, X_test, _, Y_test = train_test_split(X_train, Y_train,
+    X_training, X_test, Y_training, Y_test = train_test_split(X_train, Y_train,
                                             train_size=train_size, random_state=rand_seed1)
-    _, X_test, _, Y_test = train_test_split(X_test, Y_test,
+    X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
                                             test_size=test_size, random_state=rand_seed2)
+
+    # first check the SNR distribution in each datasets
+    SNR_training = signal_to_noise_ratio(Y_training, X_training - Y_training, axis=1) / 10
+    SNR_validate = signal_to_noise_ratio(Y_validate, X_validate - Y_validate, axis=1) / 10
+    SNR_test = signal_to_noise_ratio(Y_test, X_test - Y_test, axis=1) / 10
+    plt.figure()
+    plt.hist([SNR_training.flatten(), SNR_validate.flatten(), SNR_test.flatten()],
+             density=True, bins=20, label=['training', 'validate', 'test'])
+    plt.xlabel('log10(SNR)', fontsize=16)
+    plt.ylabel('Probability density', fontsize=16)
+    plt.legend()
+    plt.savefig(model_dir + '/SNR_distribution_of_datasets.pdf')
+    plt.close('all')
 
     test_data = WaveformDataset(X_test, Y_test)
 
@@ -92,7 +105,7 @@ for model_name in model_names:
 
     # Calculate the MSE distribution for each model
     test_iter = DataLoader(test_data, batch_size=batch_size, shuffle=False)
-    model_mse = []
+    model_mse_earthquake = []
     model_snr = []
 
     for X, y in test_iter:
@@ -123,13 +136,14 @@ for model_name in model_names:
 
         # calculate the mse between waveforms
         mse = explained_variance_score(clean_signal, denoised_signal, multioutput='raw_values')
+        mse_noise = explained_variance_score(clean_noise, noise, multioutput='raw_values')
 
-        model_mse.append(mse)
+        model_mse_earthquake.append(mse)
 
-    model_mse = np.array(model_mse).flatten()
+    model_mse_earthquake = np.array(model_mse_earthquake).flatten()
     model_snr = np.array(model_snr).flatten()
 
-    model_mse_all.append(model_mse)
+    model_mse_earthquake_all.append(model_mse_earthquake)
     model_snr_all.append(model_snr)
 
 # Save the mse and SNR of all models
@@ -137,7 +151,7 @@ for model_name in model_names:
 model_comparison = output_dir + '/all_model_comparison.hdf5'
 with h5py.File(model_comparison, 'w') as f:
     f.create_dataset('model_names', data=model_names)
-    f.create_dataset('model_mse_all', data=model_mse_all)
+    f.create_dataset('model_mse_earthquake_all', data=model_mse_earthquake_all)
     f.create_dataset('model_snr_all', data=model_snr_all)
 
 # Load the saved model comparison
@@ -156,41 +170,41 @@ output_dir = model_dataset_dir + "/" + "all_model_comparison"
 
 with h5py.File(output_dir + '/all_model_comparison.hdf5', 'r') as f:
     model_names = f['model_names'][:]
-    model_mse_all = f['model_mse_all'][:]
+    model_mse_earthquake_all = f['model_mse_earthquake_all'][:]
     model_snr_all = f['model_snr_all'][:]
 
-#model_mse_all[model_mse_all < -2] = -2 # Force very low mse value
+#model_mse_earthquake_all[model_mse_earthquake_all < -2] = -2 # Force very low mse value
 
 plt.close('all')
 plt.figure(3)
 fig, ax = plt.subplots(2, 2, sharex=True, sharey=True, squeeze=True)
 ax = ax.flatten()
-i_waveforms = np.random.choice(len(model_mse_all[0]), 10000)
+i_waveforms = np.random.choice(len(model_mse_earthquake_all[0]), 10000)
 
-bottleneck_names = ["None", "Linear", "LSTM", "attention", "Transformer"]
+bottleneck_names = ["None", "Linear", "LSTM", "Attention", "Transformer"]
 line_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
                '#17becf']
 
 for i, model_name in enumerate(model_names):
-    model_mse = model_mse_all[i]
+    model_mse_earthquake = model_mse_earthquake_all[i]
     model_snr = model_snr_all[i]
     bottleneck_name = bottleneck_names[i]
-    ii2 = np.bitwise_and(model_mse <= 1, model_mse >= -1)
+    ii2 = np.bitwise_and(model_mse_earthquake <= 1, model_mse_earthquake >= -1)
 
-    hist, bin_edge = np.histogram(model_mse[ii2], bins=20, range=(-1, 1))
-    hist = hist / len(model_mse[ii2])
+    hist, bin_edge = np.histogram(model_mse_earthquake[ii2], bins=20, range=(-1, 1))
+    hist = hist / len(model_mse_earthquake[ii2])
     bin_center = bin_edge[0:-1] + (bin_edge[1] - bin_edge[0]) / 2
     plt.figure(1, figsize=(8, 4))
     plt.plot(bin_center, hist, '-o', color=line_colors[i], label=bottleneck_name)
     #
     # plt.figure(2)
     # ii1 = np.bitwise_and(model_snr <= 20, model_snr >= -40)
-    # ii2 = np.bitwise_and(model_mse <= 1, model_mse >= 0)
-    # sns.violinplot(x=model_name, y=model_mse[ii2], alpha=0.5)
+    # ii2 = np.bitwise_and(model_mse_earthquake <= 1, model_mse_earthquake >= 0)
+    # sns.violinplot(x=model_name, y=model_mse_earthquake[ii2], alpha=0.5)
     #
     #
     # plt.figure(3)
-    # ax[i].plot(model_snr, model_mse, '.', label=model_name, alpha=0.1)
+    # ax[i].plot(model_snr, model_mse_earthquake, '.', label=model_name, alpha=0.1)
     # ax[i].set_ylim(0, 1)
     # ax[i].set_xlim(-40, 20)
     #
@@ -219,7 +233,7 @@ for i in range(len(model_names)):
     mse_mean = []
     mse_std = []
     model_snr = model_snr_all[i] / 10
-    model_mse = model_mse_all[i]
+    model_mse_earthquake = model_mse_earthquake_all[i]
 
     mse_error_positive = []
     mse_error_negative = []
@@ -228,7 +242,7 @@ for i in range(len(model_names)):
 
         ii_bin = np.bitwise_and(model_snr <= (bin + bin_size), model_snr >= bin)
 
-        mse_current = model_mse[ii_bin]
+        mse_current = model_mse_earthquake[ii_bin]
         # Median
         mse_median_current = np.median(mse_current)
         mse_median.append(mse_median_current)
