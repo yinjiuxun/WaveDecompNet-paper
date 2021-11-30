@@ -23,17 +23,19 @@ from autoencoder_1D_models_torch import Autoencoder_Conv1D, Autoencoder_Conv2D, 
     Attention_bottleneck_LSTM, SeismogramEncoder, SeismogramDecoder, SeisSeparator
 
 # make the output directory
-model_dataset_dir = './Model_and_datasets_1D_STEAD2'
+#model_dataset_dir = './Model_and_datasets_1D_STEAD2'
 # model_dataset_dir = './Model_and_datasets_1D_STEAD2_relu'
 # model_dataset_dir = './Model_and_datasets_1D_synthetic'
 # model_dataset_dir = './Model_and_datasets_1D_STEAD_plus_POHA'
+model_dataset_dir = './Model_and_datasets_1D_all_snr_40'
 mkdir(model_dataset_dir)
 
 # %% Read the pre-processed datasets
 print("#" * 12 + " Loading data " + "#" * 12)
 # model_datasets = './training_datasets/training_datasets_STEAD_plus_POHA.hdf5'
-model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
+#model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
 # model_datasets = './training_datasets/training_datasets_waveform.hdf5'
+model_datasets = './training_datasets/training_datasets_all_snr_40.hdf5'
 with h5py.File(model_datasets, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
@@ -151,7 +153,7 @@ model_dataset_dir = model_dataset_dir + '/' + model_name
 mkdir(model_dataset_dir)
 
 batch_size, epochs, lr = 128, 300, 1e-3
-minimum_epochs = 30 # the minimum epochs that the training has to do
+minimum_epochs = 30  # the minimum epochs that the training has to do
 patience = 10  # patience of the early stopping
 
 loss_fn = torch.nn.MSELoss()
@@ -162,10 +164,11 @@ validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=True)
 print("#" * 12 + " training model " + model_name + " " + "#" * 12)
 
 if model_structure == "Branch_Encoder_Decoder":
-    model, avg_train_losses, avg_valid_losses = training_loop_branches(train_iter, validate_iter,
-                                                                       model, loss_fn, optimizer,
-                                                                       epochs=epochs, patience=patience,
-                                                                       device=try_gpu(), minimum_epochs=minimum_epochs)
+    model, avg_train_losses, avg_valid_losses, partial_loss = training_loop_branches(train_iter, validate_iter,
+                                                                                     model, loss_fn, optimizer,
+                                                                                     epochs=epochs, patience=patience,
+                                                                                     device=try_gpu(),
+                                                                                     minimum_epochs=minimum_epochs)
 else:
     model, avg_train_losses, avg_valid_losses = training_loop(train_iter, validate_iter,
                                                               model, loss_fn, optimizer,
@@ -181,13 +184,27 @@ val_loss = avg_valid_losses
 plt.figure()
 plt.plot(loss, 'o', label='loss')
 plt.plot(val_loss, '-', label='Validation loss')
+
+if model_structure == "Branch_Encoder_Decoder":
+    loss_name_list = ['earthquake train loss', 'earthquake valid loss', 'noise train loss', 'noise valid loss']
+    loss_plot_list = ['o', '-', 'o', '-']
+    for ii in range(4):
+        plt.plot(partial_loss[ii], marker=loss_plot_list[ii], label=loss_name_list[ii])
+
 plt.legend()
 plt.title(model_name)
 plt.show()
+plt.savefig(model_dataset_dir + f'/{model_name}_Training_history.png')
+
 # store the model training history
 with h5py.File(model_dataset_dir + f'/{model_name}_Training_history.hdf5', 'w') as f:
     f.create_dataset("loss", data=loss)
     f.create_dataset("val_loss", data=val_loss)
+    if model_structure == "Branch_Encoder_Decoder":
+        f.create_dataset("earthquake_loss", data=partial_loss[0])
+        f.create_dataset("earthquake_val_loss", data=partial_loss[1])
+        f.create_dataset("noise_loss", data=partial_loss[2])
+        f.create_dataset("noise_val_loss", data=partial_loss[3])
 
 # add some model information
 with h5py.File(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', 'w') as f:

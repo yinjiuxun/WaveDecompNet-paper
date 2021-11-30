@@ -196,12 +196,23 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
                            , patience, device, minimum_epochs=None):
     # to track the training loss as the model trains
     train_losses = []
+    train_losses1 = []  # earthquake loss
+    train_losses2 = []  # noise loss
+
     # to track the validation loss as the model trains
     valid_losses = []
+    valid_losses1 = []  # earthquake loss
+    valid_losses2 = []  # noise loss
+
     # to track the average training loss per epoch as the model trains
     avg_train_losses = []
+    avg_train_losses1 = []  # earthquake average loss with epoch
+    avg_train_losses2 = []  # noise average loss with epoch
+
     # to track the average validation loss per epoch as the model trains
     avg_valid_losses = []
+    avg_valid_losses1 = []  # earthquake average loss with epoch
+    avg_valid_losses2 = []  # noise average loss with epoch
 
     # initialize the early_stopping object
     early_stopping = EarlyStopping(patience=patience, verbose=True)
@@ -223,13 +234,15 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
 
             loss = loss1 + loss2
 
+            # record training loss
+            train_losses.append(loss.item())
+            train_losses1.append(loss1.item())
+            train_losses2.append(loss2.item())
+
             # Backpropagation
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
-            # record training loss
-            train_losses.append(loss.item())
 
         # ======================= validating =======================
         # initialize the model for training
@@ -244,12 +257,27 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
 
             # record validation loss
             valid_losses.append(loss.item())
+            valid_losses1.append(loss1.item())
+            valid_losses2.append(loss2.item())
 
         # calculate average loss over an epoch
+        # total loss
         train_loss = np.average(train_losses)
         valid_loss = np.average(valid_losses)
         avg_train_losses.append(train_loss)
         avg_valid_losses.append(valid_loss)
+
+        # earthquake waveform loss
+        train_loss1 = np.average(train_losses1)
+        valid_loss1 = np.average(valid_losses1)
+        avg_train_losses1.append(train_loss1)
+        avg_valid_losses1.append(valid_loss1)
+
+        # ambient noise waveform loss
+        train_loss2 = np.average(train_losses2)
+        valid_loss2 = np.average(valid_losses2)
+        avg_train_losses2.append(train_loss2)
+        avg_valid_losses2.append(valid_loss2)
 
         # print training/validation statistics
         epoch_len = len(str(epochs))
@@ -276,4 +304,6 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
         # load the last checkpoint with the best model
     model.load_state_dict(torch.load('checkpoint.pt'))
 
-    return model, avg_train_losses, avg_valid_losses
+    partial_loss = [avg_train_losses1, avg_valid_losses1, avg_train_losses2, avg_valid_losses2]
+
+    return model, avg_train_losses, avg_valid_losses, partial_loss
