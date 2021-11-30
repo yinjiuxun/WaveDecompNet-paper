@@ -178,24 +178,8 @@ print("Training is done!")
 # %% Save the model
 torch.save(model, model_dataset_dir + f'/{model_name}_Model.pth')
 
-# %% Show loss evolution when training is done
 loss = avg_train_losses
 val_loss = avg_valid_losses
-plt.figure()
-plt.plot(loss, 'o', label='loss')
-plt.plot(val_loss, '-', label='Validation loss')
-
-if model_structure == "Branch_Encoder_Decoder":
-    loss_name_list = ['earthquake train loss', 'earthquake valid loss', 'noise train loss', 'noise valid loss']
-    loss_plot_list = ['o', '-', 'o', '-']
-    for ii in range(4):
-        plt.plot(partial_loss[ii], marker=loss_plot_list[ii], label=loss_name_list[ii])
-
-plt.legend()
-plt.title(model_name)
-plt.show()
-plt.savefig(model_dataset_dir + f'/{model_name}_Training_history.png')
-
 # store the model training history
 with h5py.File(model_dataset_dir + f'/{model_name}_Training_history.hdf5', 'w') as f:
     f.create_dataset("loss", data=loss)
@@ -213,3 +197,19 @@ with h5py.File(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', 'w') as 
     f.attrs['test_size'] = test_size
     f.attrs['rand_seed1'] = rand_seed1
     f.attrs['rand_seed2'] = rand_seed2
+
+# %% Show loss evolution when training is done
+plt.figure()
+plt.plot(loss, 'o', label='loss')
+plt.plot(val_loss, '-', label='Validation loss')
+
+if model_structure == "Branch_Encoder_Decoder":
+    loss_name_list = ['earthquake train loss', 'earthquake valid loss', 'noise train loss', 'noise valid loss']
+    loss_plot_list = ['o', '', 'o', '']
+    for ii in range(4):
+        plt.plot(partial_loss[ii], marker=loss_plot_list[ii], label=loss_name_list[ii])
+
+plt.legend()
+plt.title(model_name)
+plt.show()
+plt.savefig(model_dataset_dir + f'/{model_name}_Training_history.png')
