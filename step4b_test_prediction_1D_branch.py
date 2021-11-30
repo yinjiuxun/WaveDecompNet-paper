@@ -15,7 +15,7 @@ matplotlib.rcParams.update({'font.size': 10})
 data_dir = './training_datasets'
 #data_name = 'training_datasets_STEAD_waveform.hdf5'
 #data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
-data_name = 'training_datasets_all.hdf5'
+data_name = 'training_datasets_all_snr_40.hdf5'
 #data_name = 'training_datasets_waveform.hdf5'
 
 # %% load dataset
@@ -25,10 +25,11 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Need to specify model_name first
-bottleneck_name = "Transformer"
+bottleneck_name = "LSTM"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_all"
+#model_dataset_dir = "Model_and_datasets_1D_all"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
 #model_name = "Autoencoder_Conv2D_" + bottleneck_name
 model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
@@ -86,15 +87,36 @@ mkdir(figure_dir)
 with h5py.File(model_dir + '/' + f'{model_name}_Training_history.hdf5', 'r') as f:
     loss = f['loss'][:]
     val_loss = f['val_loss'][:]
+    earthquake_loss = f['earthquake_loss'][:]
+    earthquake_val_loss = f['earthquake_val_loss'][:]
+    noise_loss = f['noise_loss'][:]
+    noise_val_loss = f['noise_val_loss'][:]
+
+partial_loss = [earthquake_loss, earthquake_val_loss, noise_loss, noise_val_loss]
+
+plt.close('all')
 plt.figure()
-plt.plot(loss, 'o', label='Training loss')
-plt.plot(val_loss, '-', label='Validation loss', linewidth=2)
-plt.plot([1, len(loss)], [test_loss, test_loss], '--', label='Test loss', linewidth=2)
-plt.legend()
+plt.plot(loss, 'ko', label='Training loss')
+plt.plot(val_loss, 'k-', label='Validation loss', linewidth=2)
+plt.plot([len(loss)], [test_loss], 'r*', label=f'Test loss = {test_loss:.4f}', markersize=10, linewidth=2, zorder=10)
+
+loss_name_list = ['earthquake train loss', 'earthquake valid loss', 'noise train loss', 'noise valid loss']
+loss_plot_marker_list = ['o', '', 'o', '']
+loss_plot_line_list = ['', '-', '', '-']
+loss_plot_color_list = ['b', 'b', 'g', 'g']
+for ii in range(4):
+    plt.plot(partial_loss[ii], marker=loss_plot_marker_list[ii],
+             linestyle=loss_plot_line_list[ii],
+             color=loss_plot_color_list[ii],
+             label=loss_name_list[ii])
+
+plt.legend(fontsize=12)
 plt.ylabel('MSE', fontsize=14)
 plt.xlabel('Epochs', fontsize=14)
+plt.grid()
 plt.title(bottleneck_name + f' ({parameter_number} params.),' + f' test loss {test_loss:.4f}', fontsize=14)
 #plt.show()
+
 plt.savefig(figure_dir + f"/{model_name}_Loss_evolution.pdf", bbox_inches='tight')
 
 
