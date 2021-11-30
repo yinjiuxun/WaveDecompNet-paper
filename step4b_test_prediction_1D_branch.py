@@ -134,13 +134,15 @@ for i_model in range(100):
         ax[i, 1].plot(time, clean_signal[i_model, i, :]/scaling_factor, '-r', label='True signal', linewidth=1)
         ax[i, 1].plot(time, denoised_signal[i_model, i, :]/scaling_factor, '-b', label='Predicted signal', linewidth=1)
         # explained variance score
-        evs = explained_variance_score(clean_signal[i_model, i, :], denoised_signal[i_model, i, :])
-        text_y = np.min(clean_signal[i_model, i, :])
-        ax[i, 1].text(50, 0.8, f'EV: {evs:.2f}')
+        evs_earthquake = explained_variance_score(clean_signal[i_model, i, :], denoised_signal[i_model, i, :])
+        ax[i, 1].text(50, 0.8, f'EV: {evs_earthquake:.2f}')
+
 
         noise = separated_noise[i_model, i, :]
+        evs_noise = explained_variance_score(true_noise[i_model, i, :], noise)
         ax[i, 2].plot(time, true_noise[i_model, i, :] / scaling_factor, '-', color='gray', label='True noise', linewidth=1)
         ax[i, 2].plot(time, noise / scaling_factor, '-b',  label='Predicted noise', linewidth=1)
+        ax[i, 2].text(50, 0.8, f'EV: {evs_noise:.2f}')
 
     ax[0, 0].set_title("Original signal")
     if bottleneck_name == "Transformer":
@@ -164,6 +166,12 @@ for i_model in range(100):
             ax[i, j].spines['left'].set_visible(False)
             ax[i, j].spines['top'].set_visible(False)
             ax[i, j].spines['bottom'].set_visible(False)
+
+            if i == 2:
+                ax[i, j].xaxis.set_visible(True)
+                ax[i, j].set_xlim(0, 60)
+                ax[i, j].spines['bottom'].set_visible(True)
+
 
 
     #ax[0, 0].legend()
@@ -196,23 +204,25 @@ for i_model in range(100):
         freq, spect_denoised_signal = waveform_fft(denoised_signal[i_model, i, :]/scaling_factor, dt)
 
         #ax[i].loglog(freq, spect_noisy_signal, '-k', label='X_input', linewidth=1.5)
-        ax[1, i].loglog(freq, spect_noise, '-', color='gray', label='noise', linewidth=0.5, alpha=0.8)
-        ax[1, i].loglog(freq, spect_original_noise, '-k', label='orginal noise', linewidth=0.5, alpha=1)
+        ax[1, i].loglog(freq, spect_noise, '-', color='b', label='noise', linewidth=0.5, alpha=0.8)
+        ax[1, i].loglog(freq, spect_original_noise, 'r', label='orginal noise', linewidth=0.5, alpha=1)
 
-        ax[0, i].loglog(freq, spect_original_noise, '-k', label='orginal noise', linewidth=0.5, alpha=1)
-        ax[0, i].loglog(freq, spect_clean_signal, '-r', label='Y_true', linewidth=0.5, alpha=1)
-        ax[0, i].loglog(freq, spect_denoised_signal, '-b', label='Y_pred', linewidth=0.5, alpha=1)
+        ax[0, i].loglog(freq, spect_noisy_signal, '-k', label='raw signal', linewidth=0.5, alpha=1)
+        ax[0, i].loglog(freq, spect_clean_signal, '-r', label='true earthquake', linewidth=0.5, alpha=1)
+        ax[0, i].loglog(freq, spect_denoised_signal, '-b', label='separated earthquake', linewidth=0.5, alpha=1)
 
         ax[0, i].grid(alpha=0.2)
-        ax[0, i].set_xlabel('Freq (Hz)')
-        ax[0, i].set_ylabel('Spectra')
+        if i == 0:
+            #ax[0, i].set_xlabel('Frequency (Hz)')
+            ax[0, i].set_ylabel('velocity spectra', fontsize=14)
+            ax[1, i].set_ylabel('velocity spectra', fontsize=14)
 
         ax[1, i].grid(alpha=0.2)
-        ax[1, i].set_xlabel('Freq (Hz)')
-        ax[1, i].set_ylabel('Spectra')
+        ax[1, i].set_xlabel('Frequency (Hz)', fontsize=14)
 
-    ax[0, i].legend()
-    ax[1, i].legend()
+
+    #ax[0, i].legend()
+    #ax[1, i].legend()
     # ax[0, 0].set_title("Original signal")
     # if bottleneck_name == "Transformer":
     #     ax[0, 1].set_title("Earthquake signal (Trans.)")
@@ -223,8 +233,8 @@ for i_model in range(100):
 
     titles = ['E', 'N', 'Z']
     for i in range(noisy_signal.shape[1]):
-        ax[0, i].set_title(titles[i])
-        ax[1, i].set_title(titles[i])
+        ax[0, i].set_title(titles[i], fontsize=16)
+        #ax[1, i].set_title(titles[i])
 
     plt.figure(1)
     plt.savefig(figure_dir + f'/{model_name}_spectrum_{i_model}.pdf',
