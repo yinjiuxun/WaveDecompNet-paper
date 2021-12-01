@@ -23,7 +23,7 @@ waveform_dir = working_dir + '/continuous_waveforms'
 model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
-bottleneck_name = "attention"
+bottleneck_name = "LSTM"
 
 
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
@@ -215,7 +215,7 @@ def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figu
             if index_channel == 8:
                 ax[index_channel].set_xlabel('Time (day)', fontsize=14)
                 ax[index_channel].legend(fontsize=14)
-    plt.savefig(figure_name, bbox_inches='tight')
+    plt.savefig(figure_name, bbox_inches='tight', dpi=150)
 
 
 dt = waveform_time[1] - waveform_time[0]
@@ -295,78 +295,84 @@ figure_name = waveform_output_dir + '/unfilter_corr_coef_comparision.png'
 plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
 # Results with bandpassing filtering
-bandpass_filter = np.array([1, 2])  # [0.1, 1] [1, 2][2, 4.5]
-file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
+frequency_bands = [[0.1, 1], [1, 2], [2, 4]]
+order_letter = ['(a)', '(b)', '(c)']
+scale_factor_raw = [25, 25, 25]
+scale_factor_separated = [30, 30, 8]
 
-_, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
-xcorf_time_lag, xcorf_day_time, average_acf2 = \
-    average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
+for ii, frequency_band in enumerate(frequency_bands):
+    bandpass_filter = np.array(frequency_band)  # [0.1, 1] [1, 2][2, 4.5]
+    file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
-scale_factor = 25
-plt.close('all')
-fig, ax = plt.subplots(3, 3, figsize=(6, 10), sharex=True)
-fig.suptitle('(a) Raw waveform [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz')
-k = -1
-for i in range(3):
-    for j in range(3):
-        k += 1
-        norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / scale_factor,
-                                         vmin=-abs(average_acf1[:, :, k]).max() / scale_factor)
-        ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
-                        extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
+    _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
+    xcorf_time_lag, xcorf_day_time, average_acf2 = \
+        average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
-        ax[i, j].plot(np.ones(event_arrival_S.shape) * (time_pts_xcorf - 10) * dt,
-                      event_arrival_S / 24 / 3600, 'x', color='k', linewidth=4)
+    scale_factor = scale_factor_raw[ii]
+    plt.close('all')
+    fig, ax = plt.subplots(3, 3, figsize=(6, 10), sharex=True)
+    fig.suptitle('(a) Raw waveform [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz')
+    k = -1
+    for i in range(3):
+        for j in range(3):
+            k += 1
+            norm_color = cm.colors.Normalize(vmax=abs(average_acf1[:, :, k]).max() / scale_factor,
+                                             vmin=-abs(average_acf1[:, :, k]).max() / scale_factor)
+            ax[i, j].imshow(average_acf1[:, :, k], norm=norm_color, cmap='RdBu', aspect='auto',
+                            extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
 
-        ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
-        ax[i, j].set_xticks([0, 10, 20])
-        ax[i, j].axes.xaxis.set_visible(False)
-        ax[i, j].axes.yaxis.set_visible(False)
+            ax[i, j].plot(np.ones(event_arrival_S.shape) * (time_pts_xcorf - 10) * dt,
+                          event_arrival_S / 24 / 3600, 'x', color='k', linewidth=4)
 
-        if j == 0:
-            ax[i, j].set_ylabel('Days')
-            ax[i, j].axes.yaxis.set_visible(True)
-        if i == 2:
-            ax[i, j].set_xlabel('Time (s)')
-            ax[i, j].axes.xaxis.set_visible(True)
+            ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
+            ax[i, j].set_xticks([0, 10, 20])
+            ax[i, j].axes.xaxis.set_visible(False)
+            ax[i, j].axes.yaxis.set_visible(False)
 
-
-plt.savefig(waveform_output_dir + '/original_waveform_xcor' + file_name_str + '.png')
-
-scale_factor = 30
-fig, ax = plt.subplots(3, 3, figsize=(6, 10), sharex=True)
-fig.suptitle('(b) Separated noise [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz')
-k = -1
-for i in range(3):
-    for j in range(3):
-        k += 1
-        norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / scale_factor,
-                                         vmin=-abs(average_acf2[:, :, k]).max() / scale_factor)
-        ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
-                        extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
-
-        ax[i, j].plot(np.ones(event_arrival_S.shape) * (time_pts_xcorf - 10) * dt,
-                      event_arrival_S / 24 / 3600, 'x', color='k', linewidth=4)
-
-        ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
-        ax[i, j].set_xticks([0, 10, 20])
-        ax[i, j].axes.xaxis.set_visible(False)
-        ax[i, j].axes.yaxis.set_visible(False)
-
-        if j == 0:
-            ax[i, j].set_ylabel('Days')
-            ax[i, j].axes.yaxis.set_visible(True)
-        if i == 2:
-            ax[i, j].set_xlabel('Time (s)')
-            ax[i, j].axes.xaxis.set_visible(True)
+            if j == 0:
+                ax[i, j].set_ylabel('Days')
+                ax[i, j].axes.yaxis.set_visible(True)
+            if i == 2:
+                ax[i, j].set_xlabel('Time (s)')
+                ax[i, j].axes.xaxis.set_visible(True)
 
 
-plt.savefig(waveform_output_dir + '/separated_noise_xcor' + file_name_str + '.png')
+    plt.savefig(waveform_output_dir + '/original_waveform_xcor' + file_name_str + '.png', dpi=150)
 
-# plot the comparison of correlation coefficients with global average function
-figure_name = waveform_output_dir + '/filter_corr_coef_comparision' + file_name_str + '.png'
-plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time,
-                            figure_name, title='(a) ' + str(bandpass_filter[0]) + '-' + str(bandpass_filter[1]) + ' Hz')
+    scale_factor = scale_factor_separated[ii]
+    fig, ax = plt.subplots(3, 3, figsize=(6, 10), sharex=True)
+    fig.suptitle('(b) Separated noise [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz')
+    k = -1
+    for i in range(3):
+        for j in range(3):
+            k += 1
+            norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / scale_factor,
+                                             vmin=-abs(average_acf2[:, :, k]).max() / scale_factor)
+            ax[i, j].imshow(average_acf2[:, :, k], cmap='RdBu', norm=norm_color, aspect='auto',
+                            extent=[0, time_pts_xcorf * dt, 0, 31], origin='lower')
+
+            ax[i, j].plot(np.ones(event_arrival_S.shape) * (time_pts_xcorf - 10) * dt,
+                          event_arrival_S / 24 / 3600, 'x', color='k', linewidth=4)
+
+            ax[i, j].set_title(str(channel_xcor_list[k])[0:7])
+            ax[i, j].set_xticks([0, 10, 20])
+            ax[i, j].axes.xaxis.set_visible(False)
+            ax[i, j].axes.yaxis.set_visible(False)
+
+            if j == 0:
+                ax[i, j].set_ylabel('Days')
+                ax[i, j].axes.yaxis.set_visible(True)
+            if i == 2:
+                ax[i, j].set_xlabel('Time (s)')
+                ax[i, j].axes.xaxis.set_visible(True)
+
+
+    plt.savefig(waveform_output_dir + '/separated_noise_xcor' + file_name_str + '.png', dpi=150)
+
+    # plot the comparison of correlation coefficients with global average function
+    figure_name = waveform_output_dir + '/filter_corr_coef_comparision' + file_name_str + '.png'
+    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time,
+                                figure_name, title=order_letter[ii] + ' ' + str(bandpass_filter[0]) + '-' + str(bandpass_filter[1]) + ' Hz')
 
 ##################################################################
 average_acf1 = average_acf1 - np.mean(average_acf1, axis=0)
