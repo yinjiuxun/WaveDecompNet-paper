@@ -59,7 +59,7 @@ validate_data = WaveformDataset(X_validate, Y_validate)
 model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder_Conv2D", "Branch_Encoder_Decoder_LSTM"
 
 # Choose a bottleneck type
-bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
+bottleneck_name = "hybrid"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
 
 if bottleneck_name == "None":
     # Model without specified bottleneck
@@ -87,6 +87,12 @@ elif bottleneck_name == "attention_LSTM":
     # Attention bottleneck with LSTM as positional embedding
     bottleneck = Attention_bottleneck_LSTM(64, 4, 0.2)  # Add the attention bottleneck
 
+elif bottleneck_name == "hybrid":
+    # LSTM for earthquake and Attention bottleneck for noise
+    bottleneck1 = torch.nn.LSTM(64, 32, 2, bidirectional=True,
+                               batch_first=True, dtype=torch.float64)
+    bottleneck2 = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
+
 else:
     raise NameError('bottleneck type has not been defined!')
 
@@ -102,8 +108,12 @@ elif model_structure == "Autoencoder_Conv2D":
     model = Autoencoder_Conv2D(model_name, bottleneck).to(device=try_gpu())
 
 elif model_structure == "Branch_Encoder_Decoder":
-    bottleneck_earthquake = copy.deepcopy(bottleneck)
-    bottleneck_noise = copy.deepcopy(bottleneck)
+    if bottleneck_name == "hybrid":
+        bottleneck_earthquake = bottleneck1
+        bottleneck_noise = bottleneck2
+    else:
+        bottleneck_earthquake = copy.deepcopy(bottleneck)
+        bottleneck_noise = copy.deepcopy(bottleneck)
 
     encoder = SeismogramEncoder()
     decoder_earthquake = SeismogramDecoder(bottleneck=bottleneck_earthquake)
