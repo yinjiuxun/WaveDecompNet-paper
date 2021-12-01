@@ -23,7 +23,7 @@ waveform_dir = working_dir + '/continuous_waveforms'
 model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
-bottleneck_name = "LSTM"
+bottleneck_name = "attention"
 
 
 # waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210630-20210801.mseed'
@@ -86,7 +86,7 @@ for i_event in range(len(events)):
         event_arrival_S[i_event] = np.nan
 
 # load the separated waveforms
-waveform_output_dir = waveform_dir + '/' + model_dataset_dir + '/' + network_station
+waveform_output_dir = waveform_dir + '/' + model_dataset_dir + '/' + network_station + '/' + bottleneck_name
 
 with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
     waveform_time = f['waveform_time'][:]
@@ -295,7 +295,7 @@ figure_name = waveform_output_dir + '/unfilter_corr_coef_comparision.png'
 plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, figure_name)
 
 # Results with bandpassing filtering
-bandpass_filter = np.array([2, 4.5])  # [0.1, 1] [1, 2][2, 4.5]
+bandpass_filter = np.array([1, 2])  # [0.1, 1] [1, 2][2, 4.5]
 file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
 
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
@@ -333,7 +333,7 @@ for i in range(3):
 
 plt.savefig(waveform_output_dir + '/original_waveform_xcor' + file_name_str + '.png')
 
-scale_factor = 10
+scale_factor = 30
 fig, ax = plt.subplots(3, 3, figsize=(6, 10), sharex=True)
 fig.suptitle('(b) Separated noise [' + str(bandpass_filter[0]) + ' ' + str(bandpass_filter[1]) + '] Hz')
 k = -1

@@ -20,7 +20,7 @@ def signal_to_noise_ratio(signal, noise, axis=0):
 
 # %% load dataset
 data_dir = './training_datasets'
-data_name = 'training_datasets_all.hdf5'
+data_name = 'training_datasets_all_snr_40.hdf5'
 # data_name = 'training_datasets_waveform.hdf5'
 # data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
 
@@ -31,7 +31,7 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Specify the model directory and model name list first
-model_dataset_dir = "Model_and_datasets_1D_all"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 # model_names = ["Autoencoder_Conv1D_None", "Autoencoder_Conv1D_Linear",
@@ -170,7 +170,7 @@ from scipy.stats import mode
 matplotlib.rcParams.update({'font.size': 12})
 
 # %% Specify the model directory and model name list first
-model_dataset_dir = "Model_and_datasets_1D_all"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 output_dir = model_dataset_dir + "/" + "all_model_comparison"
@@ -220,7 +220,8 @@ plt.savefig(output_dir + '/histograms.pdf')
 plt.savefig(output_dir + '/histograms.png', dpi=200, bbox_inches='tight')
 
 # Extract the relation between SNR and EVS
-bin_size = 0.5
+plt.close('all')
+bin_size = 0.4
 snr_bin_edge = np.arange(-2, 4, bin_size)
 
 def continous_mode(data, bins=500, range=(-2, 1)):
@@ -229,7 +230,7 @@ def continous_mode(data, bins=500, range=(-2, 1)):
     #plt.plot(bin_center, hist)
     return bin_center[np.argmax(hist)]
 
-def extract_snr_vs_evs(model_snr_all, model_mse_all, snr_bin_edge):
+def extract_snr_vs_evs(model_snr_all, model_mse_all, snr_bin_edge, center_type="median"):
     snr_bin_center = snr_bin_edge + bin_size / 2
     mse_median_all = []
     mse_mean_all = []
@@ -278,46 +279,53 @@ def extract_snr_vs_evs(model_snr_all, model_mse_all, snr_bin_edge):
         mse_mode_all.append(np.array(mse_mode))
         mse_std_all.append(np.array(mse_std))
         mse_error_bar_all.append(np.array([mse_error_negative, mse_error_positive]))
-
-        mse_center_all = mse_mode_all
+        if center_type == "median":
+            mse_center_all = mse_median_all
+        elif center_type == "mode":
+            mse_center_all = mse_mode_all
+    if center_type == "mode":
+        mse_error_bar_all = [0, 0, 0, 0, 0]
 
     return snr_bin_center, mse_center_all, mse_error_bar_all
 
-
+center_type='median'
 # show earthquake waveforms evs
 snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr_all,
-                                                                       model_mse_earthquake_all, snr_bin_edge)
+                                                                       model_mse_earthquake_all, snr_bin_edge,
+                                                                       center_type=center_type)
 plt.figure(2, figsize=(10, 5))
 for i in range(len(model_names)):
     plt.plot(model_snr_all[i] / 10, model_mse_earthquake_all[i], '.', color='gray', alpha=0.005)  # line_colors[i]
-    plt.errorbar(snr_bin_center + i * 0.05 - 0.125, mse_center_all[i], yerr=mse_error_bar_all[i],
+    plt.errorbar(snr_bin_center + i * 0.05 - 0.1, mse_center_all[i], yerr=mse_error_bar_all[i],
                  marker='s', color=line_colors[i], linewidth=2,
                  label=bottleneck_names[i], elinewidth=1.5, zorder=3)
     plt.xlim(-2, 4)
-    plt.ylim(-2.1, 1.1)
+    plt.ylim(-1.1, 1.1)
 plt.legend(loc=4)
 plt.xlabel('log10(SNR)', fontsize=15)
 plt.ylabel('Explained Variance', fontsize=15)
 plt.grid()
+plt.savefig(output_dir + '/SNR_vs_EV_earthquake_' + center_type + '.png', dpi=200, bbox_inches='tight')
 
 # show ambient noise waveforms evs
 snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr_all,
-                                                                       model_mse_noise_all, snr_bin_edge)
-plt.figure(2, figsize=(10, 5))
+                                                                       model_mse_noise_all, snr_bin_edge,
+                                                                       center_type=center_type)
+plt.figure(3, figsize=(10, 5))
 for i in range(len(model_names)):
     plt.plot(model_snr_all[i] / 10, model_mse_noise_all[i], '.', color='gray', alpha=0.005)  # line_colors[i]
-    plt.errorbar(snr_bin_center + i * 0.05 - 0.125, mse_center_all[i], yerr=mse_error_bar_all[i],
+    plt.errorbar(snr_bin_center + i * 0.05 - 0.1, mse_center_all[i], yerr=mse_error_bar_all[i],
                  marker='s', color=line_colors[i], linewidth=2,
                  label=bottleneck_names[i], elinewidth=1.5, zorder=3)
     plt.xlim(-2, 4)
-    plt.ylim(-2.1, 1.1)
-plt.legend(loc=4)
+    plt.ylim(-1.1, 1.1)
+plt.legend(loc=3)
 plt.xlabel('log10(SNR)', fontsize=15)
 plt.ylabel('Explained Variance', fontsize=15)
 plt.grid()
 
 # plt.savefig(output_dir + '/SNR_vs_EV.pdf')
-plt.savefig(output_dir + '/SNR_vs_EV.png', dpi=200, bbox_inches='tight')
+plt.savefig(output_dir + '/SNR_vs_EV_noise_' + center_type + '.png', dpi=200, bbox_inches='tight')
 
 ############################## Compare Conv1D and Conv2D models ######################################
 

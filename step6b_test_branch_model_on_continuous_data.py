@@ -125,7 +125,7 @@ waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600
 waveform_data = WaveformDataset(waveform_normalized, waveform_normalized)
 
 # %% Need to specify model_name first
-bottleneck_name = "LSTM"
+bottleneck_name = "attention" # LSTM
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
@@ -176,6 +176,9 @@ waveform_output_dir = waveform_dir + '/' + model_dataset_dir
 mkdir(waveform_output_dir)
 waveform_output_dir = waveform_output_dir + '/' + network_station
 mkdir(waveform_output_dir)
+waveform_output_dir = waveform_output_dir + '/' + bottleneck_name
+mkdir(waveform_output_dir)
+
 with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'w') as f:
     f.create_dataset("waveform_time", data=waveform_time)
     f.create_dataset("waveform_original", data=waveform_original)
@@ -205,8 +208,8 @@ for i_chan in range(3):
     tr_residual[i_chan].data = waveform_original[:, i_chan] - waveform_recovered[:, i_chan] - noise_recovered[:, i_chan]
     tr_residual[i_chan].stats.sampling_rate = f_downsample
 
-tr_earthquake.write(waveform_dir + '/' + network_station + '.00.20210731-20210901_separated_earthquake.mseed')
-tr_raw.write(waveform_dir + '/' + network_station + '.00.20210731-20210901_original_earthquake.mseed')
+tr_earthquake.write(waveform_output_dir + '/' + network_station + '.00.20210731-20210901_separated_earthquake.mseed')
+tr_raw.write(waveform_output_dir + '/' + network_station + '.00.20210731-20210901_original_earthquake.mseed')
 
 
 ############################ Make figures ###############################################
@@ -223,7 +226,7 @@ tr.merge(fill_value=0)  # in case that there are segmented traces
 tr.decimate(10)
 
 # Model names and path
-bottleneck_name = "LSTM"
+bottleneck_name = "attention"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
@@ -231,7 +234,7 @@ model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
 model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
 # Load the recovered waveforms and then make plots
-waveform_output_dir = waveform_dir + '/' + model_dataset_dir + '/' + network_station
+waveform_output_dir = waveform_dir + '/' + model_dataset_dir + '/' + network_station + '/' + bottleneck_name
 with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
     waveform_time = f["waveform_time"][:]
     waveform_original = f["waveform_original"][:]

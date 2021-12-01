@@ -13,10 +13,14 @@ matplotlib.rcParams.update({'font.size': 12})
 
 working_dir = os.getcwd()
 
-# waveforms
-waveform_dir = working_dir + '/continuous_waveforms'
-
+model_and_datasets = 'Model_and_datasets_1D_all_snr_40'
+bottleneck_name = 'attention'
 network_station = 'IU.POHA'
+
+# waveforms
+waveform_dir = working_dir + '/continuous_waveforms/' \
+               + model_and_datasets + '/' + network_station + '/' + bottleneck_name
+
 second_per_day = 24 * 3600
 tr_earthquake = obspy.read(waveform_dir + '/' + network_station + '.00.20210731-20210901_separated_earthquake.mseed')
 tr_raw = obspy.read(waveform_dir + '/' + network_station + '.00.20210731-20210901_original_earthquake.mseed')
@@ -192,7 +196,6 @@ def plot_zoom_in_waveform(time_range):
 # output some zoom_in_figure
 output_dir = waveform_dir + '/STALTA'
 mkdir(output_dir)
-mkdir(output_dir + '/' + network_station)
 
 waveform_time = np.arange(tr_raw[0].stats.npts) * tr_raw[0].stats.delta
 
@@ -204,7 +207,7 @@ time_range_list = [[8.3615, 8.3645], [11.825, 11.84], [21.0675, 21.07]]
 for time_range in time_range_list:
     plot_zoom_in_waveform(time_range)
     file_name = network_station + '_t_' + str(time_range[0]) + '_coincidence_' + str(threshold_coincidence) + '.pdf'
-    plt.savefig(output_dir + '/' + network_station + '/' + file_name, bbox_inches='tight')
+    plt.savefig(output_dir + '/' + file_name, bbox_inches='tight')
 
 # plot the histogram for detected earthquakes
 plt.figure(figsize=(8,4))
@@ -216,7 +219,7 @@ plt.xlabel('Time (day)')
 plt.ylabel('Number of STA/LTA triggers')
 plt.title('Trigger events: Raw Data: ' + str(len(trig1)) + ' vs Separated Data: ' + str(len(trig2)))
 
-plt.savefig(output_dir + '/' + network_station + '/' + 'stalta_triggers_coincidence_' + str(threshold_coincidence) + '.pdf',
+plt.savefig(output_dir + '/' + 'stalta_triggers_coincidence_' + str(threshold_coincidence) + '.pdf',
             bbox_inches='tight')
 
 
