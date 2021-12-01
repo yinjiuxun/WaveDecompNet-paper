@@ -128,7 +128,7 @@ waveform_data = WaveformDataset(waveform_normalized, waveform_normalized)
 bottleneck_name = "LSTM"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_all"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
@@ -226,7 +226,7 @@ tr.decimate(10)
 bottleneck_name = "LSTM"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_all"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
@@ -306,29 +306,30 @@ plt.title('(d) Residual waveform (' + network_station + ')')
 plt.savefig(waveform_output_dir + '/one_month_data_residual_BH' + str(i_channel) + '.png')
 
 # Plot zoom-in waveforms
+waveform_time_day = waveform_time/24/3600
 plt.close('all')
 plt.figure(1, figsize=(18, 6))
 for ii in range(3):
-    plt.plot(waveform_time, waveform_original[:, ii] / np.max(abs(waveform_original[:, ii])) * 5 + ii / 2,
+    plt.plot(waveform_time_day, waveform_original[:, ii] / np.max(abs(waveform_original[:, ii])) * 5 + ii / 2,
              color='gray', alpha=0.8, zorder=-2)
 for ii in range(3):
     waveform_recovered_scaled = waveform_recovered[:, ii] / np.max(abs(waveform_original[:, ii])) * 5
-    plt.plot(waveform_time, waveform_recovered_scaled + ii / 2, color='black', zorder=-1)
+    plt.plot(waveform_time_day, waveform_recovered_scaled + ii / 2, color='black', zorder=-1)
     waveform_recovered_scaled[abs(waveform_recovered_scaled - np.mean(waveform_recovered_scaled)) < 5e-4] = np.nan
-    plt.plot(waveform_time, waveform_recovered_scaled + ii / 2, '-r', linewidth=1.5, zorder=0)
-    plt.scatter(event_arrival_P, np.ones(len(event_arrival_P)) * ii / 2, 50,
+    plt.plot(waveform_time_day, waveform_recovered_scaled + ii / 2, '-r', linewidth=1.5, zorder=0)
+    plt.scatter(event_arrival_P/24/3600, np.ones(len(event_arrival_P)) * ii / 2, 50,
                 'b', marker='+', linewidth=1.5, zorder=5)
-    plt.scatter(event_arrival_S, np.ones(len(event_arrival_S)) * ii / 2, 50,
+    plt.scatter(event_arrival_S/24/3600, np.ones(len(event_arrival_S)) * ii / 2, 50,
                 'b', marker='x', linewidth=2, zorder=5)
     # plt.scatter(event_arrival_P, np.ones(len(event_arrival_P)) * ii / 2, scaled_magnitude/10,
     #            'b', marker='+', linewidth=2, zorder=5)
     # plt.scatter(event_arrival_S, np.ones(len(event_arrival_S)) * ii / 2, scaled_magnitude/10,
     #            'b', marker='x', linewidth=2, zorder=5)
 
-plt.ylim(-1, 2)
+plt.ylim(-3.3, 4)
 plt.xlabel('Time (s)')
 plt.yticks([-1, 1], labels='')
-time_zoom_in = [(930000, 936000), (830000, 836000), (418000, 428000), (1018000, 1028000)]
+time_zoom_in = [(10.8, 10.9), (13.53, 13.6), (12.8, 12.9), (17.45, 17.55)]
 for i, xlimit in enumerate(time_zoom_in):
     plt.xlim(xlimit)
     #plt.savefig(waveform_output_dir + '/continueous_separation_IU.POHA_' + bottleneck_name + '_t' + str(i) + '.pdf')
