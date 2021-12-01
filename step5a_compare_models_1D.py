@@ -184,8 +184,7 @@ with h5py.File(output_dir + '/all_model_comparison.hdf5', 'r') as f:
 # model_mse_earthquake_all[model_mse_earthquake_all < -2] = -2 # Force very low mse value
 
 plt.close('all')
-fig, ax = plt.subplots(2, 1, sharex=True, sharey=True, squeeze=True, figsize=(8, 8))
-ax = ax.flatten()
+fig, ax = plt.subplots(2, 2, sharex=False, sharey=False, squeeze=False, figsize=(14, 10))
 
 bottleneck_names = ["None", "Linear", "LSTM", "Attention", "Transformer"]
 line_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22',
@@ -200,27 +199,28 @@ for i, model_name in enumerate(model_names):
     hist, bin_edge = np.histogram(model_mse_earthquake[ii1], bins=20, range=(-1, 1))
     hist = hist / len(model_mse_earthquake[ii1])
     bin_center = bin_edge[0:-1] + (bin_edge[1] - bin_edge[0]) / 2
-    ax[0].plot(bin_center, hist, '-o', color=line_colors[i], label=bottleneck_name + ' earthquake')
-    ax[0].grid()
+    ax[0, 0].plot(bin_center, hist, '-o', color=line_colors[i], label=bottleneck_name)
+    ax[0, 0].grid()
 
     ii2 = np.bitwise_and(model_mse_noise <= 1, model_mse_noise >= -1)
     hist, bin_edge = np.histogram(model_mse_noise[ii2], bins=20, range=(-1, 1))
     hist = hist / len(model_mse_noise[ii2])
     bin_center = bin_edge[0:-1] + (bin_edge[1] - bin_edge[0]) / 2
-    ax[1].plot(bin_center, hist, '-d', color=line_colors[i], label=bottleneck_name + ' noise')
-    ax[1].grid()
+    ax[0, 1].plot(bin_center, hist, '-d', color=line_colors[i], label=bottleneck_name)
+    ax[0, 1].grid()
 
-ax[1].set_xlabel('Explained variance score')
-ax[0].set_ylabel('Probability Density')
-ax[1].set_ylabel('Probability Density')
-ax[0].legend()
-ax[1].legend()
+ax[0, 0].set_xlabel('EV score', fontsize=14)
+ax[0, 1].set_xlabel('EV score', fontsize=14)
+ax[0, 0].set_ylabel('Probability Density', fontsize=14)
+ax[0, 0].legend()
+ax[0, 0].annotate("(a)", xy=(-0.15, 1), xycoords=ax[0, 0].transAxes, fontsize=20)
+ax[0, 1].legend()
+ax[0, 1].annotate("(b)", xy=(-0.15, 1), xycoords=ax[0, 1].transAxes, fontsize=20)
 
-plt.savefig(output_dir + '/histograms.pdf')
-plt.savefig(output_dir + '/histograms.png', dpi=200, bbox_inches='tight')
+# plt.savefig(output_dir + '/histograms.pdf')
+# plt.savefig(output_dir + '/histograms.png', dpi=200, bbox_inches='tight')
 
 # Extract the relation between SNR and EVS
-plt.close('all')
 bin_size = 0.4
 snr_bin_edge = np.arange(-2, 4, bin_size)
 
@@ -293,39 +293,39 @@ center_type='median'
 snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr_all,
                                                                        model_mse_earthquake_all, snr_bin_edge,
                                                                        center_type=center_type)
-plt.figure(2, figsize=(10, 5))
+
 for i in range(len(model_names)):
-    plt.plot(model_snr_all[i] / 10, model_mse_earthquake_all[i], '.', color='gray', alpha=0.005)  # line_colors[i]
-    plt.errorbar(snr_bin_center + i * 0.05 - 0.1, mse_center_all[i], yerr=mse_error_bar_all[i],
+    ax[1, 0].plot(model_snr_all[i] / 10, model_mse_earthquake_all[i], '.', color='gray', alpha=0.005)  # line_colors[i]
+    ax[1, 0].errorbar(snr_bin_center + i * 0.05 - 0.1, mse_center_all[i], yerr=mse_error_bar_all[i],
                  marker='s', color=line_colors[i], linewidth=2,
                  label=bottleneck_names[i], elinewidth=1.5, zorder=3)
-    plt.xlim(-2, 4)
-    plt.ylim(-1.1, 1.1)
-plt.legend(loc=4)
-plt.xlabel('log10(SNR)', fontsize=15)
-plt.ylabel('Explained Variance', fontsize=15)
-plt.grid()
-plt.savefig(output_dir + '/SNR_vs_EV_earthquake_' + center_type + '.png', dpi=200, bbox_inches='tight')
+    ax[1, 0].set_xlim(-2, 4)
+    ax[1, 0].set_ylim(-0.4, 1.1)
+ax[1, 0].legend(loc=4)
+ax[1, 0].set_xlabel('log10(SNR)', fontsize=14)
+ax[1, 0].set_ylabel('EV score', fontsize=14)
+ax[1, 0].grid()
+ax[1, 0].annotate("(c)", xy=(-0.15, 1), xycoords=ax[1, 0].transAxes, fontsize=20)
 
 # show ambient noise waveforms evs
 snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr_all,
                                                                        model_mse_noise_all, snr_bin_edge,
                                                                        center_type=center_type)
-plt.figure(3, figsize=(10, 5))
+
 for i in range(len(model_names)):
-    plt.plot(model_snr_all[i] / 10, model_mse_noise_all[i], '.', color='gray', alpha=0.005)  # line_colors[i]
-    plt.errorbar(snr_bin_center + i * 0.05 - 0.1, mse_center_all[i], yerr=mse_error_bar_all[i],
+    ax[1, 1].plot(-model_snr_all[i] / 10, model_mse_noise_all[i], '.', color='gray', alpha=0.005)  # line_colors[i]
+    ax[1, 1].errorbar(-(snr_bin_center + i * 0.05 - 0.1), mse_center_all[i], yerr=mse_error_bar_all[i],
                  marker='s', color=line_colors[i], linewidth=2,
                  label=bottleneck_names[i], elinewidth=1.5, zorder=3)
-    plt.xlim(-2, 4)
-    plt.ylim(-1.1, 1.1)
-plt.legend(loc=3)
-plt.xlabel('log10(SNR)', fontsize=15)
-plt.ylabel('Explained Variance', fontsize=15)
+    ax[1, 1].set_xlim(-4, 2)
+    ax[1, 1].set_ylim(-1.1, 1.1)
+ax[1, 1].legend(loc=4)
+ax[1, 1].set_xlabel('-log10(SNR)', fontsize=15)
 plt.grid()
+ax[1, 1].annotate("(d)", xy=(-0.15, 1), xycoords=ax[1, 1].transAxes, fontsize=20)
 
 # plt.savefig(output_dir + '/SNR_vs_EV.pdf')
-plt.savefig(output_dir + '/SNR_vs_EV_noise_' + center_type + '.png', dpi=200, bbox_inches='tight')
+plt.savefig(output_dir + '/bottleneck_comparison_' + center_type + '.png', dpi=200, bbox_inches='tight')
 
 ############################## Compare Conv1D and Conv2D models ######################################
 
