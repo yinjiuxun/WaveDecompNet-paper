@@ -253,10 +253,10 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
             loss1 = loss_fn(pred1, y)
             loss2 = loss_fn(pred2, X - y)
 
-            loss = loss1 + loss2
+            #loss = loss1 + loss2
 
             # record validation loss
-            valid_losses.append(loss.item())
+            valid_losses.append(loss1.item() + loss2.item())
             valid_losses1.append(loss1.item())
             valid_losses2.append(loss2.item())
 
