@@ -24,7 +24,8 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
 
-bottleneck_name_list = ['None', 'Linear', 'LSTM', 'attention', 'Transformer']
+bottleneck_name_list = ['None', 'Linear', 'LSTM', 'attention', 'Transformer', 'hybrid']
+
 
 for bottleneck_name in bottleneck_name_list:
     plt.close('all')
@@ -47,12 +48,12 @@ for bottleneck_name in bottleneck_name_list:
         rand_seed1 = f.attrs['rand_seed1']
         rand_seed2 = f.attrs['rand_seed2']
 
-    X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train,
+    X_training, X_test, Y_training, Y_test = train_test_split(X_train, Y_train,
                                     train_size=train_size, random_state=rand_seed1)
     X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
                                     test_size=test_size, random_state=rand_seed2)
 
-    training_data = WaveformDataset(X_train, Y_train)
+    training_data = WaveformDataset(X_training, Y_training)
     validate_data = WaveformDataset(X_validate, Y_validate)
     test_data = WaveformDataset(X_test, Y_test)
 
