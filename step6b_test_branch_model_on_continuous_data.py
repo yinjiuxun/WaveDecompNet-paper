@@ -125,7 +125,7 @@ waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600
 waveform_data = WaveformDataset(waveform_normalized, waveform_normalized)
 
 # %% Need to specify model_name first
-bottleneck_name = "attention" # LSTM
+bottleneck_name = "LSTM" # LSTM, attention
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
@@ -226,7 +226,7 @@ tr.merge(fill_value=0)  # in case that there are segmented traces
 tr.decimate(10)
 
 # Model names and path
-bottleneck_name = "attention"
+bottleneck_name = "hybrid"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
