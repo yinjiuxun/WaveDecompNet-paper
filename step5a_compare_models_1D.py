@@ -400,6 +400,53 @@ ax[1, 1].annotate("(d)", xy=(-0.15, 1), xycoords=ax[1, 1].transAxes, fontsize=20
 # plt.savefig(output_dir + '/SNR_vs_EV.pdf')
 plt.savefig(output_dir + '/bottleneck_comparison_' + center_type + '.png', dpi=200, bbox_inches='tight')
 
+
+###### A better form of plotting ##########
+# show earthquake waveforms evs
+snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr_all,
+                                                                       model_mse_earthquake_all, snr_bin_edge,
+                                                                       center_type=center_type)
+plt.close('all')
+fig, ax = plt.subplots(2, 2, figsize=(14, 8), gridspec_kw={'width_ratios': [20, 3]}, sharey='row')
+fig.tight_layout()
+for i in range(len(model_names)):
+    ax[0, 0].errorbar(snr_bin_center + i * 0.04 - 0.1, mse_center_all[i], yerr=mse_error_bar_all[i],
+                      marker='s', color=line_colors[i], linewidth=1, linestyle='-',
+                      label=bottleneck_names[i], elinewidth=1.5, zorder=3)
+    ax[0, 0].set_xlim(-2, 4)
+    ax[0, 0].set_ylim(-0.4, 1.1)
+ax[0, 0].legend(loc=4)
+ax[0, 0].set_xlabel('log10(SNR)', fontsize=14)
+ax[0, 0].set_ylabel('EV score', fontsize=14)
+ax[0, 0].grid()
+ax[0, 0].annotate("(a)", xy=(-0.1, 1), xycoords=ax[0, 0].transAxes, fontsize=20)
+
+ax[0, 1].hist(model_mse_earthquake_all[0:-1,:].T, range=(-1, 1.05), bins=10,
+           orientation='horizontal', density=True, color=line_colors[0:5])
+ax[0, 1].grid()
+
+# show ambient noise waveforms evs
+snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr_all,
+                                                                       model_mse_noise_all, snr_bin_edge,
+                                                                       center_type=center_type)
+for i in range(len(model_names)):
+    ax[1, 0].errorbar(-(snr_bin_center + i * 0.04 - 0.1), mse_center_all[i], yerr=mse_error_bar_all[i],
+                      marker='s', color=line_colors[i], linewidth=1, linestyle='-',
+                      label=bottleneck_names[i], elinewidth=1.5, zorder=3)
+    ax[1, 0].set_xlim(-4, 2)
+    ax[1, 0].set_ylim(-1, 1.1)
+ax[1, 0].legend(loc=4)
+ax[1, 0].set_xlabel('-log10(SNR)', fontsize=14)
+ax[1, 0].set_ylabel('EV score', fontsize=14)
+ax[1, 0].grid()
+ax[1, 0].annotate("(b)", xy=(-0.1, 1), xycoords=ax[1, 0].transAxes, fontsize=20)
+
+ax[1, 1].hist(model_mse_noise_all[0:-1,:].T, range=(-1, 1.05), bins=10,
+           orientation='horizontal', density=True, color=line_colors[0:5])
+ax[1, 1].grid()
+ax[1, 1].set_xlabel('Density', fontsize=14)
+plt.savefig(output_dir + '/bottleneck_comparison_' + center_type + '_histograms.pdf', dpi=200, bbox_inches='tight')
+
 ############################## Compare Conv1D and Conv2D models ######################################
 
 # %% Specify the model directory and model name list first
