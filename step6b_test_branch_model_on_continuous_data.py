@@ -226,7 +226,7 @@ tr.merge(fill_value=0)  # in case that there are segmented traces
 tr.decimate(10)
 
 # Model names and path
-bottleneck_name = "hybrid"
+bottleneck_name = "LSTM"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
@@ -264,49 +264,53 @@ for i in range(3):
     tr_noise[i].data = noise_recovered[:, i]
     tr_residual[i].data = waveform_original[:, i] - waveform_recovered[:, i] - noise_recovered[:, i]
 
+
 # Visualize the data in one-month
+plt.close('all')
 i_channel = 0
-vertical_scaling = 40000
+vertical_scaling = 35000
 # The original data
 f1 = plt.figure(1, figsize=(8, 10))
-tr[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
+tr[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling, tick_format='%m-%d',
                    fig=f1, show_y_UTC_label=False, color=['k'], title='', x_labels_size=18, events=event_time_P)
-plt.yticks([-1, 1], labels='')
+plt.yticks(fontsize=18)
 plt.ylabel("Days")
 plt.xlabel('Time in hours', fontsize=18)
 plt.title('(a) Raw waveform (' + network_station + ')')
-plt.savefig(waveform_output_dir + '/one_month_data_original_BH' + str(i_channel) + '.png')
+plt.savefig(waveform_output_dir + '/one_month_data_original_BH' + str(i_channel) + '.pdf',  bbox_inches='tight')
 
 # The separated earthquake data
+vertical_scaling = 25000
 f2 = plt.figure(2, figsize=(8, 10))
-tr_recovered[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
+tr_recovered[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling, tick_format='%m-%d',
                              fig=f2, show_y_UTC_label=False, color=['r'], title='', x_labels_size=18, events=event_time_P)
-plt.yticks([-1, 1], labels='')
+plt.yticks(fontsize=18)
 plt.ylabel("Days")
 plt.xlabel('Time in hours', fontsize=18)
 plt.title('(b) Earthquake waveform (' + network_station + ')')
-plt.savefig(waveform_output_dir + '/one_month_data_earthquake_BH' + str(i_channel) + '.png')
+plt.savefig(waveform_output_dir + '/one_month_data_earthquake_BH' + str(i_channel) + '.pdf',  bbox_inches='tight')
 
 # The separated noise data
+vertical_scaling = 35000
 f3 = plt.figure(3, figsize=(8, 10))
-tr_noise[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
+tr_noise[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling, tick_format='%m-%d',
                          fig=f3, show_y_UTC_label=False, color=['b'], title='', x_labels_size=18, events=event_time_P)
-plt.yticks([-1, 1], labels='')
+plt.yticks(fontsize=18)
 plt.ylabel("Days")
 plt.xlabel('Time in hours', fontsize=18)
 plt.title('(c) Noise waveform (' + network_station + ')')
-plt.savefig(waveform_output_dir + '/one_month_data_noise_BH' + str(i_channel) + '.png')
+plt.savefig(waveform_output_dir + '/one_month_data_noise_BH' + str(i_channel) + '.pdf',  bbox_inches='tight')
 
 # The residual
 # The separated noise data
 f4 = plt.figure(4, figsize=(8, 10))
-tr_residual[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling,
+tr_residual[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling, tick_format='%m-%d',
                          fig=f4, show_y_UTC_label=False, color=['gray'], title='', x_labels_size=18, events=event_time_P)
-plt.yticks([-1, 1], labels='')
+plt.yticks(fontsize=18)
 plt.ylabel("Days")
 plt.xlabel('Time in hours', fontsize=18)
 plt.title('(d) Residual waveform (' + network_station + ')')
-plt.savefig(waveform_output_dir + '/one_month_data_residual_BH' + str(i_channel) + '.png')
+plt.savefig(waveform_output_dir + '/one_month_data_residual_BH' + str(i_channel) + '.pdf',  bbox_inches='tight')
 
 # Plot zoom-in waveforms
 waveform_time_day = waveform_time/24/3600
