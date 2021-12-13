@@ -407,7 +407,7 @@ snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr
                                                                        model_mse_earthquake_all, snr_bin_edge,
                                                                        center_type=center_type)
 plt.close('all')
-fig, ax = plt.subplots(2, 2, figsize=(14, 8), gridspec_kw={'width_ratios': [20, 3]}, sharey='row')
+fig, ax = plt.subplots(2, 2, figsize=(12, 8), gridspec_kw={'width_ratios': [20, 4]}, sharey='row')
 fig.tight_layout()
 for i in range(len(model_names)):
     ax[0, 0].errorbar(snr_bin_center + i * 0.04 - 0.1, mse_center_all[i], yerr=mse_error_bar_all[i],
@@ -434,7 +434,7 @@ for i in range(len(model_names)):
                       marker='s', color=line_colors[i], linewidth=1, linestyle='-',
                       label=bottleneck_names[i], elinewidth=1.5, zorder=3)
     ax[1, 0].set_xlim(-4, 2)
-    ax[1, 0].set_ylim(-1, 1.1)
+    ax[1, 0].set_ylim(-0.4, 1.1)
 ax[1, 0].legend(loc=4)
 ax[1, 0].set_xlabel('-log10(SNR)', fontsize=14)
 ax[1, 0].set_ylabel('EV score', fontsize=14)
