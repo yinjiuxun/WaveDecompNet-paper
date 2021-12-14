@@ -4,6 +4,7 @@ import numpy as np
 import datetime
 from matplotlib import pyplot as plt
 import h5py
+import time as timing
 
 # import the Obspy modules that we will use in this exercise
 import obspy
@@ -18,6 +19,8 @@ from torch.utils.data import DataLoader
 import matplotlib
 matplotlib.rcParams.update({'font.size': 18})
 
+time_start_time = timing.time()  # time when code starts
+
 # %%
 working_dir = os.getcwd()
 
@@ -30,9 +33,9 @@ waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 tr = obspy.read(waveform_mseed)
 tr.merge(fill_value=0)  # in case that there are segmented traces
 #tr.filter('highpass', freq=0.1)
-f1=plt.figure(1, figsize=(8, 12))
-tr[0].plot(type='dayplot', interval=24*60, fig=f1, show_y_UTC_label=False, color=['k', 'r', 'b', 'g'])
-plt.savefig(waveform_dir + '/one_month_data_' + network_station + '.png')
+# f1=plt.figure(1, figsize=(8, 12))
+# tr[0].plot(type='dayplot', interval=24*60, fig=f1, show_y_UTC_label=False, color=['k', 'r', 'b', 'g'])
+# plt.savefig(waveform_dir + '/one_month_data_' + network_station + '.png')
 
 # t1 = obspy.UTCDateTime("2021-07-19T12:07:00")
 # t2 = obspy.UTCDateTime("2021-07-19T12:10:00")
@@ -40,10 +43,98 @@ plt.savefig(waveform_dir + '/one_month_data_' + network_station + '.png')
 # t2 = obspy.UTCDateTime("2021-08-03T12:03:00")
 # tr.plot(starttime=t1, endtime=t2)
 
+time_load_trace_time = timing.time() - time_start_time # time spent on loading data
+
 npts0 = tr[0].stats.npts  # number of samples
 dt0 = tr[0].stats.delta  # dt
 
-# event catalog
+# Reformat the waveform data into array
+waveform0 = np.zeros((npts0, 3))
+for i in range(3):
+    waveform0[:, i] = tr[i].data
+
+time0 = np.arange(0, npts0) * dt0
+
+# Downsample the waveform data
+f_downsample = 10
+time, waveform, dt = downsample_series(time0, waveform0, f_downsample)
+
+#del time0, waveform0, tr
+
+# Reformat the data into the format required by the model (batch, channel, samples)
+data_mean = np.mean(waveform, axis=0)
+data_std = np.std(waveform, axis=0)
+waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
+waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600, 3))
+
+# # Reformat the data into the format required by the model (batch, channel, samples)
+# # For individual batch
+# waveform = np.reshape(waveform[:, np.newaxis, :], (-1, 600, 3))
+#
+# #Normalize the waveform first!
+# data_mean = np.mean(waveform, axis=1, keepdims=True)
+# data_std = np.std(waveform, axis=1, keepdims=True)
+# waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
+
+# Predict the separated waveforms
+waveform_data = WaveformDataset(waveform_normalized, waveform_normalized)
+
+# time spent on downsample and normalization data
+time_process_trace_time = timing.time() - time_start_time - time_load_trace_time
+
+# %% Need to specify model_name first
+bottleneck_name = "LSTM" # LSTM, attention
+#model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
+#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
+# model_dataset_dir = "Model_and_datasets_1D_synthetic"
+model_name = "Branch_Encoder_Decoder_" + bottleneck_name
+
+model_dir = model_dataset_dir + f'/{model_name}'
+
+# %% load model
+model = torch.load(model_dir + '/' + f'{model_name}_Model.pth', map_location=try_gpu())
+
+batch_size = 256
+test_iter = DataLoader(waveform_data, batch_size=batch_size, shuffle=False)
+
+# Test on real data
+all_output1 = np.zeros(waveform_normalized.shape) # signal
+all_output2 = np.zeros(waveform_normalized.shape) # noise
+# all_output = np.zeros(waveform.shape)
+model.eval()
+for i, (X, _) in enumerate(test_iter):
+    print('+' * 12 + f'batch {i}' + '+' * 12)
+    output1, output2 = model(X)
+
+    # output1 corresponds to earthquake signal
+    output1 = output1.detach().numpy()
+    output1 = np.moveaxis(output1, 1, -1)
+    all_output1[(i * batch_size): ((i + 1) * batch_size), :, :] = output1
+
+    # output2 corresponds to ambient noise
+    output2 = output2.detach().numpy()
+    output2 = np.moveaxis(output2, 1, -1)
+    all_output2[(i * batch_size): ((i + 1) * batch_size), :, :] = output2
+
+# Check the waveform
+waveform_recovered = all_output1 * data_std + data_mean
+waveform_recovered = np.reshape(waveform_recovered, (-1, 3))
+
+noise_recovered = all_output2 * data_std + data_mean
+noise_recovered = np.reshape(noise_recovered, (-1, 3))
+
+waveform_original = np.reshape(waveform, (-1, 3))
+waveform_time = np.arange(waveform_original.shape[0]) / f_downsample
+
+time_decompose_waveform = timing.time() - time_start_time - time_load_trace_time - time_process_trace_time
+
+print('Time spent on decomposing seismograms: ')
+print(f'Load one-month mseed data: {time_load_trace_time:.3f} sec\n' +
+      f'Process data (downsample, normalization, reshape): {time_process_trace_time:.3f} sec\n' +
+      f'Decompose into earthquake and noise: {time_decompose_waveform:.3f} sec\n')
+
+## event catalog
 event_catalog = waveform_dir + '/' + 'catalog.20210731-20210901.xml'
 
 # station information
@@ -93,85 +184,7 @@ for i_event in range(len(events)):
         event_arrival_P[i_event] = np.nan
         event_arrival_S[i_event] = np.nan
 
-# Reformat the waveform data into array
-waveform0 = np.zeros((npts0, 3))
-for i in range(3):
-    waveform0[:, i] = tr[i].data
-
-time0 = np.arange(0, npts0) * dt0
-
-# Downsample the waveform data
-f_downsample = 10
-time, waveform, dt = downsample_series(time0, waveform0, f_downsample)
-
-#del time0, waveform0, tr
-
-# Reformat the data into the format required by the model (batch, channel, samples)
-data_mean = np.mean(waveform, axis=0)
-data_std = np.std(waveform, axis=0)
-waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
-waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600, 3))
-
-# # Reformat the data into the format required by the model (batch, channel, samples)
-# # For individual batch
-# waveform = np.reshape(waveform[:, np.newaxis, :], (-1, 600, 3))
-#
-# #Normalize the waveform first!
-# data_mean = np.mean(waveform, axis=1, keepdims=True)
-# data_std = np.std(waveform, axis=1, keepdims=True)
-# waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
-
-# Predict the separated waveforms
-waveform_data = WaveformDataset(waveform_normalized, waveform_normalized)
-
-# %% Need to specify model_name first
-bottleneck_name = "LSTM" # LSTM, attention
-#model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
-#model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
-# model_dataset_dir = "Model_and_datasets_1D_synthetic"
-model_name = "Branch_Encoder_Decoder_" + bottleneck_name
-
-model_dir = model_dataset_dir + f'/{model_name}'
-
-# %% load model
-model = torch.load(model_dir + '/' + f'{model_name}_Model.pth', map_location=try_gpu())
-
-batch_size = 256
-test_iter = DataLoader(waveform_data, batch_size=batch_size, shuffle=False)
-
-# Test on real data
-all_output1 = np.zeros(waveform_normalized.shape) # signal
-all_output2 = np.zeros(waveform_normalized.shape) # noise
-# all_output = np.zeros(waveform.shape)
-model.eval()
-for i, (X, _) in enumerate(test_iter):
-    print('+' * 12 + f'batch {i}' + '+' * 12)
-    output1, output2 = model(X)
-
-    # output1 corresponds to earthquake signal
-    output1 = output1.detach().numpy()
-    output1 = np.moveaxis(output1, 1, -1)
-    all_output1[(i * batch_size): ((i + 1) * batch_size), :, :] = output1
-
-    # output2 corresponds to ambient noise
-    output2 = output2.detach().numpy()
-    output2 = np.moveaxis(output2, 1, -1)
-    all_output2[(i * batch_size): ((i + 1) * batch_size), :, :] = output2
-
-# Check the waveform
-waveform_recovered = all_output1 * data_std + data_mean
-waveform_recovered = np.reshape(waveform_recovered, (-1, 3))
-
-noise_recovered = all_output2 * data_std + data_mean
-noise_recovered = np.reshape(noise_recovered, (-1, 3))
-
-waveform_original = np.reshape(waveform, (-1, 3))
-waveform_time = np.arange(waveform_original.shape[0]) / f_downsample
-
-# scaled event magnitude (this is just a test)
-scaled_magnitude = 10 ** event_magnitude / epi_distance / 10
-
+# output decomposed waveforms
 waveform_output_dir = waveform_dir + '/' + model_dataset_dir
 mkdir(waveform_output_dir)
 waveform_output_dir = waveform_output_dir + '/' + network_station
