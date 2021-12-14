@@ -203,8 +203,8 @@ def plot_zoom_in_waveform(time_range):
 
     # change to datetime format
     start_time = tr_earthquake[0].stats.starttime.timestamp
-    time_in_datetime = np.array([datetime.datetime.fromtimestamp(
-        waveform_time_point * second_per_day + start_time).strftime("%m-%d-%I:%M:%S")
+    time_in_datetime = np.array([obspy.UTCDateTime(
+        waveform_time_point * second_per_day + start_time).strftime('%m-%d-%H:%M:%S')
                                  for waveform_time_point in waveform_time_in_day])
 
     # waveform data in the corresponding range
@@ -243,7 +243,7 @@ def plot_zoom_in_waveform(time_range):
             ax[i_chan + 1, i_tr].plot(waveform_time_in_day, tr_waveform[i_chan], color=ENZ_color[i_chan])
             ax[i_chan + 1, i_tr].plot(detect_time_in_day,
                                       np.ones(detect_time_in_day.shape) * np.mean(tr_waveform[i_chan]),
-                                      'kx', markeredgewidth=3, markersize=10)
+                                      'kx', markeredgewidth=1.5, markersize=10)
 
             # label the time window
             for window_time in window_time_in_day[index_window]:
@@ -261,15 +261,24 @@ def plot_zoom_in_waveform(time_range):
                 y_lim = 1.1 * np.max(abs(tr_waveform[i_chan]))
             ax[i_chan + 1, i_tr].set_ylim((-y_lim, y_lim))
 
-    for i_tr, tr_waveform in enumerate(trace_list):
-        for i_chan in range(3):
-            # plot estimated arrival time
-            ax[i_chan + 1, i_tr].plot(P_arrival_in_day[index_P],
-                                      np.ones(P_arrival_in_day[index_P].shape) * y_lim/2,
-                                      'k+', markeredgewidth=2, markersize=10)
-            ax[i_chan + 1, i_tr].plot(S_arrival_in_day[index_S],
-                                      np.ones(P_arrival_in_day[index_S].shape) * y_lim / 2,
-                                      'k+', markeredgewidth=4, markersize=14)
+    # for i_tr, tr_waveform in enumerate(trace_list):
+    #     for i_chan in range(3):
+    #         # plot estimated arrival time
+    #         ax[i_chan + 1, i_tr].plot(P_arrival_in_day[index_P],
+    #                                   np.ones(P_arrival_in_day[index_P].shape) * y_lim/2,
+    #                                   'k+', markeredgewidth=2, markersize=10)
+    #         ax[i_chan + 1, i_tr].plot(S_arrival_in_day[index_S],
+    #                                   np.ones(P_arrival_in_day[index_S].shape) * y_lim / 2,
+    #                                   'k+', markeredgewidth=4, markersize=14)
+
+            # # Add the event information
+            # event_index = np.where(index_P)
+            # for ii_event in event_index[0]:
+            #     event_info_text = events[ii_event].origins[0].time.strftime('%m-%d-%H:%M:%S') + ', ' + events[ii_event].magnitudes[0].magnitude_type \
+            #                     + f' {events[ii_event].magnitudes[0].mag}, \n Distance: ' \
+            #                     + f'{epi_distance[ii_event]:.2f} deg'
+            #     ax[i_chan + 1, i_tr].text(P_arrival_in_day[ii_event], y_lim/1.9,
+            #                               event_info_text, ha='left', fontsize=10)
 
     for i_tr in range(2):
         ax[0, i_tr].legend()
@@ -281,18 +290,14 @@ mkdir(output_dir)
 
 waveform_time = np.arange(tr_raw[0].stats.npts) * tr_raw[0].stats.delta
 
-time_range = [11.825, 11.84]
-time_range = [8.3615, 8.3645] # [8.362, 8.3633]
-time_range = [21.0675, 21.07] # [0.3, 0.302]
-
-time_range_list = [[0.3, 0.302], [8.3615, 8.3645], [11.825, 11.84], [21.0675, 21.07],
-                   [13.544, 13.548], [10.7645, 10.767], [9.138, 9.142],
-                   [27.0858,  27.0878], [28.46455, 28.467], [13.5435,  13.5473],
-                   [9.9505,  9.953], [28.6042,  28.6060], [8.330, 8.333]]
+time_range_list = [[0.3003, 0.3014], [8.362, 8.3638], [11.825, 11.84], [21.0685, 21.0695],
+                   [10.765, 10.7665], [9.1395, 9.1405],
+                   [27.0864,  27.0878], [28.4652, 28.4665], [13.5445,  13.5473],
+                   [9.951,  9.9525], [28.6048,  28.6060]]
 
 # ii_event = np.random.randint(0, len(event_arrival_P),1)
 # time_range_list = [event_arrival_P[ii_event]/second_per_day + np.array([-0.0025, 0.0025])]
-# time_range_list = [[28.6042,  28.6060]]
+#time_range_list = [[0.3003, 0.3014]]
 for time_range in time_range_list:
     plot_zoom_in_waveform(time_range)
     file_name = network_station + '_t_' + str(time_range[0]) + '_coincidence_' + str(threshold_coincidence) + '.pdf'
