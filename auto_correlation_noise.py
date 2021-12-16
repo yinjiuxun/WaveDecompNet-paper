@@ -184,48 +184,6 @@ def average_xcorr_functions(xcorf_funciton, average_hours, time_pts_xcorf, dt, b
     return xcorf_time_lag, xcorf_day_time, average_acf[:, :time_pts_xcorf, :]
 
 
-# Calculate the correlation coef with the global average
-def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=None,
-                                figure_name=None, title=None):
-    plt.close('all')
-    line_label = ['original waveform', 'separated noise']
-    fig, ax = plt.subplots(9, 1, sharex=True, sharey=True, figsize=(4, 14))
-
-    if xcorf_time is not None:
-        index_time = (xcorf_time_lag >= xcorf_time[0]) & (xcorf_time_lag <= xcorf_time[1])
-        average_acf1 = average_acf1[:, index_time, :]
-        average_acf2 = average_acf2[:, index_time, :]
-
-    for index_channel in range(9):
-
-        for j, xcorf_function in enumerate([average_acf1, average_acf2]):
-            global_average1 = np.mean(xcorf_function[:, :time_pts_xcorf, :], axis=0)
-
-            temp = np.sum(xcorf_function[:, :, index_channel] * global_average1[:, index_channel], axis=1)
-
-            norm1 = np.linalg.norm(xcorf_function[:, :, index_channel], axis=1)
-            norm2 = np.linalg.norm(global_average1[:, index_channel])
-
-            corr_coef = temp / norm1 / norm2
-
-            ax[index_channel].plot(xcorf_day_time, corr_coef, label=line_label[j])
-            ax[index_channel].plot(event_arrival_S / 24 / 3600, np.ones(event_arrival_S.shape) * 1.3,
-                          'x', color='k', linewidth=4)
-
-            ax[index_channel].set_ylabel(channel_xcor_list[index_channel] + ' coef', fontsize=14)
-            ax[index_channel].set_ylim(0, 1.4)
-            #ax[index_channel].set_yticks([-1, 1])
-            if index_channel == 0:
-                if title is not None:
-                    ax[index_channel].set_title(title)
-
-            if index_channel == 8:
-                ax[index_channel].set_xlabel('Time (day)', fontsize=14)
-                ax[index_channel].legend(fontsize=14, loc=(0.1, -1.3))
-    if figure_name is not None:
-        plt.savefig(figure_name, bbox_inches='tight', dpi=150)
-
-
 def compare_ccfs_plot(scale_factor, time_extent, t_ballistic_coda):
     plt.close('all')
     #scale_factor = 6
@@ -249,6 +207,7 @@ def compare_ccfs_plot(scale_factor, time_extent, t_ballistic_coda):
             ax[i*3, j*3].annotate(f'({str(chr(k+97))}) ' + channel_xcor_list[k], xy=(-0.4, 1.2), xycoords=ax[i*3, j*3].transAxes)
             ax[i*3, j*3].set_title('Raw', fontsize=12)
             ax[i*3, j*3].sharex(ax_ref)
+            ax[i * 3, j * 3].set_ylim(-1,1)
 
 
             # show CCFs of each channel
@@ -287,6 +246,7 @@ def compare_ccfs_plot(scale_factor, time_extent, t_ballistic_coda):
             ax[i*3, j*3+1].axis('off')
             ax[i*3, j*3+1].set_title('Decomposed', fontsize=12)
             ax[i*3, j*3+1].sharex(ax_ref)
+            ax[i * 3, j * 3 + 1].set_ylim(-1,1)
 
             # show CCFs of each channel
             norm_color = cm.colors.Normalize(vmax=abs(average_acf2[:, :, k]).max() / scale_factor,
@@ -318,6 +278,43 @@ def compare_ccfs_plot(scale_factor, time_extent, t_ballistic_coda):
             ax[i * 3 + 2, j * 3 + 1].axis('off')
             ax[i*3+2, j * 3 + 2].axis('off')
 
+# Calculate the correlation coef with the global average
+def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=None):
+    line_label = ['original waveform', 'separated noise']
+    if xcorf_time is not None:
+        index_time = (xcorf_time_lag >= xcorf_time[0]) & (xcorf_time_lag <= xcorf_time[1])
+        average_acf1 = average_acf1[:, index_time, :]
+        average_acf2 = average_acf2[:, index_time, :]
+
+    for index_channel in range(9):
+
+        for j, xcorf_function in enumerate([average_acf1, average_acf2]):
+            global_average1 = np.mean(xcorf_function[:, :time_pts_xcorf, :], axis=0)
+
+            temp = np.sum(xcorf_function[:, :, index_channel] * global_average1[:, index_channel], axis=1)
+
+            norm1 = np.linalg.norm(xcorf_function[:, :, index_channel], axis=1)
+            norm2 = np.linalg.norm(global_average1[:, index_channel])
+
+            corr_coef = temp / norm1 / norm2
+
+            ax[index_channel].plot(xcorf_day_time, corr_coef, label=line_label[j], linewidth=1.5)
+            ax[index_channel].plot(event_arrival_S / 24 / 3600, np.ones(event_arrival_S.shape) * 1.3,
+                                   marker='.', color='g', linestyle='None')
+
+            ax[index_channel].annotate(f'({str(chr(index_channel + 97))})', xy=(-0.1, 1.06),
+                                      xycoords=ax[index_channel].transAxes)
+            ax[index_channel].set_title(channel_xcor_list[index_channel])
+
+            ax[index_channel].set_ylim(-1.4, 1.4)
+            #ax[index_channel].set_yticks([-1, 1])
+
+            if index_channel in [0, 3, 6]:
+                ax[index_channel].set_ylabel('CC', fontsize=14)
+            if index_channel in [6, 7, 8]:
+                ax[index_channel].set_xlabel('Time (day)', fontsize=14)
+            if index_channel == 8:
+                ax[index_channel].legend(fontsize=14, loc=4)
 
 
 dt = waveform_time[1] - waveform_time[0]
@@ -340,7 +337,7 @@ frequency_bands = [[0.1, 1], [1, 2], [2, 4]]
 order_letter = ['(a)', '(b)', '(c)']
 scale_factor = [10, 10, 6]
 time_extent_list = [[0, 20], [0, 12], [0, 6]]
-t_sep = [20, 3.5, 2]
+t_sep = [13, 3.5, 2]
 
 for ii, frequency_band in enumerate(frequency_bands):
     bandpass_filter = np.array(frequency_band)  # [0.1, 1] [1, 2][2, 4.5]
@@ -352,17 +349,41 @@ for ii, frequency_band in enumerate(frequency_bands):
     compare_ccfs_plot(scale_factor=scale_factor[ii], time_extent=time_extent_list[ii], t_ballistic_coda=t_sep[ii])
     plt.savefig(waveform_output_dir + '/ccf_comparison' + file_name_str + '.png', dpi=150)
 
-    figure_name = waveform_output_dir + '/cc_coda' + file_name_str + '.pdf'
-    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=time_extent_list[ii],
-                                figure_name=figure_name, title=order_letter[ii])
 
+    # All
+    plt.close('all')
+    fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(14, 7))
+    ax = ax.flatten()
+    figure_name = waveform_output_dir + '/cc_all' + file_name_str + '.pdf'
+    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=time_extent_list[ii])
+    for ax_temp in ax:
+        ax_temp.grid()
+    plt.savefig(figure_name)
+
+    # Ballistic
+    plt.close('all')
+    line_label = ['original waveform', 'separated noise']
+    fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(14, 7))
+    ax = ax.flatten()
     figure_name = waveform_output_dir + '/cc_ballistic' + file_name_str + '.pdf'
-    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=[0, time_extent_list[ii][0]],
-                                figure_name=figure_name, title=order_letter[ii])
+    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=[0, t_sep[ii]])
+    for ax_temp in ax:
+        ax_temp.grid()
+    plt.savefig(figure_name)
+
+    # Coda
+    plt.close('all')
+    line_label = ['original waveform', 'separated noise']
+    fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(14, 7))
+    ax = ax.flatten()
+    figure_name = waveform_output_dir + '/cc_coda' + file_name_str + '.pdf'
+    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=[t_sep[ii], time_extent_list[ii][-1]])
+    for ax_temp in ax:
+        ax_temp.grid()
+    plt.savefig(figure_name)
 
 
-
-####################
+#################### WILL BE REMOVED! ##############################################################################
 bandpass_filter = np.array([0.1, 1])  # [0.1, 1] [1, 2][2, 4.5]
 _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
@@ -569,3 +590,44 @@ for i in range(3):
         if i == 2:
             ax[i, j].set_xlabel('Time (s)')
 
+
+# Calculate the correlation coef with the global average
+# def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=None,
+#                                 figure_name=None, title=None):
+#     plt.close('all')
+#     line_label = ['original waveform', 'separated noise']
+#     fig, ax = plt.subplots(9, 1, sharex=True, sharey=True, figsize=(0, 14))
+#
+#     if xcorf_time is not None:
+#         index_time = (xcorf_time_lag >= xcorf_time[0]) & (xcorf_time_lag <= xcorf_time[1])
+#         average_acf1 = average_acf1[:, index_time, :]
+#         average_acf2 = average_acf2[:, index_time, :]
+#
+#     for index_channel in range(9):
+#
+#         for j, xcorf_function in enumerate([average_acf1, average_acf2]):
+#             global_average1 = np.mean(xcorf_function[:, :time_pts_xcorf, :], axis=0)
+#
+#             temp = np.sum(xcorf_function[:, :, index_channel] * global_average1[:, index_channel], axis=1)
+#
+#             norm1 = np.linalg.norm(xcorf_function[:, :, index_channel], axis=1)
+#             norm2 = np.linalg.norm(global_average1[:, index_channel])
+#
+#             corr_coef = temp / norm1 / norm2
+#
+#             ax[index_channel].plot(xcorf_day_time, corr_coef, label=line_label[j])
+#             ax[index_channel].plot(event_arrival_S / 24 / 3600, np.ones(event_arrival_S.shape) * 1.3,
+#                           'x', color='k', linewidth=4)
+#
+#             ax[index_channel].set_ylabel(channel_xcor_list[index_channel] + ' coef', fontsize=14)
+#             ax[index_channel].set_ylim(0, 1.4)
+#             #ax[index_channel].set_yticks([-1, 1])
+#             if index_channel == 0:
+#                 if title is not None:
+#                     ax[index_channel].set_title(title)
+#
+#             if index_channel == 8:
+#                 ax[index_channel].set_xlabel('Time (day)', fontsize=14)
+#                 ax[index_channel].legend(fontsize=14, loc=(0.1, -1.3))
+#     if figure_name is not None:
+#         plt.savefig(figure_name, bbox_inches='tight', dpi=150)
