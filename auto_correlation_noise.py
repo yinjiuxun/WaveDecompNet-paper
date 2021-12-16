@@ -279,7 +279,7 @@ def compare_ccfs_plot(scale_factor, time_extent, t_ballistic_coda):
             ax[i*3+2, j * 3 + 2].axis('off')
 
 # Calculate the correlation coef with the global average
-def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=None):
+def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=None, column_number=None):
     line_label = ['original waveform', 'separated noise']
     if xcorf_time is not None:
         index_time = (xcorf_time_lag >= xcorf_time[0]) & (xcorf_time_lag <= xcorf_time[1])
@@ -287,6 +287,10 @@ def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcor
         average_acf2 = average_acf2[:, index_time, :]
 
     for index_channel in range(9):
+        if column_number is None:
+            ax_current = ax[index_channel]
+        else:
+            ax_current = ax[index_channel, column_number]
 
         for j, xcorf_function in enumerate([average_acf1, average_acf2]):
             global_average1 = np.mean(xcorf_function[:, :time_pts_xcorf, :], axis=0)
@@ -298,23 +302,33 @@ def plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcor
 
             corr_coef = temp / norm1 / norm2
 
-            ax[index_channel].plot(xcorf_day_time, corr_coef, label=line_label[j], linewidth=1.5)
-            ax[index_channel].plot(event_arrival_S / 24 / 3600, np.ones(event_arrival_S.shape) * 1.3,
+            ax_current.plot(xcorf_day_time, corr_coef, label=line_label[j], linewidth=1.5)
+            ax_current.plot(event_arrival_S / 24 / 3600, np.ones(event_arrival_S.shape) * 1.3,
                                    marker='.', color='g', linestyle='None')
+            ax_current.set_ylim(-1.4, 1.4)
 
-            ax[index_channel].annotate(f'({str(chr(index_channel + 97))})', xy=(-0.1, 1.06),
-                                      xycoords=ax[index_channel].transAxes)
-            ax[index_channel].set_title(channel_xcor_list[index_channel])
+            if column_number is None: # individual figure for each frequency band
+                ax_current.annotate(f'({str(chr(index_channel + 97))})', xy=(-0.1, 1.06),
+                                          xycoords=ax[index_channel].transAxes)
+                ax_current.set_title(channel_xcor_list[index_channel])
 
-            ax[index_channel].set_ylim(-1.4, 1.4)
-            #ax[index_channel].set_yticks([-1, 1])
+                #ax[index_channel].set_yticks([-1, 1])
 
-            if index_channel in [0, 3, 6]:
-                ax[index_channel].set_ylabel('CC', fontsize=14)
-            if index_channel in [6, 7, 8]:
-                ax[index_channel].set_xlabel('Time (day)', fontsize=14)
-            if index_channel == 8:
-                ax[index_channel].legend(fontsize=14, loc=4)
+                if index_channel in [0, 3, 6]:
+                    ax_current.set_ylabel('CC', fontsize=14)
+                if index_channel in [6, 7, 8]:
+                    ax_current.set_xlabel('Time (day)', fontsize=14)
+                if index_channel == 8:
+                    ax_current.legend(fontsize=14, loc=4)
+            else: # one figure with all frequency bands
+                if column_number == 0:
+                    ax_current.set_ylabel(channel_xcor_list[index_channel], fontsize=14)
+                if index_channel == 8:
+                    ax_current.set_xlabel('Time (day)', fontsize=14)
+                if index_channel == 0:
+                    ax_current.set_title(f'({str(chr(column_number + 97))}) CC in ' + str(frequency_band[0]) + '-' + str(frequency_band[1]) + ' Hz',
+                                         fontsize=16)
+
 
 
 dt = waveform_time[1] - waveform_time[0]
@@ -347,9 +361,18 @@ for ii, frequency_band in enumerate(frequency_bands):
     xcorf_time_lag, xcorf_day_time, average_acf2 = \
         average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
     compare_ccfs_plot(scale_factor=scale_factor[ii], time_extent=time_extent_list[ii], t_ballistic_coda=t_sep[ii])
-    plt.savefig(waveform_output_dir + '/ccf_comparison' + file_name_str + '.pdf', dpi=150)
+    plt.savefig(waveform_output_dir + '/ccf_comparison' + file_name_str + '.pdf', dpi=150, bbox_inches='tight')
 
 
+    # plot all in one figure for publication purpose
+    plt.close('all')
+    fig, ax = plt.subplots(9, 3, sharex=True, sharey=True, figsize=(12, 12))
+    figure_name = waveform_output_dir + '/cc_one_all' + file_name_str + '.pdf'
+    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time,
+                                xcorf_time=time_extent_list[ii], column_number=ii)
+
+
+    # individual plots for presentation purpose
     # All
     plt.close('all')
     fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(14, 7))
@@ -358,7 +381,7 @@ for ii, frequency_band in enumerate(frequency_bands):
     plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=time_extent_list[ii])
     for ax_temp in ax:
         ax_temp.grid()
-    plt.savefig(figure_name)
+    plt.savefig(figure_name, bbox_inches='tight')
 
     # Ballistic
     plt.close('all')
@@ -369,7 +392,7 @@ for ii, frequency_band in enumerate(frequency_bands):
     plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=[0, t_sep[ii]])
     for ax_temp in ax:
         ax_temp.grid()
-    plt.savefig(figure_name)
+    plt.savefig(figure_name, bbox_inches='tight')
 
     # Coda
     plt.close('all')
@@ -380,8 +403,49 @@ for ii, frequency_band in enumerate(frequency_bands):
     plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time, xcorf_time=[t_sep[ii], time_extent_list[ii][-1]])
     for ax_temp in ax:
         ax_temp.grid()
-    plt.savefig(figure_name)
+    plt.savefig(figure_name, bbox_inches='tight')
 
+
+
+# plot all correlation coefficient in one figure for publication purpose
+plt.close('all')
+fig1, ax1 = plt.subplots(9, 3, sharex=True, sharey=True, figsize=(12, 12))
+fig2, ax2 = plt.subplots(9, 3, sharex=True, sharey=True, figsize=(12, 12))
+fig3, ax3 = plt.subplots(9, 3, sharex=True, sharey=True, figsize=(12, 12))
+for ii, frequency_band in enumerate(frequency_bands):
+    bandpass_filter = np.array(frequency_band)  # [0.1, 1] [1, 2][2, 4.5]
+    file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
+
+    _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, time_pts_xcorf, dt, bandpass_filter)
+    xcorf_time_lag, xcorf_day_time, average_acf2 = \
+        average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
+
+    # CC from entire time series (all)
+    ax = ax1
+    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time,
+                                xcorf_time=time_extent_list[ii], column_number=ii)
+
+    # CC from ballistic part of time series (ballistic)
+    ax = ax2
+    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time,
+                                xcorf_time=[0, t_sep[ii]], column_number=ii)
+
+    # CC from coda part of time series (coda)
+    ax = ax3
+    plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time,
+                                xcorf_time=[t_sep[ii], time_extent_list[ii][-1]], column_number=ii)
+
+plt.figure(fig1.number)
+figure_name = waveform_output_dir + '/cc_one_all.pdf'
+plt.savefig(figure_name, bbox_inches='tight')
+
+plt.figure(fig2.number)
+figure_name = waveform_output_dir + '/cc_one_ballistic.pdf'
+plt.savefig(figure_name, bbox_inches='tight')
+
+plt.figure(fig3.number)
+figure_name = waveform_output_dir + '/cc_one_coda.pdf'
+plt.savefig(figure_name, bbox_inches='tight')
 
 #################### WILL BE REMOVED! ##############################################################################
 bandpass_filter = np.array([0.1, 1])  # [0.1, 1] [1, 2][2, 4.5]
