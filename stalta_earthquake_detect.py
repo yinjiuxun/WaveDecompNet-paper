@@ -121,9 +121,9 @@ def plot_long_waveform_for_visualization():
     ax[3, 1].plot(detect_time2 / second_per_day, np.ones(detect_time2.shape) * np.mean(tr_earthquake[2].data), 'kx')
     ax[3, 1].sharey(axi)
 
-# This part is used to visually find the time window range for zoom in
-plt.close('all')
-plot_long_waveform_for_visualization()
+# # This part is used to visually find the time window range for zoom in
+# plt.close('all')
+# plot_long_waveform_for_visualization()
 
 
 # Get the event arrival time from catalog
@@ -235,6 +235,7 @@ def plot_zoom_in_waveform(time_range):
 
             ax[0, i_tr].set_title(name_list[i_tr])
             ax[0, i_tr].set_ylabel('STA/LTA ratio')
+            ax[0, i_tr].annotate(f'({str(chr(i_tr+97))}) ', xy=(-0.1, 1.1), xycoords=ax[0, i_tr].transAxes, fontsize=15)
 
     y_lim = 0
     for i_tr, tr_waveform in enumerate(trace_list):
