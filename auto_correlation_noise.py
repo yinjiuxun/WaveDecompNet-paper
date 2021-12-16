@@ -347,7 +347,7 @@ for ii, frequency_band in enumerate(frequency_bands):
     xcorf_time_lag, xcorf_day_time, average_acf2 = \
         average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
     compare_ccfs_plot(scale_factor=scale_factor[ii], time_extent=time_extent_list[ii], t_ballistic_coda=t_sep[ii])
-    plt.savefig(waveform_output_dir + '/ccf_comparison' + file_name_str + '.png', dpi=150)
+    plt.savefig(waveform_output_dir + '/ccf_comparison' + file_name_str + '.pdf', dpi=150)
 
 
     # All
