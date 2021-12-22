@@ -194,15 +194,6 @@ def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimiz
 
 def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn, optimizer, epochs
                            , patience, device, minimum_epochs=None):
-    # to track the training loss as the model trains
-    train_losses = []
-    train_losses1 = []  # earthquake loss
-    train_losses2 = []  # noise loss
-
-    # to track the validation loss as the model trains
-    valid_losses = []
-    valid_losses1 = []  # earthquake loss
-    valid_losses2 = []  # noise loss
 
     # to track the average training loss per epoch as the model trains
     avg_train_losses = []
@@ -220,6 +211,16 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
     for epoch in range(1, epochs + 1):
         # estimate time for each epoch
         starttime = time.time()
+
+        # to track the training loss as the model trains
+        train_losses = []
+        train_losses1 = []  # earthquake loss
+        train_losses2 = []  # noise loss
+
+        # to track the validation loss as the model trains
+        valid_losses = []
+        valid_losses1 = []  # earthquake loss
+        valid_losses2 = []  # noise loss
 
         # ======================= training =======================
         # initialize the model for training
