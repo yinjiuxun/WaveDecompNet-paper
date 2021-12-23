@@ -171,8 +171,8 @@ patience = 10  # patience of the early stopping
 
 loss_fn = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-train_iter = DataLoader(training_data, batch_size=batch_size, shuffle=True)
-validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=True)
+train_iter = DataLoader(training_data, batch_size=batch_size, shuffle=True, generator=199)
+validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=True, generator=199)
 
 print("#" * 12 + " training model " + model_name + " " + "#" * 12)
 
