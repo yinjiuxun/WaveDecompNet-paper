@@ -102,7 +102,7 @@ print("#" * 12 + " building model " + model_name + " " + "#" * 12)
 
 # Give a fixed seed for model initialization
 #torch.manual_seed(99)
-torch.manual_seed_all(99)
+torch.cuda.manual_seed_all(99)
 
 # Set up model network
 if model_structure == "Autoencoder_Conv1D":
