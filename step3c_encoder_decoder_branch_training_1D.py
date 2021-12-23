@@ -59,7 +59,7 @@ validate_data = WaveformDataset(X_validate, Y_validate)
 model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder_Conv2D", "Branch_Encoder_Decoder_LSTM"
 
 # Choose a bottleneck type
-bottleneck_name = "hybrid"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
+bottleneck_name = "Linear"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
 
 if bottleneck_name == "None":
     # Model without specified bottleneck
@@ -99,6 +99,9 @@ else:
 # Give a name to the network
 model_name = model_structure + "_" + bottleneck_name
 print("#" * 12 + " building model " + model_name + " " + "#" * 12)
+
+# Give a fixed seed for model initialization
+torch.manual_seed(99)
 
 # Set up model network
 if model_structure == "Autoencoder_Conv1D":
@@ -163,7 +166,7 @@ model_dataset_dir = model_dataset_dir + '/' + model_name
 mkdir(model_dataset_dir)
 
 batch_size, epochs, lr = 128, 300, 1e-3
-minimum_epochs = 30  # the minimum epochs that the training has to do
+minimum_epochs = 10  # the minimum epochs that the training has to do
 patience = 10  # patience of the early stopping
 
 loss_fn = torch.nn.MSELoss()
