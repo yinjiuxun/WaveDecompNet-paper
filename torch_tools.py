@@ -308,3 +308,12 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
     partial_loss = [avg_train_losses1, avg_valid_losses1, avg_train_losses2, avg_valid_losses2]
 
     return model, avg_train_losses, avg_valid_losses, partial_loss
+
+
+def model_same(model1, model2):
+    """Function to tell if two models are the same (same parameters)"""
+    for p1, p2 in zip(model1.parameters(), model2.parameters()):
+        if p1.data.ne(p2.data).sum() > 0:
+            return False
+        else:
+            return True
