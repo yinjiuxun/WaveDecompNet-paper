@@ -50,6 +50,7 @@ model_mse_earthquake_all = []  # list to store the mse for all models
 model_mse_noise_all = []  # list to store the noise mse for all models
 model_snr_all = []  # list to store the snr for all models
 model_test_loss_all = []  # list to store the model test loss
+model_test_loss_list_all = []  # List to store all the values of test loss for each model
 model_param_number = []  # list to store the number of model parameters
 
 for model_name in model_names:
@@ -93,19 +94,27 @@ for model_name in model_names:
     # Evaluate the test loss for the model
     loss_fn = torch.nn.MSELoss()
     test_loss = 0.0
+    test_loss_list = []
     model.eval()
     for X, y in test_iter:
+        loss_fn_details = torch.nn.MSELoss(reduction='none')
         if len(y.data) != batch_size:
             break
         # forward pass: compute predicted outputs by passing inputs to the model
         output1, output2 = model(X)
         # calculate the loss
         loss = loss_fn(output1, y) + loss_fn(output2, X - y)
+        loss_all = loss_fn_details(output1, y) + loss_fn_details(output2, X - y)
         # update test loss
         test_loss += loss.item() * X.size(0)
 
+        # store each test values
+        temp_array = np.mean(np.mean(loss_all.detach().numpy(), axis=-1), axis=-1)
+        test_loss_list.append(temp_array)
+
     test_loss = test_loss / len(test_iter.dataset)
     model_test_loss_all.append(test_loss)
+    model_test_loss_list_all.append(np.array(test_loss_list).flatten())
     model_param_number.append(parameter_number(model))
     print("*" * 12 + " Model " + model_name + ' Test Loss: {:.6f}\n'.format(test_loss) + "*" * 12)
 
@@ -165,6 +174,7 @@ with h5py.File(model_comparison, 'w') as f:
     f.create_dataset('model_mse_noise_all', data=model_mse_noise_all)
     f.create_dataset('model_snr_all', data=model_snr_all)
     f.create_dataset('model_test_loss_all', data=model_test_loss_all)
+    f.create_dataset('model_test_loss_list_all', data=model_test_loss_list_all)
     f.create_dataset('model_param_number', data=model_param_number)
 
 # Load the saved model comparison
@@ -190,9 +200,10 @@ with h5py.File(output_dir + '/all_model_comparison.hdf5', 'r') as f:
     model_mse_noise_all = f['model_mse_noise_all'][:]
     model_snr_all = f['model_snr_all'][:]
     model_test_loss_all = f['model_test_loss_all'][:]
+    model_test_loss_list_all = f['model_test_loss_list_all'][:]
     model_param_number = f['model_param_number'][:]
 
-# model_mse_earthquake_all[model_mse_earthquake_all < -2] = -2 # Force very low mse value
+model_names = model_names[0:5]  # not show Hybrid model for now.
 
 ####### plot training curves for all models
 # %% Show loss evolution
@@ -200,7 +211,7 @@ plt.close('all')
 fig, ax = plt.subplots(3, 2, sharey=True, figsize=(11, 13))
 ax = ax.flatten()
 
-for i_model, model_name in enumerate(model_names[:-1]):
+for i_model, model_name in enumerate(model_names):
     model_dir = model_dataset_dir + f'/{model_name}'
     test_loss = model_test_loss_all[i_model]
     param_number = model_param_number[i_model]
@@ -244,7 +255,7 @@ for i_model, model_name in enumerate(model_names[:-1]):
     ax[i_model].set_title(bottleneck_name, fontsize=14)
 
     props = dict(boxstyle='round', facecolor='white', alpha=0.7)
-    ax[i_model].text(0.98, 0.84, f'{param_number} parameters \n' + f'Test loss {test_loss:.4f}',
+    ax[i_model].text(0.98, 0.84, f'{param_number} parameters \n' + f'Mean test loss {test_loss:.4f}',
                      fontsize=12, transform=ax[i_model].transAxes, horizontalalignment='right',
                      bbox=props)
     plt.show()
@@ -256,41 +267,6 @@ for i, letter_label in enumerate(['(a)', '(b)', '(c)', '(d)', '(e)']):
 plt.savefig(output_dir + '/bottleneck_comparison_training_curves.pdf', dpi=200, bbox_inches='tight')
 
 ####### plot the EV score distribution
-plt.close('all')
-fig, ax = plt.subplots(2, 2, sharex=False, sharey=False, squeeze=False, figsize=(14, 10))
-
-model_names = model_names[0:5]  # not show Hybrid model for now.
-
-for i, model_name in enumerate(model_names):
-    model_mse_earthquake = model_mse_earthquake_all[i]
-    model_mse_noise = model_mse_noise_all[i]
-    model_snr = model_snr_all[i]
-    bottleneck_name = bottleneck_names[i]
-    ii1 = np.bitwise_and(model_mse_earthquake <= 1, model_mse_earthquake >= -1)
-    hist, bin_edge = np.histogram(model_mse_earthquake[ii1], bins=20, range=(-1, 1))
-    hist = hist / len(model_mse_earthquake[ii1])
-    bin_center = bin_edge[0:-1] + (bin_edge[1] - bin_edge[0]) / 2
-    ax[0, 0].plot(bin_center, hist, '-o', color=line_colors[i], label=bottleneck_name)
-    ax[0, 0].grid()
-
-    ii2 = np.bitwise_and(model_mse_noise <= 1, model_mse_noise >= -1)
-    hist, bin_edge = np.histogram(model_mse_noise[ii2], bins=20, range=(-1, 1))
-    hist = hist / len(model_mse_noise[ii2])
-    bin_center = bin_edge[0:-1] + (bin_edge[1] - bin_edge[0]) / 2
-    ax[0, 1].plot(bin_center, hist, '-d', color=line_colors[i], label=bottleneck_name)
-    ax[0, 1].grid()
-
-ax[0, 0].set_xlabel('EV score', fontsize=14)
-ax[0, 1].set_xlabel('EV score', fontsize=14)
-ax[0, 0].set_ylabel('Probability Density', fontsize=14)
-ax[0, 0].legend()
-ax[0, 0].annotate("(a)", xy=(-0.15, 1), xycoords=ax[0, 0].transAxes, fontsize=20)
-ax[0, 1].legend()
-ax[0, 1].annotate("(b)", xy=(-0.15, 1), xycoords=ax[0, 1].transAxes, fontsize=20)
-
-# plt.savefig(output_dir + '/histograms.pdf')
-# plt.savefig(output_dir + '/histograms.png', dpi=200, bbox_inches='tight')
-
 # Extract the relation between SNR and EVS
 bin_size = 0.5
 snr_bin_edge = np.arange(-2, 4, bin_size)
@@ -362,47 +338,6 @@ def extract_snr_vs_evs(model_snr_all, model_mse_all, snr_bin_edge, center_type="
 
 
 center_type = 'median'
-# show earthquake waveforms evs
-snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr_all,
-                                                                       model_mse_earthquake_all, snr_bin_edge,
-                                                                       center_type=center_type)
-
-for i in range(len(model_names)):
-    ax[1, 0].plot(model_snr_all[i] / 10, model_mse_earthquake_all[i], '.', color='gray', alpha=0.005)  # line_colors[i]
-    ax[1, 0].errorbar(snr_bin_center + i * 0.04 - 0.1, mse_center_all[i], yerr=mse_error_bar_all[i],
-                      marker='s', color=line_colors[i], linewidth=1, linestyle='-',
-                      label=bottleneck_names[i], elinewidth=1.5, zorder=3)
-    ax[1, 0].set_xlim(-2, 4)
-    ax[1, 0].set_ylim(-0.4, 1.1)
-ax[1, 0].legend(loc=4)
-ax[1, 0].set_xlabel('log10(SNR)', fontsize=14)
-ax[1, 0].set_ylabel('EV score', fontsize=14)
-ax[1, 0].grid()
-ax[1, 0].annotate("(c)", xy=(-0.15, 1), xycoords=ax[1, 0].transAxes, fontsize=20)
-
-# show ambient noise waveforms evs
-snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr_all,
-                                                                       model_mse_noise_all, snr_bin_edge,
-                                                                       center_type=center_type)
-
-for i in range(len(model_names)):
-    ax[1, 1].plot(-model_snr_all[i] / 10, model_mse_noise_all[i], '.', color='gray', alpha=0.005)  # line_colors[i]
-    ax[1, 1].errorbar(-(snr_bin_center + i * 0.05 - 0.1), mse_center_all[i], yerr=mse_error_bar_all[i],
-                      marker='s', color=line_colors[i], linewidth=1, linestyle='-',
-                      label=bottleneck_names[i], elinewidth=1.5, zorder=3)
-    ax[1, 1].set_xlim(-4, 2)
-    ax[1, 1].set_ylim(-1.1, 1.1)
-ax[1, 1].legend(loc=4)
-ax[1, 1].set_xlabel('-log10(SNR)', fontsize=15)
-plt.grid()
-ax[1, 1].annotate("(d)", xy=(-0.15, 1), xycoords=ax[1, 1].transAxes, fontsize=20)
-
-# plt.savefig(output_dir + '/SNR_vs_EV.pdf')
-plt.savefig(output_dir + '/bottleneck_comparison_' + center_type + '.png', dpi=200, bbox_inches='tight')
-
-
-###### A better form of plotting ##########
-# show earthquake waveforms evs
 snr_bin_center, mse_center_all, mse_error_bar_all = extract_snr_vs_evs(model_snr_all,
                                                                        model_mse_earthquake_all, snr_bin_edge,
                                                                        center_type=center_type)
@@ -446,6 +381,23 @@ ax[1, 1].hist(model_mse_noise_all[0:-1,:].T, range=(-1, 1.05), bins=10,
 ax[1, 1].grid()
 ax[1, 1].set_xlabel('Density', fontsize=14)
 plt.savefig(output_dir + '/bottleneck_comparison_' + center_type + '_histograms.pdf', dpi=200, bbox_inches='tight')
+
+######### Plot distribution of test loss #########################
+plt.close('all')
+plt.figure(figsize=(8, 5))
+plt.hist(np.array(model_test_loss_list_all[:-1]).T,
+         bins=10, range=(0, 0.5), density=True, label=bottleneck_names[:-1])
+plt.legend()
+plt.xlabel('MSE loss')
+plt.ylabel('Density')
+plt.savefig(output_dir + '/bottleneck_comparison_test_loss_histograms.pdf', dpi=200, bbox_inches='tight')
+
+
+
+
+
+
+
 
 ############################## Compare Conv1D and Conv2D models ######################################
 
