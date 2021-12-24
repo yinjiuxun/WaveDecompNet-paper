@@ -27,7 +27,6 @@ torch.manual_seed(99)
 import random
 random.seed(0)
 np.random.seed(20)
-
 torch.backends.cudnn.benchmark = False
 
 # make the output directory
