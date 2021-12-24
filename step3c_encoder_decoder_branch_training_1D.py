@@ -24,6 +24,12 @@ from autoencoder_1D_models_torch import Autoencoder_Conv1D, Autoencoder_Conv2D, 
 
 # Give a fixed seed for model initialization
 torch.manual_seed(99)
+import random
+random.seed(0)
+np.random.seed(20)
+
+torch.backends.cudnn.benchmark = False
+torch.use_deterministic_algorithms(True)
 
 # make the output directory
 #model_dataset_dir = './Model_and_datasets_1D_STEAD2'
