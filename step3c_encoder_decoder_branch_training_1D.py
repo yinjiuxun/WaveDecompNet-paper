@@ -22,6 +22,9 @@ from torch.utils.data import DataLoader
 from autoencoder_1D_models_torch import Autoencoder_Conv1D, Autoencoder_Conv2D, Attention_bottleneck, \
     Attention_bottleneck_LSTM, SeismogramEncoder, SeismogramDecoder, SeisSeparator
 
+# Give a fixed seed for model initialization
+torch.manual_seed(99)
+
 # make the output directory
 #model_dataset_dir = './Model_and_datasets_1D_STEAD2'
 # model_dataset_dir = './Model_and_datasets_1D_STEAD2_relu'
@@ -100,9 +103,6 @@ else:
 model_name = model_structure + "_" + bottleneck_name
 print("#" * 12 + " building model " + model_name + " " + "#" * 12)
 
-# Give a fixed seed for model initialization
-#torch.manual_seed(99)
-torch.cuda.manual_seed_all(99)
 
 # Set up model network
 if model_structure == "Autoencoder_Conv1D":
