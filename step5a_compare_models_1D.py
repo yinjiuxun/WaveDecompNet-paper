@@ -211,18 +211,20 @@ plt.close('all')
 fig, ax = plt.subplots(3, 2, sharey=True, figsize=(11, 13))
 ax = ax.flatten()
 
+# Only keep the training history until the best model before early stopping
+early_stopping_patience = 10
 for i_model, model_name in enumerate(model_names):
     model_dir = model_dataset_dir + f'/{model_name}'
     test_loss = model_test_loss_all[i_model]
     param_number = model_param_number[i_model]
     bottleneck_name = bottleneck_names[i_model]
     with h5py.File(model_dir + '/' + f'{model_name}_Training_history.hdf5', 'r') as f:
-        loss = f['loss'][:]
-        val_loss = f['val_loss'][:]
-        earthquake_loss = f['earthquake_loss'][:]
-        earthquake_val_loss = f['earthquake_val_loss'][:]
-        noise_loss = f['noise_loss'][:]
-        noise_val_loss = f['noise_val_loss'][:]
+        loss = f['loss'][:][:-early_stopping_patience]
+        val_loss = f['val_loss'][:][:-early_stopping_patience]
+        earthquake_loss = f['earthquake_loss'][:][:-early_stopping_patience]
+        earthquake_val_loss = f['earthquake_val_loss'][:][:-early_stopping_patience]
+        noise_loss = f['noise_loss'][:][:-early_stopping_patience]
+        noise_val_loss = f['noise_val_loss'][:][:-early_stopping_patience]
 
         # # there is no validation loss in the first epoch
         # val_loss = np.append(np.nan, val_loss)
