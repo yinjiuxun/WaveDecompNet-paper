@@ -355,36 +355,3 @@ for i, xlimit in enumerate(time_zoom_in):
     plt.xlim(xlimit)
     #plt.savefig(waveform_output_dir + '/continueous_separation_IU.POHA_' + bottleneck_name + '_t' + str(i) + '.pdf')
     plt.savefig(waveform_output_dir + '/continueous_separation_' + network_station + '_' + bottleneck_name + '_t' + str(i) + '.png')
-
-
-
-######## End ########
-plt.figure(2)
-plt.plot(waveform_original[:, 0])
-plt.plot(waveform_original[:, 0] - waveform_recovered[:, 0], alpha=1)
-
-plt.plot(waveform_original[:, 0] / np.max(abs(waveform_original[:, 0])))
-plt.plot(waveform_recovered[:, 0] / np.max(abs(waveform_recovered[:, 0])))
-
-all_output0 = np.reshape(all_output, (-1, 3))
-plt.plot(all_output0[:, 0])
-
-temp = X
-temp_out = model(X)
-step = 20
-for ii in range(0, 216, step):
-    plt.plot(temp[ii, 0, :] + ii / step * 4, '-r')
-    plt.plot(temp_out[ii, 0, :].detach().numpy() + ii / step * 4, '-b')
-
-import h5py
-
-# %% load dataset
-data_dir = './training_datasets'
-data_name = 'training_datasets_STEAD_waveform.hdf5'
-# data_name = 'training_datasets_waveform.hdf5'
-
-# %% load dataset
-with h5py.File(data_dir + '/' + data_name, 'r') as f:
-    time = f['time'][:]
-    X_train = f['X_train'][:]
-    Y_train = f['Y_train'][:]

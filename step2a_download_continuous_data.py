@@ -50,21 +50,16 @@ client = Client('IRIS', debug=True)
 # %%
 working_dir = os.getcwd()
 
-# %% Specify the network and stations we want.
-# networks = np.array(['IU'])  # A specific seismic network to which the stations belong
-# stations = np.array(['POHA'])  # Names of the stations
-# channels = np.array(['BH1', 'BH2', 'BHZ'])  # Channels
-# location = '00' #'10'
+#%% Specify the network and stations we want.
+networks = np.array(['IU'])  # A specific seismic network to which the stations belong
+stations = np.array(['POHA'])  # Names of the stations
+channels = np.array(['BH1', 'BH2', 'BHZ'])  # Channels
+location = '00' #'10'
 
 # networks = np.array(['HV'])  # A specific seismic network to which the stations belong
-# stations = np.array(['HSSD'])  # Names of the stations
-# channels = np.array(['HHE', 'HHN', 'HHZ', 'HNE', 'HNN', 'HNZ'])  # Channels
+# stations = np.array(['*'])  # Names of the stations 'HAT', 'BYL', 'MOKD'
+# channels = np.array(['HHE', 'HHN', 'HHZ'])  # Channels
 # location = '*' #'10'
-
-networks = np.array(['HV'])  # A specific seismic network to which the stations belong
-stations = np.array(['*'])  # Names of the stations 'HAT', 'BYL', 'MOKD'
-channels = np.array(['HHE', 'HHN', 'HHZ'])  # Channels
-location = '*' #'10'
 
 waveform_dir = working_dir + '/continuous_waveforms'
 mkdir(waveform_dir)

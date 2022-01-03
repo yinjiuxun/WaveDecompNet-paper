@@ -22,12 +22,6 @@ tr = obspy.read(waveform_mseed)
 
 #tr.filter('highpass', freq=1)
 
-t1 = obspy.UTCDateTime("2021-08-03T12:07:00")
-t2 = obspy.UTCDateTime("2021-08-03T12:10:00")
-# t1 = obspy.UTCDateTime("2021-08-03T11:58:00")
-# t2 = obspy.UTCDateTime("2021-08-03T12:03:00")
-# tr.plot(starttime=t1, endtime=t2)
-
 npts0 = tr[0].stats.npts # number of samples
 dt0 = tr[0].stats.delta # dt
 
