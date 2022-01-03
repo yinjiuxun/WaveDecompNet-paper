@@ -55,7 +55,7 @@ print(os.getcwd())
 
 # %% Specify the network and stations we want.
 networks = np.array(['IU'])  # A specific seismic network to which the stations belong
-stations = np.array(['XMAS'])  # Names of the stations
+stations = np.array(['POHA'])  # Names of the stations
 channels = np.array(['BHE', 'BHN', 'BHZ'])  # Channels
 location = '10'
 
