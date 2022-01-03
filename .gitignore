@@ -2,6 +2,9 @@ waveforms
 stations
 training_datasets*.hdf5
 pyrocko_synthetics/ak135_2000km_1Hz/
-Model_and_datasets_*/
+Model_and_datasets_1D_all/
+Model_and_datasets_1D_STEAD*/
+Model_and_datasets_1D_synthetic/
+Model_and_datasets_1D_all_snr_40/
 training_datasets/
 synthetic_noisy_waveforms/
