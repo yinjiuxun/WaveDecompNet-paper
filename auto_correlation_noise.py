@@ -343,7 +343,7 @@ _, _, average_acf1 = average_xcorr_functions(xcorf_function1, average_hours, tim
 xcorf_time_lag, xcorf_day_time, average_acf2 = \
     average_xcorr_functions(xcorf_function2, average_hours, time_pts_xcorf, dt, bandpass_filter)
 
-compare_ccfs_plot(scale_factor=10, time_extent=[10, 20])
+compare_ccfs_plot(scale_factor=10, time_extent=[10, 20], t_ballistic_coda=20)
 
 
 # Results with bandpassing filtering

@@ -233,9 +233,9 @@ for i_model, model_name in enumerate(model_names):
 
     partial_loss = [earthquake_loss, earthquake_val_loss, noise_loss, noise_val_loss]
 
-    ax[i_model].plot(loss, 'ko', label='Training loss')
-    ax[i_model].plot(val_loss, 'k-', label='Validation loss', linewidth=2)
-    ax[i_model].plot([len(loss)], [test_loss], 'r*', label=f'Test loss', markersize=10, linewidth=2,
+    ax[i_model].semilogy(loss, 'ko', label='Training loss', markersize=3)
+    ax[i_model].semilogy(val_loss, 'k-', label='Validation loss', linewidth=2)
+    ax[i_model].semilogy([len(loss)], [test_loss], 'r*', label=f'Mean test loss', markersize=10, linewidth=2,
                      zorder=10)
 
     loss_name_list = ['earthquake train loss', 'earthquake valid loss', 'noise train loss', 'noise valid loss']
@@ -243,7 +243,7 @@ for i_model, model_name in enumerate(model_names):
     loss_plot_line_list = ['', '-', '', '-']
     loss_plot_color_list = ['b', 'b', 'g', 'g']
     for ii in range(4):
-        ax[i_model].plot(partial_loss[ii], marker=loss_plot_marker_list[ii],
+        ax[i_model].semilogy(partial_loss[ii], marker=loss_plot_marker_list[ii], markersize=2,
                          linestyle=loss_plot_line_list[ii],
                          color=loss_plot_color_list[ii],
                          label=loss_name_list[ii])
@@ -252,7 +252,7 @@ for i_model, model_name in enumerate(model_names):
         ax[i_model].set_ylabel('MSE', fontsize=12)
     if i_model in [3, 4]:
         ax[i_model].set_xlabel('Epochs', fontsize=12)
-    ax[i_model].grid()
+    ax[i_model].grid(which='both')
     # ax[i_model].set_title(bottleneck_name, fontsize=14)
     ax[i_model].set_title(bottleneck_name, fontsize=14)
 
@@ -261,6 +261,7 @@ for i_model, model_name in enumerate(model_names):
                      fontsize=12, transform=ax[i_model].transAxes, horizontalalignment='right',
                      bbox=props)
     plt.show()
+ax[-2].set_ylim(0.01, 1)
 ax[-2].legend(fontsize=14, loc=(1.3, 0.2))
 ax[-1].set_visible(False)
 

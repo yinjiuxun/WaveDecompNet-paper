@@ -24,7 +24,7 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
 
-bottleneck_name_list = ['None', 'Linear', 'LSTM', 'attention', 'Transformer', 'hybrid']
+bottleneck_name_list = ['None', 'Linear', 'LSTM', 'attention', 'Transformer']
 
 
 for bottleneck_name in bottleneck_name_list:

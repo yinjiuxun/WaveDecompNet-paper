@@ -293,7 +293,7 @@ plt.title('(a) Raw waveform (' + network_station + ')')
 plt.savefig(waveform_output_dir + '/one_month_data_original_BH' + str(i_channel) + '.pdf',  bbox_inches='tight')
 
 # The separated earthquake data
-vertical_scaling = 25000
+vertical_scaling = 35000
 f2 = plt.figure(2, figsize=(8, 10))
 tr_recovered[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling, tick_format='%m-%d',
                              fig=f2, show_y_UTC_label=False, color=['r'], title='', x_labels_size=18, events=event_time_P)
@@ -316,6 +316,7 @@ plt.savefig(waveform_output_dir + '/one_month_data_noise_BH' + str(i_channel) + 
 
 # The residual
 # The separated noise data
+vertical_scaling = 70000
 f4 = plt.figure(4, figsize=(8, 10))
 tr_residual[i_channel].plot(type='dayplot', interval=24 * 60, vertical_scaling_range=vertical_scaling, tick_format='%m-%d',
                          fig=f4, show_y_UTC_label=False, color=['gray'], title='', x_labels_size=18, events=event_time_P)
