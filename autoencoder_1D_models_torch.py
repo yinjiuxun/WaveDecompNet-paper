@@ -322,7 +322,7 @@ class DotProductAttention(nn.Module):
         d = queries.shape[-1]
         # Set `transpose_b=True` to swap the last two dimensions of `keys`
         scores = torch.bmm(queries, keys.transpose(1, 2)) / math.sqrt(d)
-        self.attention_weights = F.softmax(scores)
+        self.attention_weights = F.softmax(scores, dim=0)
         return torch.bmm(self.dropout(self.attention_weights), values)
 
 
