@@ -1,18 +1,25 @@
-# SeisDenoise
-Tools to denoise the seismic signal
+# WaveDecompNet
+A machine learning tool to separate earthquake and ambient noise signals for the seismic data in time domain.
 
-Science goals:
-Improve the catalog of offshore earthquake M6-7
-Broadened the frequency bands of good signals for these events as future empirical Green’s function
+\Add the network figure
 
-
-Step 1: download_events_data.py
+Step 1: Download the event catalog based on distance range to a given station 
 
 
-Step 2: extract_noise_pieces.py
+Step 2: 
+
+2a - Download contineous seismic data
+
+2b - Get the STEAD earthquake waveform data with SNR > 40dB and stack with STEAD noise signals
+
+2c - Shuffle the phase of contineous data from a given station to get the local ambient noise signals, then stack with 
+the STEAD earthquake waveform.
+
+2d - Combine the waveforms datasets from 2b and 2c to get the final datasets that will be used to train the 
+WaveDecompNet.
 
 
-Step 3: randomize_noise_phase.py
+Step 3: Training the WaveDecompNet using the prepared datasets.
 
 
 Step 4: autoencoder_denoise_test.py
