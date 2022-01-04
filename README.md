@@ -13,10 +13,10 @@ Step 2:
 
 2a - Download continuous seismic data
 
-2b - Get the STEAD earthquake waveform data with SNR > 40dB and stack with STEAD noise signals
+2b - Get the [STEAD](https://github.com/smousavi05/STEAD) earthquake waveform data with SNR > 40dB and stack with STEAD noise signals
 
 2c - Shuffle the phase of continuous data from a given station to get the local ambient noise signals, then stack with 
-the STEAD earthquake waveform.
+the [STEAD](https://github.com/smousavi05/STEAD) earthquake waveform.
 
 2d - Combine the waveforms datasets from 2b and 2c to get the final datasets that will be used to train the 
 WaveDecompNet.
