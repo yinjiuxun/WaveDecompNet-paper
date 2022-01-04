@@ -8,3 +8,5 @@ Model_and_datasets_1D_synthetic/
 Model_and_datasets_1D_all_snr_40/
 training_datasets/
 synthetic_noisy_waveforms/
+continuous_waveforms/
+.ipynb_checkpoints/
