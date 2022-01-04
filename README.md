@@ -1,7 +1,7 @@
 # WaveDecompNet
 A machine learning tool to separate earthquake and ambient noise signals for the seismic data in time domain.
 
-![WaveDecompNet](WaveDecompNet_structure)
+![WaveDecompNet](WaveDecompNet_structure.png)
 
 Step 1: Download the event catalog based on distance range to a given station 
 
