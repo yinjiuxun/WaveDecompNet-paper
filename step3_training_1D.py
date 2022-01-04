@@ -22,7 +22,33 @@ from torch.utils.data import DataLoader
 from autoencoder_1D_models_torch import Autoencoder_Conv1D, Autoencoder_Conv2D, Attention_bottleneck, \
     Attention_bottleneck_LSTM, SeismogramEncoder, SeismogramDecoder, SeisSeparator
 
-for i_run in range(2):
+# make the output directory
+model_dataset_dir = './Model_and_datasets_1D_all_snr_40'
+mkdir(model_dataset_dir)
+
+# Choose different model structure: for now Conv1D and Conv2D
+model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder_Conv2D", "Branch_Encoder_Decoder_LSTM"
+
+# Choose a bottleneck type
+bottleneck_name = "Linear"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
+
+# %% Read the pre-processed datasets
+print("#" * 12 + " Loading data " + "#" * 12)
+model_datasets = './training_datasets/training_datasets_all_snr_40.hdf5'
+with h5py.File(model_datasets, 'r') as f:
+    X_train = f['X_train'][:]
+    Y_train = f['Y_train'][:]
+
+# 3. split to training (60%), validation (20%) and test (20%)
+train_size = 0.6
+test_size = 0.5
+rand_seed1 = 13
+rand_seed2 = 20
+X_training, X_test, Y_training, Y_test = train_test_split(X_train, Y_train,
+                                                          train_size=train_size, random_state=rand_seed1)
+X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
+                                                          test_size=test_size, random_state=rand_seed2)
+for i_run in range(2):  # run the model multiple times to ensure results are stable.
 
     # Give a fixed seed for model initialization
     torch.manual_seed(99)
@@ -31,44 +57,10 @@ for i_run in range(2):
     np.random.seed(20)
     torch.backends.cudnn.benchmark = False
 
-    # make the output directory
-    #model_dataset_dir = './Model_and_datasets_1D_STEAD2'
-    # model_dataset_dir = './Model_and_datasets_1D_STEAD2_relu'
-    # model_dataset_dir = './Model_and_datasets_1D_synthetic'
-    # model_dataset_dir = './Model_and_datasets_1D_STEAD_plus_POHA'
-    model_dataset_dir = './Model_and_datasets_1D_all_snr_40'
-    mkdir(model_dataset_dir)
-
-    # %% Read the pre-processed datasets
-    print("#" * 12 + " Loading data " + "#" * 12)
-    # model_datasets = './training_datasets/training_datasets_STEAD_plus_POHA.hdf5'
-    #model_datasets = './training_datasets/training_datasets_STEAD_waveform.hdf5'
-    # model_datasets = './training_datasets/training_datasets_waveform.hdf5'
-    model_datasets = './training_datasets/training_datasets_all_snr_40.hdf5'
-    with h5py.File(model_datasets, 'r') as f:
-        X_train = f['X_train'][:]
-        Y_train = f['Y_train'][:]
-
-    # 3. split to training (60%), validation (20%) and test (20%)
-    train_size = 0.6
-    test_size = 0.5
-    rand_seed1 = 13
-    rand_seed2 = 20
-    X_train, X_test, Y_train, Y_test = train_test_split(X_train, Y_train,
-                                                        train_size=train_size, random_state=rand_seed1)
-    X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
-                                                              test_size=test_size, random_state=rand_seed2)
-
     # Convert to the dataset class for Pytorch (here simply load all the data,
     # but for the sake of memory, can also use WaveformDataset_h5)
-    training_data = WaveformDataset(X_train, Y_train)
+    training_data = WaveformDataset(X_training, Y_training)
     validate_data = WaveformDataset(X_validate, Y_validate)
-
-    # Choose different model structure: for now Conv1D and Conv2D
-    model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder_Conv2D", "Branch_Encoder_Decoder_LSTM"
-
-    # Choose a bottleneck type
-    bottleneck_name = "Linear"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
 
     if bottleneck_name == "None":
         # Model without specified bottleneck
