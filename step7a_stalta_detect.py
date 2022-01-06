@@ -3,6 +3,7 @@ import os
 import numpy as np
 import datetime
 from matplotlib import pyplot as plt
+import matplotlib.patches as patches
 import h5py
 
 import obspy
@@ -179,7 +180,8 @@ for i_event in range(len(events)):
         event_arrival_S[i_event] = np.nan
 
 # Loop version to plot better Zoom-in figure
-def plot_zoom_in_waveform(time_range):
+# Loop version to plot better Zoom-in figure
+def plot_zoom_in_waveform(time_range, strict_xlim=False, time_inset=None):
     waveform_time_in_day = waveform_time / second_per_day
     window_time_in_day = waveform_time_in_day[::600] # this is the time window boundary
     P_arrival_in_day = event_arrival_P / second_per_day
@@ -250,40 +252,47 @@ def plot_zoom_in_waveform(time_range):
             for window_time in window_time_in_day[index_window]:
                 ax[i_chan + 1, i_tr].axvline(x=window_time, color='gray', linewidth=0.5)
 
+            # add inset
+            if time_inset is not None:
+                rect = patches.Rectangle((time_inset[0][0], time_inset[1][0]),
+                                         time_inset[0][1] - time_inset[0][0],
+                                         time_inset[1][1] - time_inset[1][0],
+                                         linewidth=1, edgecolor='k', facecolor='none')
+
+                # Add the patch to the Axes
+                ax[i_chan + 1, i_tr].add_patch(rect)
+
+                axins = ax[i_chan + 1, i_tr].inset_axes([0.45, 0.65, 0.59, 0.39])
+                axins.plot(waveform_time_in_day, tr_waveform[i_chan], color=ENZ_color[i_chan])
+                axins.plot(detect_time_in_day,
+                                          np.ones(detect_time_in_day.shape) * np.mean(tr_waveform[i_chan]),
+                                          'kx', markeredgewidth=1.5, markersize=10)
+                axins.set_xticks([])
+                axins.set_yticks([])
+                t_interval = waveform_time_in_day[-1] - waveform_time_in_day[0]
+                axins.set_xlim(time_inset[0])
+                axins.set_ylim(time_inset[1])
+                if (i_tr == 0) and (i_chan == 0):
+                    axins0 = axins
+                else:
+                    axins.sharey(axins0)
+
             ax[i_chan + 1, i_tr].sharey(axi)
 
             ax[i_chan + 1, 0].set_ylabel(component_list[i_chan] + ' component')
 
+            ax[i_chan + 1, 1].tick_params(axis='y', labelcolor='w')
             ax[i_chan + 1, i_tr].set_xticks(waveform_time_in_day[[0, int(len(waveform_time_in_day) / 2), -1]])
             ax[i_chan + 1, i_tr].set_xticklabels(time_in_datetime[[0, int(len(waveform_time_in_day) / 2), -1]])
-            #ax[i_chan + 1, i_tr].set_xlim(time_range)
+            if strict_xlim:
+                ax[i_chan + 1, i_tr].set_xlim(time_range)
 
             if y_lim < 1.1 * np.max(abs(tr_waveform[i_chan])):
                 y_lim = 1.1 * np.max(abs(tr_waveform[i_chan]))
             ax[i_chan + 1, i_tr].set_ylim((-y_lim, y_lim))
 
-    # for i_tr, tr_waveform in enumerate(trace_list):
-    #     for i_chan in range(3):
-    #         # plot estimated arrival time
-    #         ax[i_chan + 1, i_tr].plot(P_arrival_in_day[index_P],
-    #                                   np.ones(P_arrival_in_day[index_P].shape) * y_lim/2,
-    #                                   'k+', markeredgewidth=2, markersize=10)
-    #         ax[i_chan + 1, i_tr].plot(S_arrival_in_day[index_S],
-    #                                   np.ones(P_arrival_in_day[index_S].shape) * y_lim / 2,
-    #                                   'k+', markeredgewidth=4, markersize=14)
-
-            # # Add the event information
-            # event_index = np.where(index_P)
-            # for ii_event in event_index[0]:
-            #     event_info_text = events[ii_event].origins[0].time.strftime('%m-%d-%H:%M:%S') + ', ' + events[ii_event].magnitudes[0].magnitude_type \
-            #                     + f' {events[ii_event].magnitudes[0].mag}, \n Distance: ' \
-            #                     + f'{epi_distance[ii_event]:.2f} deg'
-            #     ax[i_chan + 1, i_tr].text(P_arrival_in_day[ii_event], y_lim/1.9,
-            #                               event_info_text, ha='left', fontsize=10)
-
     for i_tr in range(2):
-        ax[0, i_tr].legend()
-
+        ax[0, i_tr].legend(loc=1)
 
 # output some zoom_in_figure
 output_dir = waveform_dir + '/STALTA'
@@ -296,12 +305,20 @@ time_range_list = [[0.3003, 0.3014], [8.362, 8.3638], [11.825, 11.84], [21.0685,
                    [27.0864,  27.0878], [28.4652, 28.4665], [13.5445,  13.5473],
                    [9.951,  9.9525], [28.6048,  28.6060]]
 
-# ii_event = np.random.randint(0, len(event_arrival_P),1)
-# time_range_list = [event_arrival_P[ii_event]/second_per_day + np.array([-0.0025, 0.0025])]
-#time_range_list = [[0.3003, 0.3014]]
 for time_range in time_range_list:
-    plot_zoom_in_waveform(time_range)
+    plot_zoom_in_waveform(np.array(time_range))
     file_name = network_station + '_t_' + str(time_range[0]) + '_coincidence_' + str(threshold_coincidence) + '.pdf'
+    plt.subplots_adjust(wspace=0.2, hspace=0.3)
+    plt.savefig(output_dir + '/' + file_name, bbox_inches='tight')
+
+# plot Zooming figure with insets
+for time_range in [time_range_list[-5]]:
+    t_interval = time_range[1] - time_range[0]
+
+    time_inset = [[time_range[0] + t_interval/7, time_range[1]-t_interval/1.3], [-0.1, 0.1]]
+    plot_zoom_in_waveform(np.array(time_range), time_inset=time_inset)
+    plt.subplots_adjust(wspace=0.2, hspace=0.3)
+    file_name = network_station + '_t_' + str(time_range[0]) + '_coincidence_' + str(threshold_coincidence) + '_insets.pdf'
     plt.savefig(output_dir + '/' + file_name, bbox_inches='tight')
 
 # plot the histogram for detected earthquakes
@@ -316,5 +333,3 @@ plt.title('Trigger events: Raw Data: ' + str(len(trig1)) + ' vs Separated Data: 
 
 plt.savefig(output_dir + '/' + 'stalta_triggers_coincidence_' + str(threshold_coincidence) + '.pdf',
             bbox_inches='tight')
-
-
