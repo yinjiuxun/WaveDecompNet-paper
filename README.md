@@ -31,18 +31,14 @@ different in the final results.
 Step 4: Test the trained model with the test datasets, and output the comparisons of waveforms in time domain and 
 frequency domain.
 
-![WaveDecompNet](decomposed_waveforms.png)
-
 
 Step 5: Load models with different bottlenecks and compare how well they can reconstruct the waveforms by calculating 
 explained variance (EV) score.
 
-![WaveDecompNet](bottleneck_comparison_median_histograms.png)
 
 Step 6: Apply the trained model directly to the continuous seismic data to separate the earthquake and ambient noise 
 signals.
 
-![WaveDecompNet](combined_waveforms.png)
 
 Step 7: 
 
