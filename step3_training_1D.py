@@ -23,14 +23,17 @@ from autoencoder_1D_models_torch import Autoencoder_Conv1D, Autoencoder_Conv2D, 
     Attention_bottleneck_LSTM, SeismogramEncoder, SeismogramDecoder, SeisSeparator
 
 # make the output directory
-model_dataset_dir = './Model_and_datasets_1D_all_snr_40'
+model_dataset_dir = './Model_and_datasets_1D_all_snr_40_no_skip_connection'
 mkdir(model_dataset_dir)
 
 # Choose different model structure: for now Conv1D and Conv2D
 model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder_Conv2D", "Branch_Encoder_Decoder_LSTM"
 
 # Choose a bottleneck type
-bottleneck_name = "Linear"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
+bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
+
+# Switch to determine whether or not to have skip-connection
+skip_connection = False
 
 # %% Read the pre-processed datasets
 print("#" * 12 + " Loading data " + "#" * 12)
@@ -121,7 +124,7 @@ for i_run in range(2):  # run the model multiple times to ensure results are sta
         decoder_earthquake = SeismogramDecoder(bottleneck=bottleneck_earthquake)
         decoder_noise = SeismogramDecoder(bottleneck=bottleneck_noise)
 
-        model = SeisSeparator(model_name, encoder, decoder_earthquake, decoder_noise).to(device=try_gpu())
+        model = SeisSeparator(model_name, encoder, decoder_earthquake, decoder_noise, skip_connection).to(device=try_gpu())
 
     else:
         raise NameError('Network structure has not been defined!')
