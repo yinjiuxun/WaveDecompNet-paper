@@ -113,15 +113,20 @@ class SeismogramDecoder(nn.Module):
 class SeisSeparator(nn.Module):
     """The encoder-decoder architecture to separate earthquake and noise signals"""
 
-    def __init__(self, model_name, encoder, decoder1, decoder2):
+    def __init__(self, model_name, encoder, decoder1, decoder2, skip_connection=True):
         super(SeisSeparator, self).__init__()
         self.model_name = model_name
         self.encoder = encoder
         self.earthquake_decoder = decoder1
         self.noise_decoder = decoder2
+        self.skip_connection = skip_connection
 
     def forward(self, x):
         enc_outputs, x1, x2, x3 = self.encoder(x)
+        # Added a switch to turn off skip connection
+        if self.skip_connection is False:
+            x1, x2, x3 = 0., 0., 0.
+            
         output1 = self.earthquake_decoder(enc_outputs, x1, x2, x3)
         output2 = self.noise_decoder(enc_outputs, x1, x2, x3)
         return output1, output2
