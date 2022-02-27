@@ -23,17 +23,14 @@ from autoencoder_1D_models_torch import Autoencoder_Conv1D, Autoencoder_Conv2D, 
     Attention_bottleneck_LSTM, SeismogramEncoder, SeismogramDecoder, SeisSeparator
 
 # make the output directory
-model_dataset_dir = './Model_and_datasets_1D_all_snr_40_no_skip_connection'
+model_dataset_dir = './Model_and_datasets_1D_all_snr_40'
 mkdir(model_dataset_dir)
 
 # Choose different model structure: for now Conv1D and Conv2D
 model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder_Conv2D", "Branch_Encoder_Decoder_LSTM"
 
 # Choose a bottleneck type
-bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
-
-# Switch to determine whether or not to have skip-connection
-skip_connection = False
+bottleneck_name = "Linear"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
 
 # %% Read the pre-processed datasets
 print("#" * 12 + " Loading data " + "#" * 12)
@@ -51,7 +48,7 @@ X_training, X_test, Y_training, Y_test = train_test_split(X_train, Y_train,
                                                           train_size=train_size, random_state=rand_seed1)
 X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
                                                           test_size=test_size, random_state=rand_seed2)
-for i_run in range(5):  # run the model multiple times to ensure results are stable.
+for i_run in range(2):  # run the model multiple times to ensure results are stable.
 
     # Give a fixed seed for model initialization
     torch.manual_seed(99)
@@ -124,14 +121,14 @@ for i_run in range(5):  # run the model multiple times to ensure results are sta
         decoder_earthquake = SeismogramDecoder(bottleneck=bottleneck_earthquake)
         decoder_noise = SeismogramDecoder(bottleneck=bottleneck_noise)
 
-        model = SeisSeparator(model_name, encoder, decoder_earthquake, decoder_noise, skip_connection).to(device=try_gpu())
+        model = SeisSeparator(model_name, encoder, decoder_earthquake, decoder_noise).to(device=try_gpu())
 
     else:
         raise NameError('Network structure has not been defined!')
 
     # make the output directory to store the model information
-    model_dataset_dir_now = model_dataset_dir + '/' + model_name + str(i_run)
-    mkdir(model_dataset_dir_now)
+    model_dataset_dir = model_dataset_dir + '/' + model_name + str(i_run)
+    mkdir(model_dataset_dir)
 
     batch_size, epochs, lr = 128, 300, 1e-3
     minimum_epochs = 30  # the minimum epochs that the training has to do
@@ -157,12 +154,12 @@ for i_run in range(5):  # run the model multiple times to ensure results are sta
     print("Training is done!")
 
     # %% Save the model
-    torch.save(model, model_dataset_dir_now + f'/{model_name}_Model.pth')
+    torch.save(model, model_dataset_dir + f'/{model_name}_Model.pth')
 
     loss = avg_train_losses
     val_loss = avg_valid_losses
     # store the model training history
-    with h5py.File(model_dataset_dir_now + f'/{model_name}_Training_history.hdf5', 'w') as f:
+    with h5py.File(model_dataset_dir + f'/{model_name}_Training_history.hdf5', 'w') as f:
         f.create_dataset("loss", data=loss)
         f.create_dataset("val_loss", data=val_loss)
         if model_structure == "Branch_Encoder_Decoder":
@@ -172,7 +169,7 @@ for i_run in range(5):  # run the model multiple times to ensure results are sta
             f.create_dataset("noise_val_loss", data=partial_loss[3])
 
     # add some model information
-    with h5py.File(model_dataset_dir_now + f'/{model_name}_Dataset_split.hdf5', 'w') as f:
+    with h5py.File(model_dataset_dir + f'/{model_name}_Dataset_split.hdf5', 'w') as f:
         f.attrs['model_name'] = model_name
         f.attrs['train_size'] = train_size
         f.attrs['test_size'] = test_size
@@ -193,4 +190,4 @@ for i_run in range(5):  # run the model multiple times to ensure results are sta
     plt.legend()
     plt.title(model_name)
     plt.show()
-    plt.savefig(model_dataset_dir_now + f'/{model_name}_Training_history.png')
+    plt.savefig(model_dataset_dir + f'/{model_name}_Training_history.png')
