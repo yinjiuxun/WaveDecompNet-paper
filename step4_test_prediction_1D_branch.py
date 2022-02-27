@@ -266,6 +266,3 @@ for bottleneck_name in bottleneck_name_list:
         plt.figure(1)
         plt.savefig(figure_dir + f'/{model_name}_spectrum_{i_model}.pdf',
                     bbox_inches='tight')
-
-
-
