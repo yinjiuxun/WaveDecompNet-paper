@@ -7,7 +7,7 @@ import h5py
 
 # %% Read the pre-processed datasets
 print("#" * 12 + " Loading data " + "#" * 12)
-model_datasets = './training_datasets/training_datasets_STEAD_plus_POHA_snr_40.hdf5'
+model_datasets = './training_datasets/training_datasets_STEAD_plus_POHA_snr_40_unshuffled.hdf5'
 with h5py.File(model_datasets, 'r') as f:
     X_train1 = f['X_train'][:]
     Y_train1 = f['Y_train'][:]
@@ -28,7 +28,7 @@ Y_train = Y_train[temp_int, :, :]
 
 # write data
 training_dataset_dir = './training_datasets'
-model_datasets = training_dataset_dir + '/training_datasets_all_snr_40.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_all_snr_40_unshuffled.hdf5'
 
 with h5py.File(model_datasets, 'w') as f:
     f.create_dataset("X_train", data=X_train)
@@ -37,9 +37,15 @@ with h5py.File(model_datasets, 'w') as f:
 
 # Load the data, and can check the datasets visually
 training_dataset_dir = './training_datasets'
-model_datasets = training_dataset_dir + '/training_datasets_all_snr_40.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_all_snr_40_unshuffled.hdf5'
 
 with h5py.File(model_datasets, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
     time_new = f['time_new'][:]
+
+i = np.random.randint(0, X_train.shape[0])
+plt.close('all')
+print(i)
+plt.plot(time_new, X_train[i, :, 0])
+plt.plot(time_new, Y_train[i, :, 0], alpha=0.7)
