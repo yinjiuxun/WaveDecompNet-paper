@@ -12,37 +12,73 @@ from torch_tools import WaveformDataset, try_gpu
 import torch
 from torch.utils.data import DataLoader
 
-# %%
+# # %%
+# working_dir = os.getcwd()
+#
+# waveform_dir = working_dir + '/continuous_waveforms'
+# waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+#
+# tr = obspy.read(waveform_mseed)
+#
+# #tr.filter('highpass', freq=1)
+#
+# npts0 = tr[0].stats.npts # number of samples
+# dt0 = tr[0].stats.delta # dt
+#
+# # Reformat the waveform data into array
+# waveform0 = np.zeros((npts0, 3))
+# for i in range(3):
+#     waveform0[:, i] = tr[i].data
+#
+# time0 = np.arange(0, npts0) * dt0
+#
+# # Downsample the waveform data
+# f_downsample = 10
+# time, waveform, dt = downsample_series(time0, waveform0, f_downsample)
+#
+# del time0, waveform0, tr
+
+# Here instead of shuffling noise, direct use noise waveform in the previous months
 working_dir = os.getcwd()
 
 waveform_dir = working_dir + '/continuous_waveforms'
-waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
+waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210601-20210801.mseed'
+shuffle_phase = False
 
 tr = obspy.read(waveform_mseed)
+tr.decimate(4)  # downsample from 40 to 10 Hz
+tr.merge(fill_value=np.nan)
 
-#tr.filter('highpass', freq=1)
+# Extract the waveform data
+waveform0 = np.zeros((tr[0].stats.npts, 3))
 
-npts0 = tr[0].stats.npts # number of samples
-dt0 = tr[0].stats.delta # dt
-
-# Reformat the waveform data into array
-waveform0 = np.zeros((npts0, 3))
 for i in range(3):
-    waveform0[:, i] = tr[i].data
+    waveform0[:, i] = np.array(tr[i].data)
 
-time0 = np.arange(0, npts0) * dt0
+# Use the median amplitude as the threshold to separate noise and earthquake waveforms
+amplitude_threshold = 6
+waveform0_amplitude = np.sqrt(np.sum(waveform0 ** 2, axis=1))
+amplitude_median = np.nanmedian(abs(waveform0_amplitude))
 
-# Downsample the waveform data
-f_downsample = 10
-time, waveform, dt = downsample_series(time0, waveform0, f_downsample)
+waveform = waveform0[waveform0_amplitude < (amplitude_threshold * amplitude_median), :]
 
-del time0, waveform0, tr
+# keep the right number of samples (integral times of 600) and discard the remainder
+n_noise_samples = waveform.shape[0] // 600 * 600
+waveform = waveform[:n_noise_samples, :]
+
+# # Used to quickly check the noise waveforms
+# fig, ax = plt.subplots(3, 1, figsize=(10, 8), sharex=True, sharey=True)
+# for i, axi in enumerate(ax):
+#     axi.plot(waveform0[-18000:-1, i])
+#     axi.plot(waveform[-18000:-1, i])
 
 # reformat waveform for random shuffle
 waveform = waveform[np.newaxis, :, :]
 
 # Randomly shuffle the waveform data
 import scipy
+
+
 def randomization_noise(noise, rng=np.random.default_rng(None)):
     """function to produce randomized noise by shiftint the phase
     randomization_noise(noise, rng=np.random.default_rng(None))
@@ -55,7 +91,7 @@ def randomization_noise(noise, rng=np.random.default_rng(None)):
     # make sure the inverse transform is real
     phase_angle_shift[:, 0, :] = 0
     phase_angle_shift[:, int(s.shape[1] / 2 + 1):, :] = -1 * \
-                                    np.flip(phase_angle_shift[:, 1:int(s.shape[1] / 2), :])
+                                                        np.flip(phase_angle_shift[:, 1:int(s.shape[1] / 2), :])
 
     phase_shift = np.exp(np.ones(s.shape) * phase_angle_shift * 1j)
 
@@ -71,7 +107,11 @@ def randomization_noise(noise, rng=np.random.default_rng(None)):
     noise_random = np.real(scipy.fft.ifft(s_shifted, axis=1))
     return noise_random
 
-noise = randomization_noise(waveform)
+
+if shuffle_phase:
+    noise = randomization_noise(waveform)
+else:
+    noise = waveform
 
 # TODO: Reformat the data into the format required by the model (batch, channel, samples)
 waveform = np.reshape(waveform, (-1, 600, 3))
@@ -111,7 +151,6 @@ mean_snr_db = mean_snr_db.squeeze()
 df_earthquakes = df[(df.trace_category == 'earthquake_local') & (mean_snr_db >= 40)]
 print(f'total number of earthquakes: {len(df_earthquakes)}')
 
-
 # Set the number of waveforms that will be used during the training
 N_events = noise.shape[0]
 earthquake_seed = 111
@@ -121,6 +160,7 @@ snr_seed = 114
 
 # Prepare the random list to get the events and noise series
 from numpy.random import default_rng
+
 rng_earthquake = default_rng(earthquake_seed)
 chosen_earthquake_index = rng_earthquake.choice(len(df_earthquakes), N_events)
 
@@ -137,7 +177,7 @@ earthquake_list = df_earthquakes['trace_name'].to_list()
 # make the output directory
 training_dataset_dir = './training_datasets'
 mkdir(training_dataset_dir)
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_plus_POHA_snr_40.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_plus_POHA_snr_40_unshuffled.hdf5'
 
 # Loop over each pair
 f_downsample = 10
@@ -151,7 +191,7 @@ for i, earthquake in enumerate(earthquake_list):
         print(f'=============={i} / {N_events}=================')
 
     # this step takes the longest time!
-    quake_waveform = np.array(dtfl.get('data/'+str(earthquake)))
+    quake_waveform = np.array(dtfl.get('data/' + str(earthquake)))
 
     # downsample
     time_new, quake_waveform, dt_new = downsample_series(time, quake_waveform, f_downsample)
@@ -159,13 +199,14 @@ for i, earthquake in enumerate(earthquake_list):
 
     # normalize the amplitude for both
     quake_waveform = quake_waveform - np.mean(quake_waveform, axis=0)
-    quake_waveform =  quake_waveform / (np.std(quake_waveform, axis=0) + 1e-12)
+    quake_waveform = quake_waveform / (np.std(quake_waveform, axis=0) + 1e-12)
 
     noise_waveform = noise_waveform - np.mean(noise_waveform, axis=0)
     noise_waveform = noise_waveform / (np.std(noise_waveform, axis=0) + 1e-12)
 
     # random shift the signal and scaled with snr
-    shift_func = interp1d(time_new + shift[i], quake_waveform, axis=0, kind='nearest', bounds_error=False, fill_value=0.)
+    shift_func = interp1d(time_new + shift[i], quake_waveform, axis=0, kind='nearest', bounds_error=False,
+                          fill_value=0.)
     quake_waveform = snr[i] * shift_func(time_new)
 
     # combine the given snr, stack both signals
@@ -178,7 +219,6 @@ for i, earthquake in enumerate(earthquake_list):
     stacked_waveform = stacked_waveform / scaling_std
 
     quake_waveform = (quake_waveform - scaling_mean) / scaling_std
-
 
     # concatenate
     X_train.append(stacked_waveform)
@@ -207,11 +247,9 @@ for i, earthquake in enumerate(earthquake_list):
                 f['Y_train'][-N_append:] = Y_train
         X_train, Y_train = [], []
 
-
-
 # Check the datasets visually
 training_dataset_dir = './training_datasets'
-model_datasets = training_dataset_dir + '/training_datasets_STEAD_plus_POHA_snr_40.hdf5'
+model_datasets = training_dataset_dir + '/training_datasets_STEAD_plus_POHA_snr_40_unshuffled.hdf5'
 
 with h5py.File(model_datasets, 'r') as f:
     time_new = f['time'][:]
@@ -224,29 +262,23 @@ print(i)
 plt.plot(time_new, X_train[i, :, 0])
 plt.plot(time_new, Y_train[i, :, 0], alpha=0.7)
 
-
-plt.plot(X_train.reshape(-1, 3)[:, 0])
 # # ============== Following are for testing purpose ==============
 
 
-
-# check the filtering
-dt = 1 / f_downsample
-f_filt = 1
-# highpass filter
-b, a = scipy.signal.butter(4, f_filt * 2 * dt, 'highpass')
-waveform_filt = scipy.signal.filtfilt(b, a, waveform, axis=1)
-noise_filt = scipy.signal.filtfilt(b, a, noise, axis=1)
-
-
-plt.plot(waveform[12500, :, 0])
-plt.plot(waveform_filt[12500, :, 0])
-plt.plot(noise_filt[12500, :, 0], alpha=0.6)
-
+# # check the filtering
+# dt = 1 / f_downsample
+# f_filt = 1
+# # highpass filter
+# b, a = scipy.signal.butter(4, f_filt * 2 * dt, 'highpass')
+# waveform_filt = scipy.signal.filtfilt(b, a, waveform, axis=1)
+# noise_filt = scipy.signal.filtfilt(b, a, noise, axis=1)
+#
+# plt.plot(waveform[12500, :, 0])
+# plt.plot(waveform_filt[12500, :, 0])
+# plt.plot(noise_filt[12500, :, 0], alpha=0.6)
 
 # Normalization
 # data_mean = np.mean(waveform, axis=0)
 # data_std = np.std(waveform - data_mean, axis=0)
 # waveform_normalized = (waveform - data_mean) / (data_std + 1e-12)
 # waveform_normalized = np.reshape(waveform_normalized[:, np.newaxis, :], (-1, 600, 3))
-
