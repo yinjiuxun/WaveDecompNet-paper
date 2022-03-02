@@ -137,6 +137,7 @@ print(f'Load one-month mseed data: {time_load_trace_time:.3f} sec\n' +
 
 ## event catalog
 event_catalog = waveform_dir + '/' + 'catalog.20210731-20210901.xml'
+local_event_catalog = waveform_dir + '/' + 'catalog_local.20210731-20210901.xml'
 
 # station information
 station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
@@ -144,11 +145,11 @@ station = obspy.read_inventory(waveform_dir + '/stations/IU.POHA.00.BH1.xml')
 sta_lat = station[0][0].latitude
 sta_lon = station[0][0].longitude
 
-# read the catalog
+# read the global catalog
 events0 = obspy.read_events(event_catalog)
 # this is to show the large earthquake occur
-events = events0.filter("time > 2021-08-10", "time < 2021-08-20", "magnitude >= 5.5")
-events.plot(projection='local', water_fill_color='#A7D7EF', continent_fill_color='#F4F2DD')
+events = events0.filter("time > 2021-08-11T12:00:00", "time < 2021-08-17T12:00:00", "magnitude >= 5")
+#events.plot(projection='local', water_fill_color='#A7D7EF', continent_fill_color='#F4F2DD')
 # estimate the arrival time of each earthquake to the station
 t0 = tr[0].stats.starttime
 event_arrival_P = np.zeros(len(events))
@@ -185,6 +186,47 @@ for i_event in range(len(events)):
         event_arrival_P[i_event] = np.nan
         event_arrival_S[i_event] = np.nan
 
+# read the local catalog (< 5 degree)
+events0 = obspy.read_events(local_event_catalog)
+# this is to show the large earthquake occur
+events = events0.filter("magnitude >= 2.5")
+#events.plot(projection='local', water_fill_color='#A7D7EF', continent_fill_color='#F4F2DD')
+# estimate the arrival time of each earthquake to the station
+t0 = tr[0].stats.starttime
+event_arrival_P_local = np.zeros(len(events))
+event_arrival_S_local = np.zeros(len(events))
+event_time_P = []
+epi_distance = np.zeros(len(events))
+event_magnitude = np.array([event.magnitudes[0].mag for event in events])
+for i_event in range(len(events)):
+    event = events[i_event]
+    # print(event)
+    # print(event.origins[0])
+    # % % extract the event information
+    event_time = event.origins[0].time
+    event_lon = event.origins[0].longitude
+    event_lat = event.origins[0].latitude
+    event_dep = event.origins[0].depth / 1e3
+
+    # % % estimate the distance and the P arrival time from the event to the station
+    try:
+        distance_to_source = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
+        epi_distance[i_event] = distance_to_source
+        model = TauPyModel(model='iasp91')
+
+        arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['P'])
+        P_arrival = arrivals[0].time
+        arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['s'])
+        S_arrival = arrivals[0].time
+        # the relative arrival time on the waveform when the event signal arrives
+        event_info = {"time": event_time + P_arrival, "text": []}  # str(event.magnitudes[0].mag)
+        event_time_P.append(event_info)
+        event_arrival_P_local[i_event] = event_time - t0 + P_arrival
+        event_arrival_S_local[i_event] = event_time - t0 + S_arrival
+    except:
+        event_arrival_P_local[i_event] = np.nan
+        event_arrival_S_local[i_event] = np.nan
+
 # output decomposed waveforms
 waveform_output_dir = waveform_dir + '/' + model_dataset_dir
 mkdir(waveform_output_dir)
@@ -198,8 +240,10 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
     f.create_dataset("waveform_original", data=waveform_original)
     f.create_dataset("waveform_recovered", data=waveform_recovered)
     f.create_dataset("noise_recovered", data=noise_recovered)
-    f.create_dataset("event_arrival_P", data=event_arrival_P)
-    f.create_dataset("event_arrival_S", data=event_arrival_S)
+    f.create_dataset("event_arrival_P", data=event_arrival_P)  # far field events
+    f.create_dataset("event_arrival_S", data=event_arrival_S)  # far field events
+    f.create_dataset("event_arrival_P_local", data=event_arrival_P_local)  # local event
+    f.create_dataset("event_arrival_S_local", data=event_arrival_S_local)  # local event
 
 np.save(waveform_output_dir + '/M5.5_earthquakes.npy', event_time_P)
 
@@ -256,6 +300,8 @@ with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_wavefor
     noise_recovered = f["noise_recovered"][:]
     event_arrival_P = f["event_arrival_P"][:]
     event_arrival_S = f["event_arrival_S"][:]
+    event_arrival_P_local = f["event_arrival_P_local"][:]
+    event_arrival_S_local = f["event_arrival_S_local"][:]
 
 event_time_P = np.load(waveform_output_dir + '/M5.5_earthquakes.npy', allow_pickle=True)
 event_time_P = event_time_P.tolist()
@@ -279,56 +325,77 @@ waveform_recovered_S = waveform_recovered / np.amax(abs(waveform_original))
 noise_recovered_S = noise_recovered / np.amax(abs(waveform_original))
 waveform_residual_S = waveform_residual / np.amax(abs(waveform_original))
 
-def plot_month_waveform(ax, waveform_time, waveform, component=0, color='k', title=None, event_arrival=None):
+def arange_month_time(waveform_time):
+    """A small function to arange the month time into days and hours"""
     waveform_time_in_hours = waveform_time / 3600
     waveform_day = waveform_time_in_hours // 24  # day in the month
     waveform_day = waveform_day.astype('int')
     waveform_hours = waveform_time_in_hours % 24  # time in the day
+    return waveform_day, waveform_hours
 
-    if event_arrival is not None:
-        event_arrival_in_hours = event_arrival / 3600
-        event_arrival_day = event_arrival_in_hours // 24  # day in the month
-        event_arrival_day = event_arrival_day.astype('int')
-        event_arrival_hours = event_arrival_in_hours % 24  # time in the day
+
+
+def plot_month_waveform(ax, waveform_time, waveform, component=0, color='k', title=None,
+                        event_arrival_tele=None, event_arrival_local=None, amplitude_scale=10):
+
+    waveform_day, waveform_hours = arange_month_time(waveform_time)
+
+    if event_arrival_tele is not None:
+        tele_event_arrival_day, tele_event_arrival_hours = arange_month_time(event_arrival_tele)
+
+    if event_arrival_local is not None:
+        local_event_arrival_day, local_event_arrival_hours = arange_month_time(event_arrival_local)
 
     for ii0 in range(np.ceil(waveform_time[-1] / 24 / 3600).astype('int')):
 
         i_time = waveform_day == ii0
-        ax.plot(waveform_hours[i_time], np.squeeze(waveform[i_time, component] * 10) + ii0,
+        ax.plot(waveform_hours[i_time], np.squeeze(waveform[i_time, component] * amplitude_scale) + ii0,
                 '-', linewidth=1, color=color)
 
-        if event_arrival is not None:
-            i_time_event = np.where(event_arrival_day == ii0)
-            ax.plot(event_arrival_hours[i_time_event], ii0*np.ones(i_time_event[0].shape), '*', markerfacecolor='gold',
+        if event_arrival_tele is not None:
+            i_time_event = np.where(tele_event_arrival_day == ii0)
+            ax.plot(tele_event_arrival_hours[i_time_event], ii0*np.ones(i_time_event[0].shape), '*', markerfacecolor='m',
                     linewidth=1, markersize=13, markeredgecolor='k')
 
+        if event_arrival_local is not None:
+            i_time_event = np.where(local_event_arrival_day == ii0)
+            ax.plot(local_event_arrival_hours[i_time_event], ii0*np.ones(i_time_event[0].shape), '.', color='green',
+                    linewidth=1, markersize=5)
+    ax.grid()
     ax.set_title(title)
 
 component_str = ['E', 'N', 'Z']
+amplitude_scale = 14
 for component in range(3):
     plt.close('all')
     fig, ax = plt.subplots(2, 2, figsize=(14, 20), sharex=True, sharey=True)
     ax = ax.flatten()
 
-    plot_month_waveform(ax[0], waveform_time, waveform_original_S, event_arrival=event_arrival_P, component=component,
-                        color='k', title='(a) Raw waveform (' + component_str[component] + ')')
+    plot_month_waveform(ax[0], waveform_time, waveform_original_S,
+                        event_arrival_tele=event_arrival_P, event_arrival_local=event_arrival_P_local,
+                        component=component, color='k', amplitude_scale=amplitude_scale,
+                        title='(a) Raw waveform (' + component_str[component] + ')')
     ax[0].set_ylabel('Date')
 
-    plot_month_waveform(ax[1], waveform_time, waveform_recovered_S, event_arrival=event_arrival_P, component=component,
-                        color='r', title='(b) Earthquake waveform (' + component_str[component] + ')')
+    plot_month_waveform(ax[1], waveform_time, waveform_recovered_S,
+                        event_arrival_tele=event_arrival_P, event_arrival_local=event_arrival_P_local,
+                        component=component, color='r', amplitude_scale=amplitude_scale,
+                        title='(b) Earthquake waveform (' + component_str[component] + ')')
 
-    plot_month_waveform(ax[2], waveform_time, noise_recovered_S, event_arrival=event_arrival_P, component=component,
-                        color='b', title='(c) Noise waveform (' + component_str[component] + ')')
+    plot_month_waveform(ax[2], waveform_time, noise_recovered_S, event_arrival_tele=event_arrival_P, component=component,
+                        color='b', amplitude_scale=amplitude_scale,
+                        title='(c) Noise waveform (' + component_str[component] + ')')
     ax[2].set_ylabel('Date')
     ax[2].set_xlabel('Time in hour')
 
-    plot_month_waveform(ax[3], waveform_time, waveform_residual_S, event_arrival=event_arrival_P, component=component,
-                        color='gray', title='(d) Residual waveform (' + component_str[component] + ')')
+    plot_month_waveform(ax[3], waveform_time, waveform_residual_S, event_arrival_tele=event_arrival_P, component=component,
+                        color='gray', amplitude_scale=amplitude_scale,
+                        title='(d) Residual waveform (' + component_str[component] + ')')
     ax[3].set_xlabel('Time in hour')
 
     ax[0].invert_yaxis()
     ax[0].set_xlim(0, 24)
-    ax[0].set_xticks(np.arange(0, 25, 2))
+    ax[0].set_xticks(np.arange(0, 25, 4))
     ax[0].set_yticks(np.arange(0, 34, 7))
     ax[0].set_yticklabels(['07-31', '08-07', '08-14', '08-21', '08-28'])
     plt.tight_layout()
