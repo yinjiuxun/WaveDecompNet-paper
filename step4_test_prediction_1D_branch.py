@@ -12,10 +12,10 @@ import matplotlib
 matplotlib.rcParams.update({'font.size': 10})
 
 # %% load dataset
-data_dir = './training_datasets'
+data_dir = '/kuafu/yinjx/WaveDecompNet_dataset/training_datasets'
 #data_name = 'training_datasets_STEAD_waveform.hdf5'
 #data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
-data_name = 'training_datasets_all_snr_40.hdf5'
+data_name = 'training_datasets_all_snr_40_unshuffled.hdf5'
 #data_name = 'training_datasets_waveform.hdf5'
 
 # %% load dataset
@@ -24,8 +24,8 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     X_train = f['X_train'][:]
     Y_train = f['Y_train'][:]
 
-bottleneck_name_list = ['None', 'Linear', 'LSTM', 'attention', 'Transformer']
-
+#bottleneck_name_list = ['None', 'Linear', 'LSTM', 'attention', 'Transformer']
+bottleneck_name_list = ['LSTM']
 
 for bottleneck_name in bottleneck_name_list:
     plt.close('all')
@@ -34,7 +34,7 @@ for bottleneck_name in bottleneck_name_list:
     #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
     #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
     #model_dataset_dir = "Model_and_datasets_1D_all"
-    model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
+    model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
     #model_name = "Autoencoder_Conv2D_" + bottleneck_name
     model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
