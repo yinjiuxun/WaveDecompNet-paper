@@ -14,12 +14,12 @@ matplotlib.rcParams.update({'font.size': 12})
 
 working_dir = os.getcwd()
 
-model_and_datasets = 'Model_and_datasets_1D_all_snr_40'
+model_and_datasets = 'Model_and_datasets_1D_all_snr_40_unshuffled'
 bottleneck_name = 'LSTM'
 network_station = 'IU.POHA'
 
 # waveforms
-waveform_dir = working_dir + '/continuous_waveforms/' \
+waveform_dir = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/' \
                + model_and_datasets + '/' + network_station + '/' + bottleneck_name
 
 second_per_day = 24 * 3600
@@ -131,10 +131,10 @@ def plot_long_waveform_for_visualization():
 from obspy.taup import TauPyModel
 from obspy.geodetics import locations2degrees
 # event catalog
-event_catalog = working_dir + '/continuous_waveforms/catalog.20210731-20210901.xml'
+event_catalog = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/catalog.20210731-20210901.xml'
 
 # station information
-station = obspy.read_inventory(working_dir + '/continuous_waveforms/stations/IU.POHA.00.BH1.xml')
+station = obspy.read_inventory('/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/stations/IU.POHA.00.BH1.xml')
 #station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
 sta_lat = station[0][0].latitude
 sta_lon = station[0][0].longitude
@@ -302,7 +302,7 @@ waveform_time = np.arange(tr_raw[0].stats.npts) * tr_raw[0].stats.delta
 
 time_range_list = [[0.3003, 0.3014], [8.362, 8.3638], [11.825, 11.84], [21.0685, 21.0695],
                    [10.765, 10.7665], [9.1395, 9.1405],
-                   [27.0864,  27.0878], [28.4652, 28.4665], [13.5445,  13.5473],
+                   [27.0864,  27.0874], [28.4652, 28.4665], [13.5445,  13.5473],
                    [9.951,  9.9525], [28.6048,  28.6060]]
 
 for time_range in time_range_list:
@@ -312,10 +312,10 @@ for time_range in time_range_list:
     plt.savefig(output_dir + '/' + file_name, bbox_inches='tight')
 
 # plot Zooming figure with insets
-for time_range in [time_range_list[-5]]:
+for time_range in time_range_list:
     t_interval = time_range[1] - time_range[0]
 
-    time_inset = [[time_range[0] + t_interval/7, time_range[1]-t_interval/1.3], [-0.1, 0.1]]
+    time_inset = [[time_range[0] + t_interval/7, time_range[1]-t_interval/1.5], [-0.1, 0.1]]
     plot_zoom_in_waveform(np.array(time_range), time_inset=time_inset)
     plt.subplots_adjust(wspace=0.2, hspace=0.3)
     file_name = network_station + '_t_' + str(time_range[0]) + '_coincidence_' + str(threshold_coincidence) + '_insets.pdf'
