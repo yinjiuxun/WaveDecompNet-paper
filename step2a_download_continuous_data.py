@@ -48,7 +48,7 @@ def download_waveforms(network, station, channel, location, starttime, endtime, 
 client = Client('IRIS', debug=True)
 
 # %%
-working_dir = os.getcwd()
+working_dir = '/Users/yinjiuxun/Work/WaveDecompNet'
 
 #%% Specify the network and stations we want.
 networks = np.array(['IU'])  # A specific seismic network to which the stations belong
@@ -90,6 +90,17 @@ endtime = t2 + 1 * 3600
 
 catalog_name = 'catalog.' + starttime.strftime("%Y%m%d") + "-" + endtime.strftime("%Y%m%d") + '.xml'
 catalog.write(waveform_dir + "/" + catalog_name, format="QUAKEML")
+
+# %% Search for the local events within a given range
+t1 = obspy.UTCDateTime("2021-08-01")
+t2 = obspy.UTCDateTime("2021-09-01")
+
+catalog_local = client.get_events(starttime=t1, endtime=t2, minmagnitude=1.5,
+                            latitude=sta_lat, longitude=sta_lon, maxradius=5,
+                            maxdepth=100)
+
+catalog_name = 'catalog_local.' + starttime.strftime("%Y%m%d") + "-" + endtime.strftime("%Y%m%d") + '.xml'
+catalog_local.write(waveform_dir + "/" + catalog_name, format="QUAKEML")
 
 
 # Download data for individual stations
