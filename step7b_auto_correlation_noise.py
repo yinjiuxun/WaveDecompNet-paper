@@ -19,8 +19,8 @@ from utilities import mkdir
 working_dir = os.getcwd()
 # waveforms
 network_station = "IU.POHA" # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
-waveform_dir = working_dir + '/continuous_waveforms'
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
+waveform_dir = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/'
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 bottleneck_name = "LSTM"
