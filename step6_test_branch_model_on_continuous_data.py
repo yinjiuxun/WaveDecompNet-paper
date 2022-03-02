@@ -25,7 +25,7 @@ time_start_time = timing.time()  # time when code starts
 working_dir = os.getcwd()
 
 # waveforms
-waveform_dir = working_dir + '/continuous_waveforms'
+waveform_dir = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms'
 network_station = "IU.POHA" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
 #waveform_mseed = waveform_dir + '/HV_data_20210731-20210901/' + network_station + '.*.20210731-20210901.mseed'
@@ -86,7 +86,8 @@ time_process_trace_time = timing.time() - time_start_time - time_load_trace_time
 bottleneck_name = "LSTM" # LSTM, attention
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
+# model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
@@ -227,7 +228,7 @@ tr_raw.write(waveform_output_dir + '/' + network_station + '.00.20210731-2021090
 
 ############################ Make figures ###############################################
 # waveforms
-waveform_dir = working_dir + '/continuous_waveforms'
+waveform_dir = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms'
 network_station = "IU.POHA" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 
 waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
@@ -242,7 +243,7 @@ tr.decimate(10)
 bottleneck_name = "LSTM"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
