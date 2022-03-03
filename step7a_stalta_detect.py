@@ -39,7 +39,7 @@ st2 = tr_earthquake.copy()  # separated earthquake data
 
 from obspy.signal.trigger import classic_sta_lta, recursive_sta_lta, carl_sta_trig, coincidence_trigger, plot_trigger
 
-ENZ_color = ['r', 'b', 'g']
+ENZ_color = ['r', 'b', 'orange']
 
 # Parameters of the STA/LTA
 short_term = 2
@@ -133,51 +133,55 @@ from obspy.geodetics import locations2degrees
 # event catalog
 event_catalog = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/catalog.20210731-20210901.xml'
 
-# station information
-station = obspy.read_inventory('/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/stations/IU.POHA.00.BH1.xml')
-#station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
-sta_lat = station[0][0].latitude
-sta_lon = station[0][0].longitude
+# # station information
+# station = obspy.read_inventory('/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/stations/IU.POHA.00.BH1.xml')
+# #station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
+# sta_lat = station[0][0].latitude
+# sta_lon = station[0][0].longitude
+#
+# # read the catalog
+# events0 = obspy.read_events(event_catalog)
+# # this is to show the large earthquake occur
+# events = events0.filter("magnitude >= 3")
+# # estimate the arrival time of each earthquake to the station
+# t0 = tr_raw[0].stats.starttime
+# event_arrival_P = np.zeros(len(events))
+# event_arrival_S = np.zeros(len(events))
+# event_time_P = []
+# epi_distance = np.zeros(len(events))
+# event_magnitude = np.array([event.magnitudes[0].mag for event in events])
+# for i_event in range(len(events)):
+#     event = events[i_event]
+#     # print(event)
+#     # print(event.origins[0])
+#     # % % extract the event information
+#     event_time = event.origins[0].time
+#     event_lon = event.origins[0].longitude
+#     event_lat = event.origins[0].latitude
+#     event_dep = event.origins[0].depth / 1e3
+#
+#     # % % estimate the distance and the P arrival time from the event to the station
+#     try:
+#         distance_to_source = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
+#         epi_distance[i_event] = distance_to_source
+#         model = TauPyModel(model='iasp91')
+#
+#         arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['P'])
+#         P_arrival = arrivals[0].time
+#         arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['S'])
+#         S_arrival = arrivals[0].time
+#         # the relative arrival time on the waveform when the event signal arrives
+#         event_info = {"time": event_time + P_arrival, "text": []} #str(event.magnitudes[0].mag)
+#         event_time_P.append(event_info)
+#         event_arrival_P[i_event] = event_time - t0 + P_arrival
+#         event_arrival_S[i_event] = event_time - t0 + S_arrival
+#     except:
+#         event_arrival_P[i_event] = np.nan
+#         event_arrival_S[i_event] = np.nan
 
-# read the catalog
-events0 = obspy.read_events(event_catalog)
-# this is to show the large earthquake occur
-events = events0.filter("magnitude >= 3")
-# estimate the arrival time of each earthquake to the station
-t0 = tr_raw[0].stats.starttime
-event_arrival_P = np.zeros(len(events))
-event_arrival_S = np.zeros(len(events))
-event_time_P = []
-epi_distance = np.zeros(len(events))
-event_magnitude = np.array([event.magnitudes[0].mag for event in events])
-for i_event in range(len(events)):
-    event = events[i_event]
-    # print(event)
-    # print(event.origins[0])
-    # % % extract the event information
-    event_time = event.origins[0].time
-    event_lon = event.origins[0].longitude
-    event_lat = event.origins[0].latitude
-    event_dep = event.origins[0].depth / 1e3
-
-    # % % estimate the distance and the P arrival time from the event to the station
-    try:
-        distance_to_source = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
-        epi_distance[i_event] = distance_to_source
-        model = TauPyModel(model='iasp91')
-
-        arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['P'])
-        P_arrival = arrivals[0].time
-        arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['S'])
-        S_arrival = arrivals[0].time
-        # the relative arrival time on the waveform when the event signal arrives
-        event_info = {"time": event_time + P_arrival, "text": []} #str(event.magnitudes[0].mag)
-        event_time_P.append(event_info)
-        event_arrival_P[i_event] = event_time - t0 + P_arrival
-        event_arrival_S[i_event] = event_time - t0 + S_arrival
-    except:
-        event_arrival_P[i_event] = np.nan
-        event_arrival_S[i_event] = np.nan
+with h5py.File(waveform_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
+    event_arrival_P = f["event_arrival_P_local"][:]
+    event_arrival_S = f["event_arrival_S_local"][:]
 
 # Loop version to plot better Zoom-in figure
 # Loop version to plot better Zoom-in figure
@@ -239,14 +243,20 @@ def plot_zoom_in_waveform(time_range, strict_xlim=False, time_inset=None):
             ax[0, i_tr].set_ylabel('STA/LTA ratio')
             ax[0, i_tr].annotate(f'({str(chr(i_tr+97))}) ', xy=(-0.1, 1.1), xycoords=ax[0, i_tr].transAxes, fontsize=15)
 
-    y_lim = 0
+    y_lim = 0.2
     for i_tr, tr_waveform in enumerate(trace_list):
         detect_time_in_day = detect_time_list[i_tr]
         for i_chan in range(3):
             ax[i_chan + 1, i_tr].plot(waveform_time_in_day, tr_waveform[i_chan], color=ENZ_color[i_chan])
             ax[i_chan + 1, i_tr].plot(detect_time_in_day,
                                       np.ones(detect_time_in_day.shape) * np.mean(tr_waveform[i_chan]),
-                                      'kx', markeredgewidth=1.5, markersize=10)
+                                      'kx', markeredgewidth=1.5, markersize=10, zorder=10)
+            ax[i_chan + 1, i_tr].plot(P_arrival_in_day[index_P],
+                                      np.ones(P_arrival_in_day[index_P].shape) * np.mean(tr_waveform[i_chan]),
+                                      'ko', markeredgewidth=1.5, markersize=3, markerfacecolor='g')
+            ax[i_chan + 1, i_tr].plot(S_arrival_in_day[index_S],
+                                      np.ones(S_arrival_in_day[index_S].shape) * np.mean(tr_waveform[i_chan]),
+                                      'ko', markeredgewidth=1.5, markersize=6, markerfacecolor='g')
 
             # label the time window
             for window_time in window_time_in_day[index_window]:
@@ -257,7 +267,7 @@ def plot_zoom_in_waveform(time_range, strict_xlim=False, time_inset=None):
                 rect = patches.Rectangle((time_inset[0][0], time_inset[1][0]),
                                          time_inset[0][1] - time_inset[0][0],
                                          time_inset[1][1] - time_inset[1][0],
-                                         linewidth=1, edgecolor='k', facecolor='none')
+                                         linewidth=1, edgecolor='k', facecolor='none', zorder=12)
 
                 # Add the patch to the Axes
                 ax[i_chan + 1, i_tr].add_patch(rect)
@@ -266,7 +276,13 @@ def plot_zoom_in_waveform(time_range, strict_xlim=False, time_inset=None):
                 axins.plot(waveform_time_in_day, tr_waveform[i_chan], color=ENZ_color[i_chan])
                 axins.plot(detect_time_in_day,
                                           np.ones(detect_time_in_day.shape) * np.mean(tr_waveform[i_chan]),
-                                          'kx', markeredgewidth=1.5, markersize=10)
+                                          'kx', markeredgewidth=1.5, markersize=10, zorder=10)
+                axins.plot(P_arrival_in_day[index_P],
+                                      np.ones(P_arrival_in_day[index_P].shape) * np.mean(tr_waveform[i_chan]),
+                                      'ko', markeredgewidth=1.5, markersize=3, markerfacecolor='g')
+                axins.plot(S_arrival_in_day[index_S],
+                                      np.ones(S_arrival_in_day[index_S].shape) * np.mean(tr_waveform[i_chan]),
+                                      'ko', markeredgewidth=1.5, markersize=6, markerfacecolor='g')
                 axins.set_xticks([])
                 axins.set_yticks([])
                 t_interval = waveform_time_in_day[-1] - waveform_time_in_day[0]
@@ -303,7 +319,8 @@ waveform_time = np.arange(tr_raw[0].stats.npts) * tr_raw[0].stats.delta
 time_range_list = [[0.3003, 0.3014], [8.362, 8.3638], [11.825, 11.84], [21.0685, 21.0695],
                    [10.765, 10.7665], [9.1395, 9.1405],
                    [27.0864,  27.0874], [28.4652, 28.4665], [13.5445,  13.5473],
-                   [9.951,  9.9525], [28.6048,  28.6060]]
+                   [9.9512,  9.9525], [28.6048,  28.6060]]
+
 
 for time_range in time_range_list:
     plot_zoom_in_waveform(np.array(time_range))
@@ -315,7 +332,7 @@ for time_range in time_range_list:
 for time_range in time_range_list:
     t_interval = time_range[1] - time_range[0]
 
-    time_inset = [[time_range[0] + t_interval/7, time_range[1]-t_interval/1.5], [-0.1, 0.1]]
+    time_inset = [[time_range[0] + t_interval/6.2, time_range[1]-t_interval/1.7], [-0.1, 0.1]]
     plot_zoom_in_waveform(np.array(time_range), time_inset=time_inset)
     plt.subplots_adjust(wspace=0.2, hspace=0.3)
     file_name = network_station + '_t_' + str(time_range[0]) + '_coincidence_' + str(threshold_coincidence) + '_insets.pdf'
