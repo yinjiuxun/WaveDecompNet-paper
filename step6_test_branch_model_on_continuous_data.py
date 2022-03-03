@@ -26,7 +26,6 @@ time_start_time = timing.time()  # time when code starts
 working_dir = '/Users/yinjiuxun/Work/WaveDecompNet'
 
 # waveforms
-<<<<<<< HEAD
 waveform_dir = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms'
 network_station = "IU.POHA" # "HV.HSSD" "IU.POHA" "HV.WRM" "HV.HAT" "HV.AIND" "HV.DEVL"
 waveform_mseed = waveform_dir + '/' + 'IU.POHA.00.20210731-20210901.mseed'
