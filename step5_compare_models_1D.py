@@ -19,8 +19,8 @@ def signal_to_noise_ratio(signal, noise, axis=0):
 
 
 # %% load dataset
-data_dir = './training_datasets'
-data_name = 'training_datasets_all_snr_40.hdf5'
+data_dir = '/kuafu/yinjx/WaveDecompNet_dataset/training_datasets'
+data_name = 'training_datasets_all_snr_40_unshuffled.hdf5'
 # data_name = 'training_datasets_waveform.hdf5'
 # data_name = 'training_datasets_STEAD_plus_POHA.hdf5'
 
@@ -31,7 +31,7 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Specify the model directory and model name list first
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 # model_names = ["Autoencoder_Conv1D_None", "Autoencoder_Conv1D_Linear",
@@ -39,8 +39,8 @@ model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
 #                "Autoencoder_Conv1D_attention_LSTM", "Autoencoder_Conv1D_Transformer"]
 model_names = ["Branch_Encoder_Decoder_None", "Branch_Encoder_Decoder_Linear",
                "Branch_Encoder_Decoder_LSTM", "Branch_Encoder_Decoder_attention",
-               "Branch_Encoder_Decoder_Transformer", "Branch_Encoder_Decoder_hybrid"]
-bottleneck_names = ["None", "Linear", "LSTM", "Attention", "Transformer", "Hybrid"]
+               "Branch_Encoder_Decoder_Transformer"]
+bottleneck_names = ["None", "Linear", "LSTM", "Attention", "Transformer"]
 
 # make the output directory
 output_dir = model_dataset_dir + "/" + "all_model_comparison"
@@ -189,7 +189,7 @@ line_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
                '#17becf']
 
 # %% Specify the model directory and model name list first
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 output_dir = model_dataset_dir + "/" + "all_model_comparison"
@@ -359,7 +359,7 @@ ax[0, 0].set_ylabel('EV score', fontsize=14)
 ax[0, 0].grid()
 ax[0, 0].annotate("(a)", xy=(-0.1, 1), xycoords=ax[0, 0].transAxes, fontsize=20)
 
-ax[0, 1].hist(model_mse_earthquake_all[0:-1,:].T, range=(-1, 1.05), bins=10,
+ax[0, 1].hist(model_mse_earthquake_all.T, range=(-1, 1.05), bins=10,
            orientation='horizontal', density=True, color=line_colors[0:5])
 ax[0, 1].grid()
 
@@ -379,7 +379,7 @@ ax[1, 0].set_ylabel('EV score', fontsize=14)
 ax[1, 0].grid()
 ax[1, 0].annotate("(b)", xy=(-0.1, 1), xycoords=ax[1, 0].transAxes, fontsize=20)
 
-ax[1, 1].hist(model_mse_noise_all[0:-1,:].T, range=(-1, 1.05), bins=10,
+ax[1, 1].hist(model_mse_noise_all.T, range=(-1, 1.05), bins=10,
            orientation='horizontal', density=True, color=line_colors[0:5])
 ax[1, 1].grid()
 ax[1, 1].set_xlabel('Density', fontsize=14)
@@ -388,8 +388,8 @@ plt.savefig(output_dir + '/bottleneck_comparison_' + center_type + '_histograms.
 ######### Plot distribution of test loss #########################
 plt.close('all')
 plt.figure(figsize=(8, 5))
-plt.hist(np.array(model_test_loss_list_all[:-1]).T,
-         bins=10, range=(0, 0.5), density=True, label=bottleneck_names[:-1])
+plt.hist(np.array(model_test_loss_list_all).T,
+         bins=10, range=(0, 0.5), density=True, label=bottleneck_names)
 plt.legend()
 plt.xlabel('MSE loss')
 plt.ylabel('Density')
