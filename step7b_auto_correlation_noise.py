@@ -201,7 +201,7 @@ def calculate_xcorf(waveform1, waveform2, running_mean_samples=32):
     xcorf = ifft(spectra_data_1 * np.conjugate(spectra_data_2), axis=1)
     return xcorf
 
-for smoothing_step in [4, 8, 16, 32, 64]:
+for smoothing_step in [8]:#[4, 8, 16, 32, 64]:
     print(f'Testing smoothing step {smoothing_step} ...')
 #smoothing_step = 4
     num_windows = data_test1.shape[0]
@@ -359,12 +359,14 @@ for smoothing_step in [4, 8, 16, 32, 64]:
             average_acf1 = average_acf1[:, index_time, :]
             average_acf2 = average_acf2[:, index_time, :]
 
+        corr_coef_list = []
         for index_channel in range(9):
             if column_number is None:
                 ax_current = ax[index_channel]
             else:
                 ax_current = ax[index_channel, column_number]
 
+            median_cc = []
             for j, xcorf_function in enumerate([average_acf1, average_acf2]):
                 global_average1 = np.mean(xcorf_function[:, :time_pts_xcorf, :], axis=0)
 
@@ -374,11 +376,14 @@ for smoothing_step in [4, 8, 16, 32, 64]:
                 norm2 = np.linalg.norm(global_average1[:, index_channel])
 
                 corr_coef = temp / norm1 / norm2
+                corr_coef_list.append(corr_coef)
+                median_cc.append(np.nanmedian(corr_coef))
 
                 ax_current.plot(xcorf_day_time, corr_coef, label=line_label[j], linewidth=1.5)
                 ax_current.plot(event_arrival_S / 24 / 3600, np.ones(event_arrival_S.shape) * 1.3,
                                        marker='.', color='g', linestyle='None')
-                ax_current.set_ylim(-1.4, 1.4)
+                ax_current.set_ylim(-1.8, 1.4)
+                ax_current.set_yticks([-1, 0, 1])
 
                 if column_number is None: # individual figure for each frequency band
                     ax_current.annotate(f'({str(chr(index_channel + 97))})', xy=(-0.1, 1.06),
@@ -401,6 +406,15 @@ for smoothing_step in [4, 8, 16, 32, 64]:
                     if index_channel == 0:
                         ax_current.set_title(f'({str(chr(column_number + 97))}) CC in ' + str(frequency_band[0]) + '-' + str(frequency_band[1]) + ' Hz',
                                              fontsize=16)
+            cmap_text = plt.get_cmap("tab10")
+            ax_current.text(3, -1.4, 'median: ',horizontalalignment='left', fontsize=12)
+            ax_current.text(12, -1.4, f'{median_cc[0]:.2f}', horizontalalignment='left', color=cmap_text(0), fontsize=12)
+            ax_current.text(17, -1.4, ' vs ', horizontalalignment='left', fontsize=12)
+            ax_current.text(21, -1.4, f'{median_cc[1]:.2f}', horizontalalignment='left', color=cmap_text(1), fontsize=12)
+
+
+        return corr_coef_list
+
 
 
     figure_output_dir = waveform_output_dir + f'/ccf_spectrum_smoothing_sample_{smoothing_step}'
@@ -488,6 +502,7 @@ for smoothing_step in [4, 8, 16, 32, 64]:
     fig1, ax1 = plt.subplots(9, 3, sharex=True, sharey=True, figsize=(12, 12))
     fig2, ax2 = plt.subplots(9, 3, sharex=True, sharey=True, figsize=(12, 12))
     fig3, ax3 = plt.subplots(9, 3, sharex=True, sharey=True, figsize=(12, 12))
+    corr_coeff_list_freq = []
     for ii, frequency_band in enumerate(frequency_bands):
         bandpass_filter = np.array(frequency_band)  # [0.1, 1] [1, 2][2, 4.5]
         file_name_str = '_' + str(bandpass_filter[0]) + '_' + str(bandpass_filter[1]) + 'Hz'
@@ -498,8 +513,9 @@ for smoothing_step in [4, 8, 16, 32, 64]:
 
         # CC from entire time series (all)
         ax = ax1
-        plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time,
+        corr_coeff_list = plot_correlation_coefficent(average_acf1, average_acf2, xcorf_day_time,
                                     xcorf_time=time_extent_list[ii], column_number=ii)
+        corr_coeff_list_freq.append(corr_coeff_list) # store the corr_coefficient
 
         # CC from ballistic part of time series (ballistic)
         ax = ax2
@@ -521,4 +537,50 @@ for smoothing_step in [4, 8, 16, 32, 64]:
 
     plt.figure(fig3.number)
     figure_name = figure_output_dir + '/cc_one_coda.pdf'
+    plt.savefig(figure_name, bbox_inches='tight')
+
+
+    fig4, ax4 = plt.subplots(9, 3, sharex=True, sharey=True, figsize=(12, 12))
+
+    # Calculate the correlation coef with the global average
+    def plot_corr_coef_hist(corr_coeff_list_freq, ax):
+        line_label = ['original waveform', 'separated noise']
+
+        for i_freq, frequency_band in enumerate(frequency_bands):
+            bandpass_filter = np.array(frequency_band)  # [0.1, 1] [1, 2][2, 4.5]
+            file_name_str = str(bandpass_filter[0]) + ' - ' + str(bandpass_filter[1]) + 'Hz'
+            print('=' * 10 + file_name_str + '=' * 10)
+            for index_channel in range(0, 18, 2):
+
+                ax_current = ax[int(index_channel/2), i_freq]
+
+                ax_current.hist([corr_coeff_list_freq[i_freq][index_channel], corr_coeff_list_freq[i_freq][index_channel+1]],
+                                bins=10, range=(-1, 1), alpha=0.8)
+                ax_current.set_xticks(np.arange(-1, 1, 0.5))
+
+                if i_freq == 0:
+                    ax_current.set_ylabel(channel_xcor_list[int(index_channel/2)], fontsize=14)
+
+                if int(index_channel/2) == 8:
+                    ax_current.set_xlabel('CC', fontsize=14)
+                if int(index_channel/2) == 0:
+                    ax_current.set_title(
+                        f'({str(chr(i_freq + 97))}) CC in ' + str(frequency_band[0]) + '-' + str(frequency_band[1]) + ' Hz',
+                        fontsize=16)
+
+                print('=' * 10 + channel_xcor_list[int(index_channel/2)] + '=' * 10)
+                print(f'Raw data, cc mean: {np.mean(corr_coeff_list_freq[i_freq][index_channel])}, ' \
+                        + f'median: {np.median(corr_coeff_list_freq[i_freq][index_channel])}, ' \
+                        + f'STD: {np.std(corr_coeff_list_freq[i_freq][index_channel])}\n')
+
+                print(f'Separated noise, cc mean: {np.mean(corr_coeff_list_freq[i_freq][index_channel+1])}, ' \
+                        + f'median: {np.median(corr_coeff_list_freq[i_freq][index_channel+1])}, '\
+                        + f'STD: {np.std(corr_coeff_list_freq[i_freq][index_channel+1])}\n')
+
+
+
+    plot_corr_coef_hist(corr_coeff_list_freq, ax4)
+
+    plt.figure(fig4.number)
+    figure_name = figure_output_dir + '/cc_hist.pdf'
     plt.savefig(figure_name, bbox_inches='tight')
