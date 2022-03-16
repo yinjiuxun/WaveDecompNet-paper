@@ -58,7 +58,7 @@ cft2_N = recursive_sta_lta(st2[1].data, int(short_term * f_sample), int(long_ter
 cft2_Z = recursive_sta_lta(st2[2].data, int(short_term * f_sample), int(long_term * f_sample))
 
 # trig = coincidence_trigger("classicstalta", trigger_on, trigger_off, st, 3, sta=short_term, lta=long_term)
-threshold_coincidence = 2
+threshold_coincidence = 3
 trig1 = coincidence_trigger("recstalta", trigger_on, trigger_off, st1, threshold_coincidence, sta=short_term, lta=long_term)
 trig2 = coincidence_trigger("recstalta", trigger_on, trigger_off, st2, threshold_coincidence, sta=short_term, lta=long_term)
 
