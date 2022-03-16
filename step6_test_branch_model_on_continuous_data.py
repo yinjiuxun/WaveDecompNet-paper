@@ -95,7 +95,7 @@ model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 model_dir = model_dataset_dir + f'/{model_name}'
 
 # %% load model
-model = torch.load(model_dir + '/' + f'{model_name}_Model.pth', map_location=try_gpu())
+model = torch.load(model_dir + '/' + f'{model_name}_Model.pth', map_location='cpu')#try_gpu())
 
 batch_size = 256
 test_iter = DataLoader(waveform_data, batch_size=batch_size, shuffle=False)
@@ -359,8 +359,8 @@ def plot_month_waveform(ax, waveform_time, waveform, component=0, color='k', tit
 
         if event_arrival_local is not None:
             i_time_event = np.where(local_event_arrival_day == ii0)
-            ax.plot(local_event_arrival_hours[i_time_event], ii0*np.ones(i_time_event[0].shape), '.', color='green',
-                    linewidth=1, markersize=5)
+            ax.plot(local_event_arrival_hours[i_time_event], ii0 * np.ones(i_time_event[0].shape), 's', color='green',
+                    linewidth=1, markersize=12, markerfacecolor='None')
     ax.grid()
     ax.set_title(title)
 
