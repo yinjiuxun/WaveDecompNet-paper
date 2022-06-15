@@ -34,6 +34,8 @@ for i in range(3):
 f_sample = tr_raw[0].stats.sampling_rate
 waveform_time = np.arange(tr_raw[0].stats.npts) * tr_raw[0].stats.delta
 
+# highpass_f = 0.2
+# tr_raw.filter("highpass", freq=highpass_f) # apply a highpass filter 
 st1 = tr_raw.copy()  # raw seismic data
 st2 = tr_earthquake.copy()  # separated earthquake data
 
@@ -58,7 +60,7 @@ cft2_N = recursive_sta_lta(st2[1].data, int(short_term * f_sample), int(long_ter
 cft2_Z = recursive_sta_lta(st2[2].data, int(short_term * f_sample), int(long_term * f_sample))
 
 # trig = coincidence_trigger("classicstalta", trigger_on, trigger_off, st, 3, sta=short_term, lta=long_term)
-threshold_coincidence = 3
+threshold_coincidence = 2
 trig1 = coincidence_trigger("recstalta", trigger_on, trigger_off, st1, threshold_coincidence, sta=short_term, lta=long_term)
 trig2 = coincidence_trigger("recstalta", trigger_on, trigger_off, st2, threshold_coincidence, sta=short_term, lta=long_term)
 
@@ -311,7 +313,8 @@ def plot_zoom_in_waveform(time_range, strict_xlim=False, time_inset=None):
         ax[0, i_tr].legend(loc=1)
 
 # output some zoom_in_figure
-output_dir = waveform_dir + '/STALTA'
+# output_dir = waveform_dir + f'/STALTA_highpass_{highpass_f}Hz'
+output_dir = waveform_dir + f'/STALTA'
 mkdir(output_dir)
 
 waveform_time = np.arange(tr_raw[0].stats.npts) * tr_raw[0].stats.delta
@@ -350,3 +353,5 @@ plt.title('Trigger events: Raw Data: ' + str(len(trig1)) + ' vs Separated Data: 
 
 plt.savefig(output_dir + '/' + 'stalta_triggers_coincidence_' + str(threshold_coincidence) + '.pdf',
             bbox_inches='tight')
+
+# %%
