@@ -6,6 +6,10 @@ Model_and_datasets_1D_all/
 Model_and_datasets_1D_STEAD*/
 Model_and_datasets_1D_synthetic/
 Model_and_datasets_1D_all_snr_40/
+Model_and_datasets_1D_all_snr_40_no_skip_connection/
+Model_and_datasets_1D_all_snr_40_unshuffled_batch_256/
+Model_and_datasets_1D_all_snr_40_unshuffled/all_runs/
+Model_and_datasets_1D_all_snr_40_unshuffled/Branch_Encoder_Decoder_LSTM/Figures
 training_datasets/
 synthetic_noisy_waveforms/
 continuous_waveforms/
