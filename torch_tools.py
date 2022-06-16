@@ -113,7 +113,7 @@ def parameter_number(model):
     return num_param
 
 
-def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimizer, epochs, patience, device):
+def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimizer, scheduler, epochs, patience, device):
     # to track the training loss as the model trains
     train_losses = []
     # to track the validation loss as the model trains
@@ -148,6 +148,9 @@ def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimiz
             # record training loss
             train_losses.append(loss.item())
 
+        if scheduler is not None: # Adjust the learning rate
+            scheduler.step() 
+            
         # ======================= validating =======================
         # initialize the model for training
         model.eval()
@@ -192,7 +195,7 @@ def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimiz
     return model, avg_train_losses, avg_valid_losses
 
 
-def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn, optimizer, epochs
+def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn, optimizer, scheduler, epochs
                            , patience, device, minimum_epochs=None):
 
     # to track the average training loss per epoch as the model trains
@@ -247,6 +250,9 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+        if scheduler is not None: # Adjust the learning rate
+            scheduler.step() 
 
         # ======================= validating =======================
         # initialize the model for training
@@ -306,8 +312,8 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
                 print("Early stopping")
                 break
 
-        # load the last checkpoint with the best model
-    model.load_state_dict(torch.load('checkpoint.pt'))
+            # load the last checkpoint with the best model
+            model.load_state_dict(torch.load('checkpoint.pt'))
 
     partial_loss = [avg_train_losses1, avg_valid_losses1, avg_train_losses2, avg_valid_losses2]
 
