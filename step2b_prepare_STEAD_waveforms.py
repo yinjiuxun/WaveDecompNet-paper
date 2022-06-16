@@ -5,8 +5,8 @@ import os
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
-file_name = "/Users/Yin9xun/Work/STEAD/merged.hdf5"
-csv_file = "/Users/Yin9xun/Work/STEAD/merged.csv"
+file_name = "/kuafu/yinjx/STEAD/merged.hdf5"
+csv_file = "/kuafu/yinjx/STEAD/merged.csv"
 
 # reading the csv file into a dataframe:
 df = pd.read_csv(csv_file)
@@ -151,3 +151,8 @@ for i, axi_i in enumerate(axi):
     axi_i.plot(time_new, Y_train[i_data, :, i].flatten(), '-b')
 axi[-1].set_xlabel('Time (s)')
 
+#%% 
+# Show magnitude distribution of chosen earthquakes
+plt.hist(df_earthquakes.source_magnitude, range=(0, 8), bins=40)
+plt.ylabel('Counts')
+plt.xlabel('Magnitude')
