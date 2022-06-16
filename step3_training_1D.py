@@ -63,7 +63,7 @@ for bottleneck_name in bottleneck_names:
                                                               train_size=train_size, random_state=rand_seed1)
     X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
                                                               test_size=test_size, random_state=rand_seed2)
-    for i_run in range(2,10):  # run the model multiple times to ensure results are stable.
+    for i_run in [1]:#range(2,10):  # run the model multiple times to ensure results are stable.
 
         # Recording the running progress to a text file
         write_running_progress(progress_file_name,
@@ -96,8 +96,9 @@ for bottleneck_name in bottleneck_names:
 
         elif bottleneck_name == "attention":
             # Self-attention bottleneck
-            bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
-
+            # bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
+            bottleneck = torch.nn.MultiheadAttention(64, 4, 0.2, 
+                                                    batch_first=True, dtype=torch.float64)
         elif bottleneck_name == "Transformer":
             # The encoder-decoder model with transformer encoder as bottleneck
             encoder_layer = torch.nn.TransformerEncoderLayer(d_model=64, nhead=4, dtype=torch.float64)
@@ -155,6 +156,7 @@ for bottleneck_name in bottleneck_names:
 
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
         train_iter = DataLoader(training_data, batch_size=batch_size, shuffle=False)
         validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=False)
 
@@ -162,7 +164,7 @@ for bottleneck_name in bottleneck_names:
 
         if model_structure == "Branch_Encoder_Decoder":
             model, avg_train_losses, avg_valid_losses, partial_loss = training_loop_branches(train_iter, validate_iter,
-                                                                                             model, loss_fn, optimizer,
+                                                                                             model, loss_fn, optimizer, scheduler,
                                                                                              epochs=epochs, patience=patience,
                                                                                              device=try_gpu(),
                                                                                              minimum_epochs=minimum_epochs)
