@@ -86,7 +86,9 @@ class SeismogramDecoder(nn.Module):
             # print(x.shape)
 
             if isinstance(self.bottleneck, torch.nn.LSTM):
-                x, _ = self.bottleneck(x)  # LSTM will also output state variable
+                x, _ = self.bottleneck(x)  # LSTM will also output state variable; 
+            elif isinstance(self.bottleneck, torch.nn.MultiheadAttention):
+                x, _ = self.bottleneck(x, x, x) # Pytorch MultiheadAttention also output weight
             else:
                 x = self.bottleneck(x)
 
