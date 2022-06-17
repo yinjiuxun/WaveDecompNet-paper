@@ -1,3 +1,4 @@
+#%%
 from matplotlib import pyplot as plt
 import numpy as np
 import h5py
@@ -25,16 +26,13 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 #bottleneck_name_list = ['None', 'Linear', 'LSTM', 'attention', 'Transformer']
-bottleneck_name_list = ['LSTM']
-
+bottleneck_name_list = ['None', 'Linear', 'attention', 'Transformer']
+#%%
 for bottleneck_name in bottleneck_name_list:
     plt.close('all')
     # %% Need to specify model_name first
-    #bottleneck_name = "LSTM"
-    #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
-    #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-    #model_dataset_dir = "Model_and_datasets_1D_all"
-    model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
+    # model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
+    model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
     #model_name = "Autoencoder_Conv2D_" + bottleneck_name
     model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
@@ -59,6 +57,7 @@ for bottleneck_name in bottleneck_name_list:
 
     # %% load model
     model = torch.load(model_dir + '/' + f'{model_name}_Model.pth', map_location=try_gpu())
+    model = model.to('cpu')
 
     batch_size = 256
     test_iter = DataLoader(test_data, batch_size=batch_size, shuffle=False)
@@ -68,6 +67,7 @@ for bottleneck_name in bottleneck_name_list:
     test_loss = 0.0
     model.eval()
     for X, y in test_iter:
+        # X, y = X.to(try_gpu()), y.to(try_gpu())
         if len(y.data) != batch_size:
             break
         # forward pass: compute predicted outputs by passing inputs to the model
@@ -129,7 +129,7 @@ for bottleneck_name in bottleneck_name_list:
     # obtain one batch of test images
     data_iter = iter(test_iter)
     noisy_signal, clean_signal = data_iter.next()
-    noisy_signal, clean_signal = noisy_signal.to(try_gpu()), clean_signal.to(try_gpu())
+    # noisy_signal, clean_signal = noisy_signal.to(try_gpu()), clean_signal.to(try_gpu())
 
     # get sample outputs
     denoised_signal, separated_noise = model(noisy_signal)
@@ -266,3 +266,5 @@ for bottleneck_name in bottleneck_name_list:
         plt.figure(1)
         plt.savefig(figure_dir + f'/{model_name}_spectrum_{i_model}.pdf',
                     bbox_inches='tight')
+
+# %%
