@@ -39,7 +39,7 @@ model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder
 
 # Choose a bottleneck type
 #bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
-bottleneck_names = ["Transformer"] #["LSTM", "None", "Linear", "attention", "Transformer"] #"LSTM", 
+bottleneck_names = ["LSTM", "None", "Linear", "attention", "Transformer"] #"LSTM", 
 
 for bottleneck_name in bottleneck_names:
 
@@ -63,7 +63,7 @@ for bottleneck_name in bottleneck_names:
                                                               train_size=train_size, random_state=rand_seed1)
     X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
                                                               test_size=test_size, random_state=rand_seed2)
-    for i_run in [2]:  # run the model multiple times to ensure results are stable.
+    for i_run in ['']:  # run the model multiple times to ensure results are stable.
 
         # Recording the running progress to a text file
         write_running_progress(progress_file_name,
@@ -151,7 +151,7 @@ for bottleneck_name in bottleneck_names:
         model_dataset_dir_current = model_dataset_dir + '/' + model_name + str(i_run)
         mkdir(model_dataset_dir_current)
 
-        batch_size, epochs, lr = 128, 30, 1e-3
+        batch_size, epochs, lr = 128, 100, 1e-3
         minimum_epochs = 30  # the minimum epochs that the training has to do
         patience = None  # patience of the early stopping
 

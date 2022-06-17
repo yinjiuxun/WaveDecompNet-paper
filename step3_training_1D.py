@@ -39,7 +39,7 @@ model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder
 
 # Choose a bottleneck type
 #bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
-bottleneck_names = ["LSTM", "None", "Linear", "attention", "Transformer"]
+bottleneck_names = ["LSTM", "None", "Linear", "attention", "Transformer"] #["LSTM", "None", "Linear", "attention", "Transformer"]
 
 for bottleneck_name in bottleneck_names:
 
@@ -154,6 +154,9 @@ for bottleneck_name in bottleneck_names:
         minimum_epochs = 30  # the minimum epochs that the training has to do
         patience = 10  # patience of the early stopping
 
+        if os.path.exists('checkpoint.pt'):# Remove the existing early stopping checkpoint
+            os.remove('checkpoint.pt')
+
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
@@ -212,7 +215,10 @@ for bottleneck_name in bottleneck_names:
             for ii in range(4):
                 plt.plot(partial_loss[ii], marker=loss_plot_list[ii], label=loss_name_list[ii])
 
+        plt.yscale('log')
         plt.legend()
         plt.title(model_name)
         plt.show()
         plt.savefig(model_dataset_dir_current + f'/{model_name}_Training_history.png')
+
+# %%
