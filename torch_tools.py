@@ -312,8 +312,8 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
                 print("Early stopping")
                 break
 
-            # load the last checkpoint with the best model
-            model.load_state_dict(torch.load('checkpoint.pt'))
+    # load the last checkpoint with the best model
+    model.load_state_dict(torch.load('checkpoint.pt'))
 
     partial_loss = [avg_train_losses1, avg_valid_losses1, avg_train_losses2, avg_valid_losses2]
 
