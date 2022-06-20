@@ -88,7 +88,8 @@ bottleneck_name = "LSTM" # LSTM, attention
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 # model_dataset_dir = "Model_and_datasets_1D_all_snr_40"
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
+# model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
@@ -270,6 +271,7 @@ for i_chan in range(3):
 tr_earthquake.write(waveform_output_dir + '/' + network_station + '.00.20210731-20210901_separated_earthquake.mseed')
 tr_raw.write(waveform_output_dir + '/' + network_station + '.00.20210731-20210901_original_earthquake.mseed')
 
+#%%
 ############################ Make figures ###############################################
 # waveforms
 waveform_dir = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms'
@@ -287,7 +289,7 @@ tr.decimate(4)
 bottleneck_name = "LSTM"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 #model_dataset_dir = "Model_and_datasets_1D_STEAD2"
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 model_name = "Branch_Encoder_Decoder_" + bottleneck_name
 
@@ -595,3 +597,5 @@ for i, xlimit in enumerate(time_zoom_in):
 # plt.tight_layout()
 #
 # plt.savefig(working_dir + '/continuous_waveforms_all.pdf')
+
+# %%

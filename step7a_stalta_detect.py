@@ -14,7 +14,7 @@ matplotlib.rcParams.update({'font.size': 12})
 
 working_dir = os.getcwd()
 
-model_and_datasets = 'Model_and_datasets_1D_all_snr_40_unshuffled'
+model_and_datasets = 'Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100'
 bottleneck_name = 'LSTM'
 network_station = 'IU.POHA'
 
@@ -34,8 +34,9 @@ for i in range(3):
 f_sample = tr_raw[0].stats.sampling_rate
 waveform_time = np.arange(tr_raw[0].stats.npts) * tr_raw[0].stats.delta
 
-# highpass_f = 0.2
-# tr_raw.filter("highpass", freq=highpass_f) # apply a highpass filter 
+highpass_f = 0.5
+if highpass_f:
+    tr_raw.filter("highpass", freq=highpass_f) # apply a highpass filter 
 st1 = tr_raw.copy()  # raw seismic data
 st2 = tr_earthquake.copy()  # separated earthquake data
 
@@ -44,6 +45,7 @@ from obspy.signal.trigger import classic_sta_lta, recursive_sta_lta, carl_sta_tr
 ENZ_color = ['r', 'b', 'orange']
 
 # Parameters of the STA/LTA
+threshold_coincidence = 1
 short_term = 2
 long_term = 60
 trigger_on = 6
@@ -60,7 +62,6 @@ cft2_N = recursive_sta_lta(st2[1].data, int(short_term * f_sample), int(long_ter
 cft2_Z = recursive_sta_lta(st2[2].data, int(short_term * f_sample), int(long_term * f_sample))
 
 # trig = coincidence_trigger("classicstalta", trigger_on, trigger_off, st, 3, sta=short_term, lta=long_term)
-threshold_coincidence = 2
 trig1 = coincidence_trigger("recstalta", trigger_on, trigger_off, st1, threshold_coincidence, sta=short_term, lta=long_term)
 trig2 = coincidence_trigger("recstalta", trigger_on, trigger_off, st2, threshold_coincidence, sta=short_term, lta=long_term)
 
@@ -313,8 +314,10 @@ def plot_zoom_in_waveform(time_range, strict_xlim=False, time_inset=None):
         ax[0, i_tr].legend(loc=1)
 
 # output some zoom_in_figure
-# output_dir = waveform_dir + f'/STALTA_highpass_{highpass_f}Hz'
-output_dir = waveform_dir + f'/STALTA'
+if highpass_f:
+    output_dir = waveform_dir + f'/STALTA_highpass_{highpass_f}Hz'
+else:
+    output_dir = waveform_dir + f'/STALTA'
 mkdir(output_dir)
 
 waveform_time = np.arange(tr_raw[0].stats.npts) * tr_raw[0].stats.delta

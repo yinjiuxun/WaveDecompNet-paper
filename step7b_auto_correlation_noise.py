@@ -1,10 +1,11 @@
+#%%
 import h5py
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from scipy.fft import fft, fftfreq, ifft
-from scipy.signal import butter, filtfilt, fftconvolve
+from scipy.signal import butter, filtfilt, fftconvolve, oaconvolve
 import h5py
 import obspy
 
@@ -20,7 +21,7 @@ working_dir = os.getcwd()
 # waveforms
 network_station = "IU.POHA" # HV.HSSD "HV.WRM" "IU.POHA" "HV.HAT"
 waveform_dir = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/'
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD2"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 bottleneck_name = "LSTM"
@@ -85,7 +86,7 @@ for i_event in range(len(events)):
         event_arrival_P[i_event] = np.nan
         event_arrival_S[i_event] = np.nan
 
-# load the separated waveforms
+#%% load the separated waveforms
 waveform_output_dir = waveform_dir + '/' + model_dataset_dir + '/' + network_station + '/' + bottleneck_name
 
 with h5py.File(waveform_output_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
@@ -182,20 +183,22 @@ for i_batch in random_batch:
     plt.savefig(waveform_output_dir + '/' + bottleneck_name + f'_waveform_spectrum_batch_{i_batch}.pdf')
     plt.close('all')
 
+#%%
 def running_mean_spectrum(X, N):
     """Apply the running mean to smooth the spectrum X, running mean is N-point along axis"""
-    return fftconvolve(abs(X), np.ones((X.shape[0], N)) / N, mode='same', axes=1)
+    # return fftconvolve(abs(X), np.ones((X.shape[0], N)) / N, mode='same', axes=1)
+    return oaconvolve(abs(X), np.ones((X.shape[0], N)) / N, mode='same', axes=1)
 
 
 def calculate_xcorf(waveform1, waveform2, running_mean_samples=32):
     """Calculate cross-correlation functions for single station,
     waveform1 and waveform2 are (nun_windows, num_time_points, )"""
     spectra_data_1 = fft(waveform1, axis=1)
-    spectra_data_1[0] = 0
+    spectra_data_1[:, 0] = 0
     # spectra_data_1 = spectra_data_1 / abs(spectra_data_1)
     spectra_data_1 = spectra_data_1 / (running_mean_spectrum(spectra_data_1, running_mean_samples) + 1e-8)
     spectra_data_2 = fft(waveform2, axis=1)
-    spectra_data_2[0] = 0
+    spectra_data_2[:, 0] = 0
     # spectra_data_2 = spectra_data_2 / abs(spectra_data_2)
     spectra_data_2 = spectra_data_2 / (running_mean_spectrum(spectra_data_2, running_mean_samples) + 1e-8)
     xcorf = ifft(spectra_data_1 * np.conjugate(spectra_data_2), axis=1)
@@ -584,3 +587,5 @@ for smoothing_step in [8]:#[4, 8, 16, 32, 64]:
     plt.figure(fig4.number)
     figure_name = figure_output_dir + '/cc_hist.pdf'
     plt.savefig(figure_name, bbox_inches='tight')
+
+# %%

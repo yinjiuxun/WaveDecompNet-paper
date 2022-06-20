@@ -1,3 +1,4 @@
+#%%
 from matplotlib import pyplot as plt
 import numpy as np
 import h5py
@@ -31,12 +32,8 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Specify the model directory and model name list first
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
-# model_dataset_dir = "Model_and_datasets_1D_synthetic"
-# model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
-# model_names = ["Autoencoder_Conv1D_None", "Autoencoder_Conv1D_Linear",
-#                "Autoencoder_Conv1D_LSTM", "Autoencoder_Conv1D_attention",
-#                "Autoencoder_Conv1D_attention_LSTM", "Autoencoder_Conv1D_Transformer"]
+# model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
 model_names = ["Branch_Encoder_Decoder_None", "Branch_Encoder_Decoder_Linear",
                "Branch_Encoder_Decoder_LSTM", "Branch_Encoder_Decoder_attention",
                "Branch_Encoder_Decoder_Transformer"]
@@ -86,6 +83,7 @@ for model_name in model_names:
 
     # %% load model
     model = torch.load(model_dir + '/' + f'{model_name}_Model.pth', map_location=try_gpu())
+    model = model.to('cpu')
     print("*" * 12 + " Model " + model_name + " loaded " + "*" * 12)
 
     batch_size = 256
@@ -189,7 +187,8 @@ line_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
                '#17becf']
 
 # %% Specify the model directory and model name list first
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
+# model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 output_dir = model_dataset_dir + "/" + "all_model_comparison"
@@ -212,19 +211,19 @@ fig, ax = plt.subplots(3, 2, sharey=True, figsize=(11, 13))
 ax = ax.flatten()
 
 # Only keep the training history until the best model before early stopping
-early_stopping_patience = 10
+early_stopping_patience = 0#10
 for i_model, model_name in enumerate(model_names):
     model_dir = model_dataset_dir + f'/{model_name}'
     test_loss = model_test_loss_all[i_model]
     param_number = model_param_number[i_model]
     bottleneck_name = bottleneck_names[i_model]
     with h5py.File(model_dir + '/' + f'{model_name}_Training_history.hdf5', 'r') as f:
-        loss = f['loss'][:][:-early_stopping_patience]
-        val_loss = f['val_loss'][:][:-early_stopping_patience]
-        earthquake_loss = f['earthquake_loss'][:][:-early_stopping_patience]
-        earthquake_val_loss = f['earthquake_val_loss'][:][:-early_stopping_patience]
-        noise_loss = f['noise_loss'][:][:-early_stopping_patience]
-        noise_val_loss = f['noise_val_loss'][:][:-early_stopping_patience]
+        loss = f['loss'][:]#[:-early_stopping_patience]
+        val_loss = f['val_loss'][:]#[:-early_stopping_patience]
+        earthquake_loss = f['earthquake_loss'][:]#[:-early_stopping_patience]
+        earthquake_val_loss = f['earthquake_val_loss'][:]#[:-early_stopping_patience]
+        noise_loss = f['noise_loss'][:]#[:-early_stopping_patience]
+        noise_val_loss = f['noise_val_loss'][:]#[:-early_stopping_patience]
 
         # # there is no validation loss in the first epoch
         # val_loss = np.append(np.nan, val_loss)
@@ -260,7 +259,6 @@ for i_model, model_name in enumerate(model_names):
     ax[i_model].text(0.98, 0.84, f'{param_number} parameters \n' + f'Mean test loss {test_loss:.4f}',
                      fontsize=12, transform=ax[i_model].transAxes, horizontalalignment='right',
                      bbox=props)
-    plt.show()
 ax[-2].set_ylim(0.01, 1)
 ax[-2].legend(fontsize=14, loc=(1.3, 0.2))
 ax[-1].set_visible(False)
@@ -359,7 +357,7 @@ ax[0, 0].set_ylabel('EV score', fontsize=14)
 ax[0, 0].grid()
 ax[0, 0].annotate("(a)", xy=(-0.1, 1), xycoords=ax[0, 0].transAxes, fontsize=20)
 
-ax[0, 1].hist(model_mse_earthquake_all.T, range=(-1, 1.05), bins=10,
+ax[0, 1].hist(model_mse_earthquake_all.T, range=(-1, 1.05), bins=11,
            orientation='horizontal', density=True, color=line_colors[0:5])
 ax[0, 1].grid()
 
@@ -379,7 +377,7 @@ ax[1, 0].set_ylabel('EV score', fontsize=14)
 ax[1, 0].grid()
 ax[1, 0].annotate("(b)", xy=(-0.1, 1), xycoords=ax[1, 0].transAxes, fontsize=20)
 
-ax[1, 1].hist(model_mse_noise_all.T, range=(-1, 1.05), bins=10,
+ax[1, 1].hist(model_mse_noise_all.T, range=(-1, 1.05), bins=11,
            orientation='horizontal', density=True, color=line_colors[0:5])
 ax[1, 1].grid()
 ax[1, 1].set_xlabel('Density', fontsize=14)
@@ -394,3 +392,4 @@ plt.legend()
 plt.xlabel('MSE loss')
 plt.ylabel('Density')
 plt.savefig(output_dir + '/bottleneck_comparison_test_loss_histograms.pdf', dpi=200, bbox_inches='tight')
+# %%
