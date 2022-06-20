@@ -124,7 +124,7 @@ def training_loop(train_dataloader, validate_dataloader, model, loss_fn, optimiz
     avg_valid_losses = []
 
     # initialize the early_stopping object
-    early_stopping = EarlyStopping(patience=patience, verbose=True)
+    early_stopping = EarlyStopping(patience=patience, verbose=True, delta=1e-6)
 
     for epoch in range(1, epochs + 1):
         # estimate time for each epoch
@@ -212,7 +212,7 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
     if patience is None: # dont apply early stopping
         early_stopping = EarlyStopping(patience=1, verbose=False)
     else:
-        early_stopping = EarlyStopping(patience=patience, verbose=True)
+        early_stopping = EarlyStopping(patience=patience, verbose=True, delta=1e-6)
 
     for epoch in range(1, epochs + 1):
         # estimate time for each epoch
@@ -312,8 +312,9 @@ def training_loop_branches(train_dataloader, validate_dataloader, model, loss_fn
                 print("Early stopping")
                 break
 
-    # load the last checkpoint with the best model
-    model.load_state_dict(torch.load('checkpoint.pt'))
+    # load the last checkpoint with the best model if apply early stopping
+    if patience is not None:
+        model.load_state_dict(torch.load('checkpoint.pt'))
 
     partial_loss = [avg_train_losses1, avg_valid_losses1, avg_train_losses2, avg_valid_losses2]
 
