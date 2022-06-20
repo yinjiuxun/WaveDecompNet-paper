@@ -7,7 +7,6 @@ Created on Mon Apr 27 10:55:02 2021
 """
 # %%
 import os
-from tabnanny import verbose
 from matplotlib import pyplot as plt
 import numpy as np
 import h5py
@@ -30,7 +29,7 @@ def write_running_progress(file_name, text_contents):
 
 
 # make the output directory
-model_dataset_dir = './Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100'
+model_dataset_dir = './Model_and_datasets_1D_all_snr_40_unshuffled_earlystopping'
 mkdir(model_dataset_dir)
 # progress text file name
 progress_file_name = model_dataset_dir + '/Running_progress.txt'
@@ -40,7 +39,7 @@ model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder
 
 # Choose a bottleneck type
 #bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
-bottleneck_names = ["LSTM", "attention", "Transformer"] #["None", "Linear", "LSTM", "attention", "Transformer"]
+bottleneck_names = ["None", "Linear", "LSTM", "attention", "Transformer"] #["LSTM", "None", "Linear", "attention", "Transformer"]
 
 for bottleneck_name in bottleneck_names:
 
@@ -64,7 +63,7 @@ for bottleneck_name in bottleneck_names:
                                                               train_size=train_size, random_state=rand_seed1)
     X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
                                                               test_size=test_size, random_state=rand_seed2)
-    for i_run in ['_warmup']:  # run the model multiple times to ensure results are stable.
+    for i_run in [1]:#range(2,10):  # run the model multiple times to ensure results are stable.
 
         # Recording the running progress to a text file
         write_running_progress(progress_file_name,
@@ -97,10 +96,9 @@ for bottleneck_name in bottleneck_names:
 
         elif bottleneck_name == "attention":
             # Self-attention bottleneck
-            #bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
+            # bottleneck = Attention_bottleneck(64, 4, 0.2)  # Add the attention bottleneck
             bottleneck = torch.nn.MultiheadAttention(64, 4, 0.2, 
                                                     batch_first=True, dtype=torch.float64)
-
         elif bottleneck_name == "Transformer":
             # The encoder-decoder model with transformer encoder as bottleneck
             encoder_layer = torch.nn.TransformerEncoderLayer(d_model=64, nhead=4, dtype=torch.float64)
@@ -152,9 +150,12 @@ for bottleneck_name in bottleneck_names:
         model_dataset_dir_current = model_dataset_dir + '/' + model_name + str(i_run)
         mkdir(model_dataset_dir_current)
 
-        batch_size, epochs, lr = 128, 100, 1e-3
+        batch_size, epochs, lr = 128, 300, 1e-3
         minimum_epochs = 30  # the minimum epochs that the training has to do
-        patience = None  # patience of the early stopping
+        patience = 10  # patience of the early stopping
+
+        if os.path.exists('checkpoint.pt'):# Remove the existing early stopping checkpoint
+            os.remove('checkpoint.pt')
 
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -162,8 +163,8 @@ for bottleneck_name in bottleneck_names:
         LR_func = lambda epoch: (epoch+1)/11 if (epoch<=10) else (0.95**epoch if (epoch <50) else 0.95**50) # with warmup
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=LR_func, verbose=True)
         # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95, verbose=True)
-        train_iter = DataLoader(training_data, batch_size=batch_size, shuffle=True) # need to be shuffled
-        validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=False) # don't shuffle
+        train_iter = DataLoader(training_data, batch_size=batch_size, shuffle=False)
+        validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=False)
 
         print("#" * 12 + " training model " + model_name + " " + "#" * 12)
 
@@ -217,7 +218,11 @@ for bottleneck_name in bottleneck_names:
             for ii in range(4):
                 plt.plot(partial_loss[ii], marker=loss_plot_list[ii], label=loss_name_list[ii])
 
+        plt.yscale('log')
         plt.legend()
         plt.title(model_name)
         plt.show()
         plt.savefig(model_dataset_dir_current + f'/{model_name}_Training_history.png')
+
+# %%
+
