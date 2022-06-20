@@ -39,7 +39,7 @@ model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder
 
 # Choose a bottleneck type
 #bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
-bottleneck_names = ["LSTM", "None", "Linear", "attention", "Transformer"] #["LSTM", "None", "Linear", "attention", "Transformer"]
+bottleneck_names = ["None", "Linear", "LSTM", "attention", "Transformer"] #["LSTM", "None", "Linear", "attention", "Transformer"]
 
 for bottleneck_name in bottleneck_names:
 
@@ -159,7 +159,10 @@ for bottleneck_name in bottleneck_names:
 
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+        #LR_func = lambda epoch: 0.95**epoch if (epoch <50) else 0.95**50
+        LR_func = lambda epoch: (epoch+1)/11 if (epoch<=10) else (0.95**epoch if (epoch <50) else 0.95**50) # with warmup
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=LR_func, verbose=True)
+        # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95, verbose=True)
         train_iter = DataLoader(training_data, batch_size=batch_size, shuffle=False)
         validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=False)
 
