@@ -7,6 +7,7 @@ Created on Mon Apr 27 10:55:02 2021
 """
 # %%
 import os
+from tabnanny import verbose
 from matplotlib import pyplot as plt
 import numpy as np
 import h5py
@@ -39,7 +40,7 @@ model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder
 
 # Choose a bottleneck type
 #bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
-bottleneck_names = ["LSTM", "None", "Linear", "attention", "Transformer"] #"LSTM", 
+bottleneck_names = ["LSTM", "attention", "Transformer"] #["None", "Linear", "LSTM", "attention", "Transformer"]
 
 for bottleneck_name in bottleneck_names:
 
@@ -63,7 +64,7 @@ for bottleneck_name in bottleneck_names:
                                                               train_size=train_size, random_state=rand_seed1)
     X_validate, X_test, Y_validate, Y_test = train_test_split(X_test, Y_test,
                                                               test_size=test_size, random_state=rand_seed2)
-    for i_run in ['']:  # run the model multiple times to ensure results are stable.
+    for i_run in ['_warmup']:  # run the model multiple times to ensure results are stable.
 
         # Recording the running progress to a text file
         write_running_progress(progress_file_name,
@@ -157,7 +158,10 @@ for bottleneck_name in bottleneck_names:
 
         loss_fn = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+        #LR_func = lambda epoch: 0.95**epoch if (epoch <50) else 0.95**50
+        LR_func = lambda epoch: (epoch+1)/11 if (epoch<=10) else (0.95**epoch if (epoch <50) else 0.95**50) # with warmup
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=LR_func, verbose=True)
+        # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95, verbose=True)
         train_iter = DataLoader(training_data, batch_size=batch_size, shuffle=True) # need to be shuffled
         validate_iter = DataLoader(validate_data, batch_size=batch_size, shuffle=False) # don't shuffle
 
