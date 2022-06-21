@@ -231,18 +231,20 @@ for bottleneck_name in bottleneck_name_list:
             freq, spect_denoised_signal = waveform_fft(denoised_signal[i_model, i, :]/scaling_factor, dt)
 
             #ax[i].loglog(freq, spect_noisy_signal, '-k', label='X_input', linewidth=1.5)
-            ax[1, i].loglog(freq, spect_noise, '-', color='b', label='noise', linewidth=0.5, alpha=0.8)
-            ax[1, i].loglog(freq, spect_original_noise, 'r', label='orginal noise', linewidth=0.5, alpha=1)
+            ax[1, i].loglog(freq, spect_noise, '-', color='b', label='decomp. noise', linewidth=0.5, alpha=0.8)
+            ax[1, i].loglog(freq, spect_original_noise, 'r', label='true noise', linewidth=0.5, alpha=1)
 
             ax[0, i].loglog(freq, spect_noisy_signal, '-k', label='raw signal', linewidth=0.5, alpha=1)
-            ax[0, i].loglog(freq, spect_clean_signal, '-r', label='true earthquake', linewidth=0.5, alpha=1)
-            ax[0, i].loglog(freq, spect_denoised_signal, '-b', label='separated earthquake', linewidth=0.5, alpha=1)
+            ax[0, i].loglog(freq, spect_clean_signal, '-r', label='true EQ', linewidth=0.5, alpha=1)
+            ax[0, i].loglog(freq, spect_denoised_signal, '-b', label='decomp. EQ', linewidth=0.5, alpha=1)
 
             ax[0, i].grid(alpha=0.2)
             if i == 0:
                 #ax[0, i].set_xlabel('Frequency (Hz)')
                 ax[0, i].set_ylabel('velocity spectra', fontsize=14)
                 ax[1, i].set_ylabel('velocity spectra', fontsize=14)
+                ax[0, i].legend(fontsize=8, loc=4)
+                ax[1, i].legend(fontsize=8, loc=4)
 
             ax[1, i].grid(alpha=0.2)
             ax[1, i].set_xlabel('Frequency (Hz)', fontsize=14)
