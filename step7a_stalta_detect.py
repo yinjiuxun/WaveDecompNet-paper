@@ -11,7 +11,7 @@ from utilities import mkdir
 import matplotlib
 
 matplotlib.rcParams.update({'font.size': 12})
-
+#%%
 working_dir = os.getcwd()
 
 model_and_datasets = 'Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100'
@@ -34,7 +34,7 @@ for i in range(3):
 f_sample = tr_raw[0].stats.sampling_rate
 waveform_time = np.arange(tr_raw[0].stats.npts) * tr_raw[0].stats.delta
 
-highpass_f = 0.5
+highpass_f = None
 if highpass_f:
     tr_raw.filter("highpass", freq=highpass_f) # apply a highpass filter 
 st1 = tr_raw.copy()  # raw seismic data
@@ -129,59 +129,7 @@ def plot_long_waveform_for_visualization():
 # plt.close('all')
 # plot_long_waveform_for_visualization()
 
-
-# Get the event arrival time from catalog
-from obspy.taup import TauPyModel
-from obspy.geodetics import locations2degrees
-# event catalog
-event_catalog = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/catalog.20210731-20210901.xml'
-
-# # station information
-# station = obspy.read_inventory('/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/stations/IU.POHA.00.BH1.xml')
-# #station = obspy.read_inventory(waveform_dir + '/stations/HV.HAT.*.HHE.xml')
-# sta_lat = station[0][0].latitude
-# sta_lon = station[0][0].longitude
-#
-# # read the catalog
-# events0 = obspy.read_events(event_catalog)
-# # this is to show the large earthquake occur
-# events = events0.filter("magnitude >= 3")
-# # estimate the arrival time of each earthquake to the station
-# t0 = tr_raw[0].stats.starttime
-# event_arrival_P = np.zeros(len(events))
-# event_arrival_S = np.zeros(len(events))
-# event_time_P = []
-# epi_distance = np.zeros(len(events))
-# event_magnitude = np.array([event.magnitudes[0].mag for event in events])
-# for i_event in range(len(events)):
-#     event = events[i_event]
-#     # print(event)
-#     # print(event.origins[0])
-#     # % % extract the event information
-#     event_time = event.origins[0].time
-#     event_lon = event.origins[0].longitude
-#     event_lat = event.origins[0].latitude
-#     event_dep = event.origins[0].depth / 1e3
-#
-#     # % % estimate the distance and the P arrival time from the event to the station
-#     try:
-#         distance_to_source = locations2degrees(sta_lat, sta_lon, event_lat, event_lon)
-#         epi_distance[i_event] = distance_to_source
-#         model = TauPyModel(model='iasp91')
-#
-#         arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['P'])
-#         P_arrival = arrivals[0].time
-#         arrivals = model.get_ray_paths(event_dep, distance_to_source, phase_list=['S'])
-#         S_arrival = arrivals[0].time
-#         # the relative arrival time on the waveform when the event signal arrives
-#         event_info = {"time": event_time + P_arrival, "text": []} #str(event.magnitudes[0].mag)
-#         event_time_P.append(event_info)
-#         event_arrival_P[i_event] = event_time - t0 + P_arrival
-#         event_arrival_S[i_event] = event_time - t0 + S_arrival
-#     except:
-#         event_arrival_P[i_event] = np.nan
-#         event_arrival_S[i_event] = np.nan
-
+# load the precalculated event arrival for zoom-in waveforms
 with h5py.File(waveform_dir + '/' + bottleneck_name + '_processed_waveforms.hdf5', 'r') as f:
     event_arrival_P = f["event_arrival_P_local"][:]
     event_arrival_S = f["event_arrival_S_local"][:]
@@ -344,10 +292,32 @@ for time_range in time_range_list:
     file_name = network_station + '_t_' + str(time_range[0]) + '_coincidence_' + str(threshold_coincidence) + '_insets.pdf'
     plt.savefig(output_dir + '/' + file_name, bbox_inches='tight')
 
+
 # plot the histogram for detected earthquakes
+# Get the event time from catalog
+event_catalog_global = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/catalog.20210731-20210901.xml'
+event_catalog_local = '/kuafu/yinjx/WaveDecompNet_dataset/continuous_waveforms/catalog_local.20210731-20210901.xml'
+
+time0 = obspy.UTCDateTime('20210731')
+
+def get_catalog_events(event_catalog_local, time0, M):
+    events_local = obspy.read_events(event_catalog_local)
+    events_local = events_local.filter(f'magnitude >= {M}')
+
+    event_local_magnitude_list = [event.magnitudes[0].mag for event in events_local]
+    event_local_time_in_day_list = [(event.origins[0].time - time0)/24/3600  for event in events_local]
+
+    catalog_event_local_counts, catalog_event_local_day = np.histogram(event_local_time_in_day_list, bins=30, range=(1, 31))
+    catalog_event_local_day = catalog_event_local_day[:-1] + np.diff(catalog_event_local_day)/2
+    return catalog_event_local_counts,catalog_event_local_day
+
+catalog_event_local_counts1, catalog_event_local_day = get_catalog_events(event_catalog_local, time0, 1)
+catalog_event_local_counts2, catalog_event_local_day = get_catalog_events(event_catalog_local, time0, 2)
+
 plt.figure(figsize=(8,4))
-plt.hist(detect_time2 / second_per_day, bins=31, label='separated waveform')
-plt.hist(detect_time1 / second_per_day, bins=31, label='raw waveform')
+plt.hist(detect_time2 / second_per_day, bins=31, label='STA/LTA of decomp. waveform')
+plt.hist(detect_time1 / second_per_day, bins=31, label='STA/LTA of raw waveform')
+plt.plot(catalog_event_local_day, catalog_event_local_counts2, '-o', color='k', label='M2+ local events in catalog')
 plt.legend()
 #plt.ylim(0, 200)
 plt.xlabel('Time (day)')
