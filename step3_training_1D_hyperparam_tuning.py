@@ -29,7 +29,7 @@ def write_running_progress(file_name, text_contents):
 
 
 # make the output directory
-model_dataset_dir = './Model_and_datasets_1D_all_snr_40_unshuffled_earlystopping'
+model_dataset_dir = './Model_and_datasets_1D_all_snr_40_unshuffled_early_stopping'
 mkdir(model_dataset_dir)
 # progress text file name
 progress_file_name = model_dataset_dir + '/Running_progress.txt'
@@ -39,7 +39,7 @@ model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder
 
 # Choose a bottleneck type
 #bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
-bottleneck_names = ["None", "Linear", "LSTM", "attention", "Transformer"] #["LSTM", "None", "Linear", "attention", "Transformer"]
+bottleneck_names = ["LSTM"]#["None", "Linear", "LSTM", "attention", "Transformer"] #["LSTM", "None", "Linear", "attention", "Transformer"]
 
 for bottleneck_name in bottleneck_names:
 

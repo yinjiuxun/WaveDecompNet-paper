@@ -32,8 +32,8 @@ with h5py.File(data_dir + '/' + data_name, 'r') as f:
     Y_train = f['Y_train'][:]
 
 # %% Specify the model directory and model name list first
-# model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_early_stopping"
+# model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
 model_names = ["Branch_Encoder_Decoder_None", "Branch_Encoder_Decoder_Linear",
                "Branch_Encoder_Decoder_LSTM", "Branch_Encoder_Decoder_attention",
                "Branch_Encoder_Decoder_Transformer"]
@@ -187,8 +187,8 @@ line_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
                '#17becf']
 
 # %% Specify the model directory and model name list first
-# model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled"
-model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
+model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_early_stopping"
+# model_dataset_dir = "Model_and_datasets_1D_all_snr_40_unshuffled_equal_epoch100"
 # model_dataset_dir = "Model_and_datasets_1D_synthetic"
 # model_dataset_dir = "Model_and_datasets_1D_STEAD_plus_POHA"
 output_dir = model_dataset_dir + "/" + "all_model_comparison"
