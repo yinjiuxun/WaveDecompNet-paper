@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch_tools import WaveformDataset, try_gpu, parameter_number
 from autoencoder_1D_models_torch import *
+from torchinfo import summary
 
 import matplotlib
 matplotlib.rcParams.update({'font.size': 10})
@@ -58,6 +59,8 @@ for bottleneck_name in bottleneck_name_list:
     # %% load model
     model = torch.load(model_dir + '/' + f'{model_name}_Model.pth', map_location=try_gpu())
     model = model.to('cpu')
+    # Print the model summary
+    summary(model, (128, 3, 600), dtypes=[torch.float64])
 
     batch_size = 256
     test_iter = DataLoader(test_data, batch_size=batch_size, shuffle=False)
