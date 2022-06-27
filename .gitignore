@@ -2,7 +2,7 @@ waveforms
 stations
 .idea
 __pycache__
-check_point.pt
+checkpoint.pt
 training_datasets*.hdf5
 pyrocko_synthetics/ak135_2000km_1Hz/
 Model_and_datasets_1D_all/
