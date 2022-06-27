@@ -1,5 +1,6 @@
 waveforms
 stations
+.idea
 __pycache__
 check_point.pt
 training_datasets*.hdf5
