@@ -39,7 +39,7 @@ model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder
 
 # Choose a bottleneck type
 #bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
-bottleneck_names = ["LSTM"]#["None", "Linear", "LSTM", "attention", "Transformer"] #["LSTM", "None", "Linear", "attention", "Transformer"]
+bottleneck_names = ["Linear"]#["None", "Linear", "LSTM", "attention", "Transformer"] #["LSTM", "None", "Linear", "attention", "Transformer"]
 
 for bottleneck_name in bottleneck_names:
 
