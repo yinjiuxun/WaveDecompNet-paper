@@ -39,8 +39,7 @@ progress_file_name = model_dataset_dir + '/Running_progress.txt'
 model_structure = "Branch_Encoder_Decoder"  # "Autoencoder_Conv1D", "Autoencoder_Conv2D", "Branch_Encoder_Decoder_LSTM"
 
 # Choose a bottleneck type
-#bottleneck_name = "LSTM"  # "None", "Linear", "LSTM", "attention", "Transformer", "attention_LSTM"
-bottleneck_names = ["LSTM", "attention", "Transformer"] #["None", "Linear", "LSTM", "attention", "Transformer"]
+bottleneck_names = ["None", "Linear", "LSTM", "attention", "Transformer"]
 
 for bottleneck_name in bottleneck_names:
 
