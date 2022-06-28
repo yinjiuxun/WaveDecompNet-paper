@@ -26,7 +26,7 @@ Step 3: Training the WaveDecompNet using the prepared datasets with specified bo
 randomness of ML algorithm, the searching paths for optimal parameters may be slightly different when repeating the 
 execution. Multiple run of the model training may help (just change the first i_run for-loop) but there are little 
 different in the final results.
-(Trained models can be found in the folder [/Model_and_datasets_1D_all_snr_40](https://github.com/yinjiuxun/WaveDecompNet/tree/stable/Model_and_datasets_1D_all_snr_40))
+(Trained models that are showned in the paper can be found in the folder [/trained_models](https://github.com/yinjiuxun/WaveDecompNet-paper/tree/stable/trained_models)
 
 - step3_training_1D.py gives the results shown in the paper.
 
