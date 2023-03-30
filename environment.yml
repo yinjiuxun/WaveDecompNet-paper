@@ -1,4 +1,4 @@
-name: WaveDecompNet-test
+name: WaveDecompNet
 channels:
   - conda-forge
   - defaults
