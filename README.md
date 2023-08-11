@@ -1,5 +1,8 @@
 # WaveDecompNet
 
+Please see this repository for the up-to-date method: https://github.com/qibinshi/TeleseismicDenoiser 
+This repository is not under maintenance for now.
+
 A machine learning tool to separate earthquake and ambient noise signals for the seismic data in time domain.
 
 ![WaveDecompNet](WaveDecompNet_structure.png)
